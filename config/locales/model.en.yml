@@ -1,0 +1,172 @@
+---
+en:
+  activerecord:
+    models:
+      product: Product
+      bid_item: Bid item
+      bid: Bid
+      user: User
+      transaction: Transaction
+      admin: Admin
+      withdrawal: Withdrawal
+      shipping: Shipping
+      payment_method: Payment method
+      deposit: Deposit
+      wallet: Wallet
+      category: Category
+      product_category: Product category
+      listing: Listing
+      listing_bid_item: Listing bid item
+    attributes:
+      bid_item:
+        user_id: User ID
+        expiration_time: Expiration time
+        id: ID
+        name: Name
+        created_at: Created at
+        updated_at: Updated at
+        product_id: Product ID
+        base_price: Base price
+        status: Status
+      user:
+        id: ID
+        updated_at: Updated at
+        unlock_token: Unlock token
+        confirmation_token: Confirmation token
+        created_at: Created at
+        sign_in_count: Sign in count
+        password: Password
+        encrypted_password: Encrypted password
+        email: Email
+        remember_created_at: Remember created at
+        current_sign_in_at: Current sign in at
+        last_sign_in_at: Last sign in at
+        password_confirmation: Password confirmation
+        reset_password_token: Reset password token
+        reset_password_sent_at: Reset password sent at
+        current_sign_in_ip: Current sign in ip
+        last_sign_in_ip: Last sign in ip
+        locked_at: Locked at
+        unconfirmed_email: Unconfirmed email
+        failed_attempts: Failed attempts
+        confirmed_at: Confirmed at
+        confirmation_sent_at: Confirmation sent at
+      admin:
+        password_confirmation: Password confirmation
+        unlock_token: Unlock token
+        created_at: Created at
+        encrypted_password: Encrypted password
+        password: Password
+        confirmation_token: Confirmation token
+        confirmation_sent_at: Confirmation sent at
+        id: ID
+        updated_at: Updated at
+        name: Name
+        remember_created_at: Remember created at
+        current_sign_in_at: Current sign in at
+        sign_in_count: Sign in count
+        confirmed_at: Confirmed at
+        email: Email
+        reset_password_sent_at: Reset password sent at
+        last_sign_in_at: Last sign in at
+        current_sign_in_ip: Current sign in ip
+        last_sign_in_ip: Last sign in ip
+        locked_at: Locked at
+        failed_attempts: Failed attempts
+        reset_password_token: Reset password token
+        unconfirmed_email: Unconfirmed email
+      transaction:
+        reference_type: Reference type
+        id: ID
+        created_at: Created at
+        transaction_type: Transaction type
+        status: Status
+        reference_id: Reference
+        updated_at: Updated at
+        value: Value
+        wallet_id: Wallet ID
+      withdrawal:
+        updated_at: Updated at
+        created_at: Created at
+        aprroved_id: Aprroved ID
+        id: ID
+        value: Value
+        status: Status
+        payment_method_id: Payment method ID
+      product:
+        description: Description
+        created_at: Created at
+        name: Name
+        updated_at: Updated at
+        image: Image
+        stock: Stock
+        id: ID
+        user_id: User ID
+        price: Price
+        aproved_id: Aproved ID
+      payment_method:
+        id: ID
+        created_at: Created at
+        updated_at: Updated at
+        primary: Primary
+        user_id: User ID
+        method: Method
+      bid:
+        id: ID
+        created_at: Created at
+        user_id: User ID
+        updated_at: Updated at
+        price: Price
+        item_id: Item ID
+        status: Status
+      deposit:
+        updated_at: Updated at
+        wallet_id: Wallet ID
+        id: ID
+        created_at: Created at
+        value: Value
+        user_id: User ID
+        status: Status
+        payment_method_id: Payment method ID
+      category:
+        id: ID
+        updated_at: Updated at
+        name: Name
+        created_at: Created at
+        created_id: Created ID
+        disabled: Disabled
+      listing:
+        description: Description
+        updated_at: Updated at
+        id: ID
+        created_at: Created at
+      listing_bid_item:
+        listing_id: Listing ID
+        created_at: Created at
+        id: ID
+        updated_at: Updated at
+        bid_item_id: Bid item ID
+      shipping:
+        id: ID
+        shiping_address: Shiping address
+        created_at: Created at
+        updated_at: Updated at
+        status: Status
+        post_code: Post code
+        phone_number: Phone number
+        email: Email
+        bid_id: Bid ID
+        full_name: Full name
+      wallet:
+        id: ID
+        updated_at: Updated at
+        created_at: Created at
+        user_id: User ID
+        balance: Balance
+        locked: Locked
+      product_category:
+        id: ID
+        updated_at: Updated at
+        category_id: Category ID
+        created_at: Created at
+        product_id: Product ID
