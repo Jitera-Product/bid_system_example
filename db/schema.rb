@@ -305,4 +305,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_22_185136) do
   add_foreign_key "transactions", "wallets"
   add_foreign_key "wallets", "users"
   add_foreign_key "withdrawals", "payment_methods"
+  add_foreign_key "withdrawals", "admins"
+  add_foreign_key "products", "admins"
+  add_foreign_key "categories", "admins"
 end
