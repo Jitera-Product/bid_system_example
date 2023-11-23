@@ -4,8 +4,8 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 ruby '3.0.0'
 
 # Gems for all environments
-        gem 'multi_json'
-        gem 'rswag', '~> 2.5.1'
+gem 'multi_json'
+gem 'rswag', '~> 2.5.1'
 gem 'active_storage_validations'
 gem 'aws-sdk-s3', require: false
 gem 'bootsnap', '>= 1.4.2', require: false
@@ -23,7 +23,7 @@ gem 'jbuilder', '~> 2.11.5'
 # jitera-hook-for-jwt
 gem 'kaminari'
 gem 'lograge'
-gem 'pg', '~> 1.2'
+gem 'pg', '~> 1.5.3'
 gem 'puma', '~> 5.5.2'
 gem 'pundit'
 gem 'rack-cors'
@@ -60,16 +60,17 @@ gem 'factory_bot_rails'
 gem 'rspec'
 gem 'rspec-rails', '~> 4.0.1'
 gem 'shoulda-matchers'
+gem 'validates_timeliness'
 # swaggerize does not run spec just needded for documentation updates
 group :development do
   gem 'letter_opener'
-  gem 'listen', '~> 3.4.1'
+  gem 'listen', '3.5'
   gem 'rails-erd'
   gem 'rubocop'
   gem 'rubocop-rails', require: false
   gem 'rubocop-rspec', require: false
-  gem 'spring', '~> 3.0.0'
-  gem 'spring-commands-rspec'
+  # gem 'spring', '~> 3.0.0'
+  # gem 'spring-commands-rspec'
   gem 'web-console', '>= 3.3.0'
 end
 
