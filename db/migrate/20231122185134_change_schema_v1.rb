@@ -25,13 +25,13 @@ class ChangeSchemaV1 < ActiveRecord::Migration[6.0]
 
       t.integer :stock
 
-      t.integer :aproved_id, index: true
+      t.integer :admin_id, index: true
 
       t.timestamps null: false
     end
 
     create_table :categories do |t|
-      t.integer :created_id, index: true
+      t.integer :admin_id, index: true
 
       t.boolean :disabled, default: false
 
@@ -65,7 +65,7 @@ class ChangeSchemaV1 < ActiveRecord::Migration[6.0]
     end
 
     create_table :withdrawals do |t|
-      t.integer :aprroved_id, index: true
+      t.integer :admin_id, index: true
 
       t.integer :value, null: false
 

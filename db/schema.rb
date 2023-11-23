@@ -97,12 +97,12 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_22_185136) do
   end
 
   create_table "categories", force: :cascade do |t|
-    t.integer "created_id"
+    t.integer "admin_id"
     t.boolean "disabled", default: false
     t.string "name", default: "", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["created_id"], name: "index_categories_on_created_id"
+    t.index ["admin_id"], name: "index_categories_on_admin_id"
   end
 
   create_table "deposits", force: :cascade do |t|
@@ -203,11 +203,11 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_22_185136) do
     t.text "description"
     t.string "name", default: "", null: false
     t.integer "stock"
-    t.integer "aproved_id"
+    t.integer "admin_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id"
-    t.index ["aproved_id"], name: "index_products_on_aproved_id"
+    t.index ["admin_id"], name: "index_products_on_admin_id"
     t.index ["user_id"], name: "index_products_on_user_id"
   end
 
@@ -275,13 +275,13 @@ ActiveRecord::Schema[7.0].define(version: 2023_11_22_185136) do
   end
 
   create_table "withdrawals", force: :cascade do |t|
-    t.integer "aprroved_id"
+    t.integer "admin_id"
     t.integer "value", null: false
     t.integer "status", default: 1, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "payment_method_id"
-    t.index ["aprroved_id"], name: "index_withdrawals_on_aprroved_id"
+    t.index ["admin_id"], name: "index_withdrawals_on_admin_id"
     t.index ["payment_method_id"], name: "index_withdrawals_on_payment_method_id"
   end
 
