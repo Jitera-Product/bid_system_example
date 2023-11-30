@@ -1,7 +1,6 @@
-# PATH: /app/controllers/api/questions_controller.rb
 class Api::QuestionsController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update edit retrieve_answer]
-  before_action :set_user, only: [:create]
+  before_action :doorkeeper_authorize!, only: %i[index create show update edit moderate_content retrieve_answer]
+  before_action :set_user, only: [:create, :moderate_content]
   def index
     @questions = QuestionService::Index.new(params.permit!, current_resource_owner).execute
     @total_pages = @questions.total_pages
@@ -42,6 +41,21 @@ class Api::QuestionsController < Api::BaseController
       render status: :unprocessable_entity
     end
   end
+  def moderate_content
+    begin
+      @content = Question.find_by(id: params[:id]) || Answer.find_by(id: params[:id])
+      raise ActiveRecord::RecordNotFound if @content.blank?
+      raise ActiveRecord::RecordNotFound if @user.blank?
+      if @content.update(content: params[:content])
+        render json: {message: "Content moderated successfully", content_id: @content.id}, status: :ok
+      else
+        @error_object = @content.errors.messages
+        render json: {error: @error_object}, status: :unprocessable_entity
+      end
+    rescue => e
+      render json: {error: e.message}, status: :unprocessable_entity
+    end
+  end
   def retrieve_answer
     query = params[:query]
     questions = Question.where("content LIKE ?", "%#{query}%")
@@ -56,7 +70,7 @@ class Api::QuestionsController < Api::BaseController
   end
   private
   def set_user
-    @user = User.find_by_id(params[:question][:contributor_id])
+    @user = User.find_by_id(params[:contributor_id] || params[:question][:contributor_id])
     render json: {error: "User not found"}, status: :not_found unless @user
   end
   def question_params

@@ -1,48 +1,37 @@
 class Api::AdminsController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update]
-
-  def index
-    # inside service params are checked and whiteisted
-    @admins = AdminService::Index.new(params.permit!, current_resource_owner).execute
-    @total_pages = @admins.total_pages
+  before_action :doorkeeper_authorize!, only: %i[index create show update moderate_content]
+  before_action :authorize_admin, only: :moderate_content
+  # other methods...
+  def moderate_content
+    content = params[:content]
+    id = params[:id]
+    contributor_id = params[:contributor_id]
+    user = User.find_by(id: contributor_id)
+    question = Question.find_by(id: id)
+    answer = Answer.find_by(id: id)
+    if user.nil?
+      render json: { error: 'User not found' }, status: :not_found
+      return
+    end
+    if question
+      moderate(question, content, id)
+    elsif answer
+      moderate(answer, content, id)
+    else
+      render json: { error: 'Content not found' }, status: :not_found
+    end
   end
-
-  def show
-    @admin = Admin.find_by!('admins.id = ?', params[:id])
-
-    authorize @admin, policy_class: Api::AdminsPolicy
+  private
+  def moderate(content_object, content, id)
+    if content.blank?
+      content_object.destroy
+      render json: { message: 'Content deleted', id: id }, status: :ok
+    else
+      content_object.update(content: content)
+      render json: { message: 'Content updated', id: id }, status: :ok
+    end
   end
-
-  def create
-    @admin = Admin.new(create_params)
-
-    authorize @admin, policy_class: Api::AdminsPolicy
-
-    return if @admin.save
-
-    @error_object = @admin.errors.messages
-
-    render status: :unprocessable_entity
-  end
-
-  def create_params
-    params.require(:admins).permit(:name, :email)
-  end
-
-  def update
-    @admin = Admin.find_by('admins.id = ?', params[:id])
-    raise ActiveRecord::RecordNotFound if @admin.blank?
-
-    authorize @admin, policy_class: Api::AdminsPolicy
-
-    return if @admin.update(update_params)
-
-    @error_object = @admin.errors.messages
-
-    render status: :unprocessable_entity
-  end
-
-  def update_params
-    params.require(:admins).permit(:name, :email)
+  def authorize_admin
+    authorize current_resource_owner, policy_class: Api::AdminsPolicy
   end
 end
