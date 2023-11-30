@@ -1,5 +1,6 @@
+# PATH: /app/controllers/api/questions_controller.rb
 class Api::QuestionsController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update edit]
+  before_action :doorkeeper_authorize!, only: %i[index create show update edit retrieve_answer]
   before_action :set_user, only: [:create]
   def index
     @questions = QuestionService::Index.new(params.permit!, current_resource_owner).execute
@@ -22,17 +23,36 @@ class Api::QuestionsController < Api::BaseController
     @question = Question.find_by('questions.id = ?', params[:id])
     raise ActiveRecord::RecordNotFound if @question.blank?
     authorize @question, policy_class: Api::QuestionsPolicy
-    return if @question.update(update_params)
-    @error_object = @question.errors.messages
-    render status: :unprocessable_entity
+    if @question.update(update_params)
+      render json: {message: "Question updated successfully", question_id: @question.id}, status: :ok
+    else
+      @error_object = @question.errors.messages
+      render status: :unprocessable_entity
+    end
   end
   def edit
     @question = Question.find_by('questions.id = ?', params[:id])
     raise ActiveRecord::RecordNotFound if @question.blank?
     authorize @question, policy_class: Api::QuestionsPolicy
-    return if @question.update(edit_params)
-    flash[:notice] = "Question was successfully updated."
-    render json: { id: @question.id }, status: :ok
+    if @question.update(edit_params)
+      flash[:notice] = "Question was successfully updated."
+      render json: { id: @question.id }, status: :ok
+    else
+      @error_object = @question.errors.messages
+      render status: :unprocessable_entity
+    end
+  end
+  def retrieve_answer
+    query = params[:query]
+    questions = Question.where("content LIKE ?", "%#{query}%")
+    answers = Answer.where("content LIKE ?", "%#{query}%")
+    relevant_answers = answers.select { |answer| questions.map(&:id).include?(answer.question_id) }
+    most_relevant_answer = relevant_answers.max_by { |answer| answer.created_at }
+    if most_relevant_answer
+      render json: {answer_content: most_relevant_answer.content, question_id: most_relevant_answer.question_id, answer_id: most_relevant_answer.id}
+    else
+      render json: {message: "No relevant answer found"}, status: :not_found
+    end
   end
   private
   def set_user
@@ -43,9 +63,9 @@ class Api::QuestionsController < Api::BaseController
     params.require(:question).permit(:content, :tags, :contributor_id)
   end
   def update_params
-    params.require(:questions).permit(:content, :tags, :user_id)
+    params.require(:question).permit(:content, :tags, :user_id)
   end
   def edit_params
-    params.require(:questions).permit(:content, :tags, :contributor_id)
+    params.require(:question).permit(:content, :tags, :contributor_id)
   end
 end
