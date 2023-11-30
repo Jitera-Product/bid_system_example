@@ -1,5 +1,5 @@
 class Question < ApplicationRecord
   belongs_to :user
   has_many :answers, dependent: :destroy
-  validates :feedback_type, presence: true
+  validates :content, :feedback_type, presence: true
 end
