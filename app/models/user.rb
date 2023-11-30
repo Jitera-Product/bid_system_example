@@ -21,6 +21,7 @@ class User < ApplicationRecord
   validates :location, presence: true
   validates :interests, presence: true
   validates :preferences, presence: true
+  validates :name, presence: true
   # end for validations
   def generate_reset_password_token
     raw, enc = Devise.token_generator.generate(self.class, :reset_password_token)
@@ -40,6 +41,21 @@ class User < ApplicationRecord
       # We will show the error message in TokensController
       return user if user&.access_locked?
       false
+    end
+    def create(name:, age:, gender:, location:, interests:, preferences:)
+      user = User.new(
+        name: name,
+        age: age,
+        gender: gender,
+        location: location,
+        interests: interests,
+        preferences: preferences
+      )
+      if user.save
+        return user.id
+      else
+        return false
+      end
     end
   end
 end

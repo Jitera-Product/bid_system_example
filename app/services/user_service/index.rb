@@ -42,6 +42,14 @@ class UserService::Index
     end
     'Match status updated successfully'
   end
+  def register(name, age, gender, location, interests, preferences)
+    # Validate the input data
+    return { status: 'error', message: 'Invalid input data' } unless name && age && gender && location && interests && preferences
+    # Create a new user record
+    user = User.create(name: name, age: age, gender: gender, location: location, interests: interests, preferences: preferences)
+    # Return the user ID and a success status
+    { status: 'success', user_id: user.id }
+  end
   private
   def calculate_matches(preferences, interests)
     # Placeholder matching algorithm
