@@ -1,6 +1,7 @@
 Rails.application.routes.draw do
   namespace :api do
     resources :users_registrations, only: [:create]
+    post '/users/register', to: 'users_registrations#register'
     resources :users do
       resources :matches do
         post 'swipe', to: 'users#swipe'
