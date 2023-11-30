@@ -11,6 +11,7 @@ Rails.application.routes.draw do
         post 'swipe', to: 'users#swipe'
         resources :messages, only: [:create]
       end
+      resources :feedbacks, only: [:create]
     end
   end
   resources :feedbacks, only: [:create]

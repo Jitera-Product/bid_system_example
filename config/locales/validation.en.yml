@@ -25,3 +25,15 @@ en:
         invalid: is invalid
         date_type: must be a valid date
         datetime_type: must be a valid date and time
+        invalid_email: is not a valid email address
+        password_mismatch: password and password confirmation do not match
+        age_not_valid: age must be between 18 and 100
+        gender_not_valid: gender must be male, female, or other
+        location_not_valid: location must be a valid city
+        interests_not_valid: interests must be a valid list of interests
+        preferences_not_valid: preferences must be a valid list of preferences
+        id_not_found: This user is not found
+        id_not_number: Wrong format
+        match_id_not_found: This match is not found
+        match_id_not_number: Wrong format
+        feedback_blank: The feedback is required.

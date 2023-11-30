@@ -1,11 +1,24 @@
 ---
 en:
   common:
-    '404': not found
+    '404': This user is not found
     '403': forbidden
     '401': unauthorized
     '500': internal server error
-    '422': unprocessable
+    '422': The feedback is required.
     '201': created
     '200': success
     '302': deleted
+  user:
+    invalid_email: 'Invalid email format'
+    password_length: 'Password must be at least 8 characters'
+    password_confirmation: 'Password confirmation does not match'
+    age: 'Age must be at least 18'
+    gender: 'Invalid gender'
+    location: 'Invalid location'
+    interests: 'Invalid interests'
+    preferences: 'Invalid preferences'
+  feedback:
+    user_not_found: 'This user is not found'
+    match_not_found: 'This match is not found'
+    feedback_required: 'The feedback is required.'
