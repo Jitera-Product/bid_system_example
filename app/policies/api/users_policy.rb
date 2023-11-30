@@ -1,12 +1,16 @@
 class Api::UsersPolicy < ApplicationPolicy
   def update?
-    (user.is_a?(User) && record.id == user&.id)
+    if user.is_a?(User) && record.id == user&.id
+      true
+    else
+      raise "User does not have permission to access the resource"
+    end
   end
   def show?
     (user.is_a?(User) && record.id == user&.id)
   end
   def create?
-    (user.is_a?(User) && record.id == user&.id)
+    user.is_a?(User)
   end
   def swipe?
     (user.is_a?(User) && record.id == user&.id)

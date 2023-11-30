@@ -3,6 +3,9 @@ Rails.application.routes.draw do
     resources :users_registrations, only: [:create]
     post '/users/register', to: 'users_registrations#register'
     resources :users do
+      member do
+        put :update
+      end
       resources :matches do
         post 'swipe', to: 'users#swipe'
         resources :messages, only: [:create]
