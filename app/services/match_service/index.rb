@@ -14,6 +14,18 @@ class MatchService::Index
     end
     matches
   end
+  def update_match_status(match_id, action)
+    match = Match.find_by(user_id: user_id, id: match_id)
+    return { error: 'Match not found', status: 404 } unless match
+    return { error: 'Invalid action type.', status: 422 } unless ['like', 'pass'].include?(action)
+    match.update(status: action)
+    if action == 'like' && match.matched_user.matches.find_by(user_id: match.matched_user_id, status: 'like')
+      # Send notification to both users
+      NotificationService.new(user_id, "You have a new match!").send
+      NotificationService.new(match.matched_user_id, "You have a new match!").send
+    end
+    { message: 'Match status updated successfully', match: match, status: 200 }
+  end
   private
   def calculate_compatibility_score(user, potential_match)
     # This is a placeholder for the matching algorithm. You may need to replace it with a real algorithm.

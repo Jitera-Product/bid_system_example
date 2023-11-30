@@ -1,5 +1,5 @@
 class Api::UsersController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update]
+  before_action :doorkeeper_authorize!, only: %i[index create show update swipe]
   def index
     @users = UserService::Index.new(params.permit!, current_resource_owner).execute
     @total_pages = @users.total_pages
@@ -31,5 +31,26 @@ class Api::UsersController < Api::BaseController
   end
   def update_params
     params.require(:user).permit(:age, :gender, :location, :interests, :preferences)
+  end
+  def swipe
+    @user = User.find_by('users.id = ?', params[:id])
+    raise ActiveRecord::RecordNotFound if @user.blank?
+    authorize @user, policy_class: Api::UsersPolicy
+    match_id = params[:match_id]
+    action = params[:action]
+    if !%w[like pass].include?(action)
+      render json: { error: 'Invalid action type.' }, status: :unprocessable_entity
+      return
+    end
+    result = MatchService.update_match_status(@user.id, match_id, action)
+    case result
+    when 'Match not found'
+      render json: { error: 'This match is not found' }, status: :not_found
+    when 'Match status updated successfully'
+      match = Match.find(match_id)
+      render json: { status: 200, match: match }, status: :ok
+    else
+      render json: { error: 'Internal Server Error' }, status: :internal_server_error
+    end
   end
 end

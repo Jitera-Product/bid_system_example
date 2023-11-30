@@ -8,6 +8,9 @@ class Api::UsersPolicy < ApplicationPolicy
   def create?
     (user.is_a?(User) && record.id == user&.id)
   end
+  def swipe?
+    (user.is_a?(User) && record.id == user&.id)
+  end
   def create_message?
     (user.is_a?(User) && record.id == user&.id)
   end
