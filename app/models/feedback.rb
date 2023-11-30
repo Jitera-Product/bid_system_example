@@ -1,8 +1,9 @@
 class Feedback < ApplicationRecord
-  # validations
-  validates :content, presence: true
   # associations
   belongs_to :user
+  belongs_to :answer
+  # validations
+  validates :content, presence: true
   # methods
   def self.create_feedback(user, content)
     feedback = self.new(user: user, content: content)
