@@ -28,7 +28,6 @@ class MatchService::Index
   end
   private
   def calculate_compatibility_score(user, potential_match)
-    # This is a placeholder for the matching algorithm. You may need to replace it with a real algorithm.
     common_interests = (user.interests & potential_match.interests).count
     total_interests = (user.interests | potential_match.interests).count
     common_interests.to_f / total_interests

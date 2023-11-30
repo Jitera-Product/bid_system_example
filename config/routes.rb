@@ -4,6 +4,7 @@ Rails.application.routes.draw do
     post '/users/register', to: 'users_registrations#register'
     resources :users do
       member do
+        get :matches
         put :update
       end
       resources :matches do

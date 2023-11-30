@@ -1,13 +1,14 @@
 class Api::UsersController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update swipe]
-  before_action :set_user, only: [:show, :update, :swipe]
-  before_action :authorize_user, only: [:show, :update, :swipe]
+  before_action :doorkeeper_authorize!, only: %i[index create show update matches swipe]
+  before_action :set_user, only: [:show, :update, :matches, :swipe]
+  before_action :authorize_user, only: [:show, :update, :matches, :swipe]
   before_action :validate_update_params, only: [:update]
   def index
     @users = UserService::Index.new(params.permit!, current_resource_owner).execute
     @total_pages = @users.total_pages
   end
   def show
+    authorize @user, policy_class: Api::UsersPolicy
   end
   def create
     @user = User.new(create_params)
@@ -17,11 +18,21 @@ class Api::UsersController < Api::BaseController
     render status: :unprocessable_entity
   end
   def update
+    authorize @user, policy_class: Api::UsersPolicy
     if @user.update(update_params)
       render json: { message: 'User profile updated successfully.', user: @user }, status: :ok
     else
       @error_object = @user.errors.messages
       render status: :unprocessable_entity
+    end
+  end
+  def matches
+    authorize @user, policy_class: Api::UsersPolicy
+    @matches = MatchService.new(@user.id).generateMatches
+    if @matches
+      render json: { status: 200, matches: @matches }, status: :ok
+    else
+      render json: { status: 500, error: 'An unexpected error occurred on the server.' }, status: :internal_server_error
     end
   end
   def swipe
@@ -44,8 +55,8 @@ class Api::UsersController < Api::BaseController
   end
   private
   def set_user
-    @user = User.find_by('users.id = ?', params[:id])
-    render json: { error: 'This user is not found' }, status: :not_found if @user.blank?
+    @user = User.find_by(id: params[:id])
+    raise ActiveRecord::RecordNotFound, 'This user is not found' if @user.blank?
   end
   def authorize_user
     render json: { error: 'You do not have permission to access this resource' }, status: :forbidden unless current_user == @user
@@ -54,7 +65,7 @@ class Api::UsersController < Api::BaseController
     params.require(:users).permit(:email)
   end
   def update_params
-    params.require(:user).permit(:age, :location, :interests, :preferences)
+    params.require(:user).permit(:age, :gender, :location, :interests, :preferences)
   end
   def validate_update_params
     render json: { error: 'Wrong format' }, status: :bad_request unless params[:id].is_a?(Integer)
