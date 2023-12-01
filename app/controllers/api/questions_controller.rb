@@ -33,7 +33,10 @@ class Api::QuestionsController < ApplicationController
     elsif params[:content].blank? || params[:category].blank?
       render json: { error: 'Content and category are required.' }, status: :unprocessable_entity
     else
-      if @question.update(question_params)
+      @question = Question.find_by(id: params[:id], user_id: params[:user_id])
+      if @question.nil?
+        render json: { error: 'Question not found or not authorized' }, status: :not_found
+      elsif @question.update(question_params)
         render json: { status: 200, question: @question }, status: :ok
       else
         render json: @question.errors, status: :unprocessable_entity

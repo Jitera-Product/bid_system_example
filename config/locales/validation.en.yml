@@ -25,3 +25,9 @@ en:
         invalid: is invalid
         date_type: must be a valid date
         datetime_type: must be a valid date and time
+        not_a_number: Wrong format
+        content_blank: The content is required.
+        user_id_not_a_number: Wrong format
+        category_blank: The category is required.
+        id_not_a_number: Wrong format
+        id_not_found: This question is not found

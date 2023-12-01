@@ -5,7 +5,7 @@ class ApplicationPolicy
     @record = record
   end
   def update?
-    user.role == 'admin'
+    user.role == 'admin' || user == record.user
   end
   class Scope
     attr_reader :user, :scope

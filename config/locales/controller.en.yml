@@ -9,3 +9,11 @@ en:
     '201': created
     '200': success
     '302': deleted
+  questions:
+    update:
+      success: The question or answer was successfully edited.
+      error:
+        wrong_format: Wrong format
+        not_found: This question is not found
+        content_required: The content is required.
+        category_required: The category is required.
