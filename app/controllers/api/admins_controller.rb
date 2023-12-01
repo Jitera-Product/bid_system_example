@@ -1,48 +1,29 @@
 class Api::AdminsController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update]
-
-  def index
-    # inside service params are checked and whiteisted
-    @admins = AdminService::Index.new(params.permit!, current_resource_owner).execute
-    @total_pages = @admins.total_pages
-  end
-
-  def show
-    @admin = Admin.find_by!('admins.id = ?', params[:id])
-
-    authorize @admin, policy_class: Api::AdminsPolicy
-  end
-
-  def create
-    @admin = Admin.new(create_params)
-
-    authorize @admin, policy_class: Api::AdminsPolicy
-
-    return if @admin.save
-
-    @error_object = @admin.errors.messages
-
-    render status: :unprocessable_entity
-  end
-
-  def create_params
-    params.require(:admins).permit(:name, :email)
-  end
-
-  def update
-    @admin = Admin.find_by('admins.id = ?', params[:id])
-    raise ActiveRecord::RecordNotFound if @admin.blank?
-
-    authorize @admin, policy_class: Api::AdminsPolicy
-
-    return if @admin.update(update_params)
-
-    @error_object = @admin.errors.messages
-
-    render status: :unprocessable_entity
-  end
-
-  def update_params
-    params.require(:admins).permit(:name, :email)
+  before_action :doorkeeper_authorize!, only: %i[index create show update moderate_content]
+  # other methods...
+  def moderate_content
+    id = params[:id]
+    action = params[:action]
+    content = Content.find_by(id: id)
+    unless content
+      render json: { error: 'Content does not exist' }, status: :not_found
+      return
+    end
+    begin
+      case action
+      when 'approve'
+        content.approve!
+      when 'edit'
+        content.edit!
+      when 'delete'
+        content.destroy!
+      else
+        render json: { error: 'Invalid action' }, status: :unprocessable_entity
+        return
+      end
+      render json: { message: 'Action performed successfully' }, status: :ok
+    rescue => e
+      render json: { error: e.message }, status: :internal_server_error
+    end
   end
 end
