@@ -57,8 +57,8 @@ Rails.application.routes.draw do
     end
     resources :users, only: %i[index create show update] do
     end
-    # Add this line
     resources :messages, only: [:create]
+    resources :chat_channels, only: [:create]
   end
   get '/health' => 'pages#health_check'
   get 'api-docs/v1/swagger.yaml' => 'swagger#yaml'
