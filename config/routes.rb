@@ -1,3 +1,4 @@
+# PATH: /config/routes.rb
 require 'sidekiq/web'
 Rails.application.routes.draw do
   use_doorkeeper do
