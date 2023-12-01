@@ -3,7 +3,6 @@ class Feedback < ApplicationRecord
   belongs_to :answer
   # validations
   validates :content, presence: true
-  validates :feedback_type, presence: true
   # methods
   def created_at
     attributes['created_at'].strftime("%m/%d/%Y %H:%M")
