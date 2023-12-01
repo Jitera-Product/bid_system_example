@@ -1,19 +1,21 @@
 class Api::AnswersController < ApplicationController
-  before_action :doorkeeper_authorize!, only: %i[update]
-  def retrieve_answer
-    query = params[:query]
-    questions = Question.where("content LIKE ?", "%#{query}%")
-    answers = Answer.where("content LIKE ?", "%#{query}%")
-    # Combine questions and answers into a single array
-    results = questions + answers
-    # Sort results based on relevance
-    sorted_results = results.sort_by { |result| result.content.downcase.include?(query.downcase) ? -1 : 1 }
-    # Return the most relevant answer
-    most_relevant_answer = sorted_results.first
-    if most_relevant_answer.present?
-      render json: {answer: most_relevant_answer.content, question_id: most_relevant_answer.question_id, answer_id: most_relevant_answer.id}
+  before_action :doorkeeper_authorize!, only: %i[update show]
+  def show
+    begin
+      question_id = Integer(params[:question_id])
+    rescue ArgumentError
+      return render json: { error: 'Wrong format' }, status: :bad_request
+    end
+    question = Question.find_by(id: question_id)
+    if question.nil?
+      render json: { error: 'This question is not found' }, status: :not_found
     else
-      render json: {message: "No relevant answer found"}, status: :not_found
+      answer = Answer.find_by(question_id: question_id)
+      if answer.nil?
+        render json: { error: 'No answer found for this question' }, status: :not_found
+      else
+        render json: { status: 200, answer: answer }, status: :ok
+      end
     end
   end
   def update
