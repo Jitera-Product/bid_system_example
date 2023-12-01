@@ -28,13 +28,15 @@ class Api::QuestionsController < ApplicationController
   end
   def update
     authorize @question, policy_class: Api::QuestionsPolicy
-    respond_to do |format|
+    if params[:id].to_i.to_s != params[:id] || params[:user_id].to_i.to_s != params[:user_id]
+      render json: { error: 'Wrong format' }, status: :bad_request
+    elsif params[:content].blank? || params[:category].blank?
+      render json: { error: 'Content and category are required.' }, status: :unprocessable_entity
+    else
       if @question.update(question_params)
-        format.html { redirect_to @question, notice: 'Question was successfully updated.' }
-        format.json { render :show, status: :ok, location: @question }
+        render json: { status: 200, question: @question }, status: :ok
       else
-        format.html { render :edit }
-        format.json { render json: @question.errors, status: :unprocessable_entity }
+        render json: @question.errors, status: :unprocessable_entity
       end
     end
   end
@@ -59,7 +61,8 @@ class Api::QuestionsController < ApplicationController
   end
   private
   def set_question
-    @question = Question.find(params[:id])
+    @question = Question.find_by_id(params[:id])
+    render json: { error: 'This question is not found' }, status: :not_found unless @question
   end
   def question_params
     params.require(:question).permit(:content, :category, :user_id)
