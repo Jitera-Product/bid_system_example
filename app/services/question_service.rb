@@ -6,8 +6,17 @@ class QuestionService
     question = Question.create!(content: content, user_id: user_id, category: category)
     # Send confirmation email
     QuestionMailer.question_confirmation(user_id, question.id).deliver_now
-    # Return question id and confirmation message
-    { question_id: question.id, message: 'Question submitted successfully and confirmation email sent.' }
+    # Return question data and confirmation message
+    { status: 200, question: question, message: 'Question submitted successfully and confirmation email sent.' }
+  end
+  def create_question(content, user_id, category)
+    # Create new question
+    question = Question.create!(content: content, user_id: user_id, category: category)
+    # Return question data
+    question
+  rescue ActiveRecord::RecordInvalid => e
+    # Raise exception if there is an error while creating the question
+    raise e
   end
   def update_question(id, content, user_id, category)
     # Validate input data

@@ -16,14 +16,14 @@ class Api::QuestionsController < ApplicationController
   def create
     @question = Question.new(question_params)
     authorize @question, policy_class: Api::QuestionsPolicy
-    respond_to do |format|
+    if @question.valid?
       if @question.save
-        format.html { redirect_to @question, notice: 'Question was successfully created.' }
-        format.json { render :show, status: :created, location: @question }
+        render json: { status: 200, question: @question }, status: :created
       else
-        format.html { render :new }
-        format.json { render json: @question.errors, status: :unprocessable_entity }
+        render json: { error: 'Internal Server Error' }, status: :internal_server_error
       end
+    else
+      render json: { error: @question.errors.full_messages }, status: :bad_request
     end
   end
   def update
