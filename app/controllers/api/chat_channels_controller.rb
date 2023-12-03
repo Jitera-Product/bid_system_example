@@ -1,8 +1,27 @@
 class Api::ChatChannelsController < Api::BaseController
   include AuthenticationConcern
-  before_action :doorkeeper_authorize!, only: [:create, :reject_chat_request]
-  before_action :authenticate_user!, only: [:create, :reject_chat_request]
-  # existing create action...
+  before_action :doorkeeper_authorize!, only: [:create, :validate, :reject_chat_request]
+  before_action :authenticate_user!, only: [:create, :validate, :reject_chat_request]
+  def create
+    # existing create action code...
+  end
+  def validate
+    bid_item_id = validate_params[:bid_item_id]
+    bid_item = BidItem.find_by(id: bid_item_id)
+    unless bid_item
+      render json: { error: "BidItem not found." }, status: :not_found
+      return
+    end
+    if bid_item.is_paid
+      render json: { error: "Cannot create chat channel for a paid item." }, status: :unprocessable_entity
+      return
+    end
+    render json: { status: 200, validation: { bid_item_id: bid_item_id, is_valid: true } }, status: :ok
+  rescue ActiveRecord::RecordNotFound => e
+    render json: { error: e.message }, status: :not_found
+  rescue => e
+    render json: { error: e.message }, status: :internal_server_error
+  end
   def reject_chat_request
     chat_channel_id = params[:id]
     chat_channel = ChatChannel.find_by(id: chat_channel_id)
@@ -31,5 +50,11 @@ class Api::ChatChannelsController < Api::BaseController
     end
   end
   private
+  def create_params
+    params.require(:chat_channel).permit(:user_id, :bid_item_id)
+  end
+  def validate_params
+    params.require(:chat_channel).permit(:bid_item_id)
+  end
   # existing private methods...
 end
