@@ -1,62 +1,38 @@
 # PATH: /app/controllers/api/chat_channels_controller.rb
 class Api::ChatChannelsController < Api::BaseController
-  include AuthenticationConcern
-  include ErrorHandling
-  include ExceptionHandler
+  before_action :doorkeeper_authorize!, only: [:select_biditem_for_chat]
 
-  before_action :doorkeeper_authorize!
-  before_action :set_chat_channel, only: [:close] # Ensure the chat channel is set for the close action
-  before_action :validate_chat_channel_ownership, only: [:close] # Ensure the user owns the chat channel
+  # Add the new action below
+  def select_biditem_for_chat
+    bid_item = BidItem.find_by(id: params[:bid_item_id])
 
-  # POST /api/chat_channels/check_status
-  def check_status
-    # ... existing code ...
-  end
-
-  def create
-    # ... existing code ...
-  end
-
-  # PUT /api/chat_channels/:id/close
-  def close
-    if @chat_channel.nil?
-      render json: { error: 'Chat channel not found' }, status: :not_found
+    if bid_item.nil?
+      render json: { error: 'BidItem not found' }, status: :not_found
       return
     end
 
-    unless @chat_channel.is_active
-      render json: { error: 'Chat channel is already closed' }, status: :bad_request
+    if bid_item.is_paid
+      render json: { error: 'BidItem is already paid for and cannot be used for chat' }, status: :forbidden
       return
     end
 
-    if ChatChannelService::Index.close_channel(@chat_channel)
-      render json: { status: 200, chat_channel: { id: @chat_channel.id, is_active: false } }, status: :ok
-    else
-      render json: { error: 'Unable to close the chat channel' }, status: :unprocessable_entity
+    # Updated code to check if a chat channel already exists between the user and the owner of the BidItem
+    chat_channel = ChatChannel.find_or_create_by(bid_item_id: bid_item.id, user_id: current_resource_owner.id, owner_id: bid_item.user_id) do |channel|
+      channel.is_active = true
     end
-  rescue StandardError => e
-    handle_exception(e)
+
+    render json: serialize_chat_channel(chat_channel), status: :ok
   end
 
   private
 
-  def set_chat_channel
-    @chat_channel = ChatChannel.find_by(id: params[:id])
+  def serialize_chat_channel(chat_channel)
+    {
+      id: chat_channel.id,
+      bid_item_id: chat_channel.bid_item_id,
+      user_id: chat_channel.user_id,
+      owner_id: chat_channel.bid_item.user_id, # Assuming bid_item has a user_id field for the owner
+      is_active: chat_channel.is_active
+    }
   end
-
-  def validate_chat_channel_ownership
-    unless @chat_channel&.bid_item&.user_id == current_resource_owner.id
-      render json: { error: 'User is not the owner of the associated BidItem' }, status: :forbidden
-    end
-  end
-
-  def validate_user_id(user_id)
-    # ... existing code ...
-  end
-
-  def validate_and_retrieve_bid_item(bid_item_id)
-    # ... existing code ...
-  end
-
-  # Other private methods from the existing code...
 end
