@@ -1,33 +1,34 @@
 class User < ApplicationRecord
   # Include default devise modules. Others available are:
-  # :omniauthable, :timeoutable
-  devise :database_authenticatable, :registerable, :rememberable, :validatable,
-         :trackable, :recoverable, :lockable, :confirmable
+  # :timeoutable, :trackable and :omniauthable
+  devise :database_authenticatable, :registerable,
+         :recoverable, :rememberable, :validatable,
+         :confirmable, :lockable, :timeoutable, :trackable
 
-  # Existing relationships from new code
+  # Relationships
+  # The new code has 'has_many' relationships for payment_methods and wallets,
+  # but the existing code has 'has_one'. Need to decide which one to keep based on the business logic.
+  # For this example, we will assume that a user can have multiple payment methods and wallets.
+  has_many :payment_methods, dependent: :destroy
+  has_many :wallets, dependent: :destroy
   has_many :bid_items, dependent: :destroy
   has_many :bids, dependent: :destroy
   has_many :deposits, dependent: :destroy
-  # The new code had 'has_many :payment_methods' and 'has_many :wallets', but the existing code has 'has_one'.
-  # We need to decide which one to keep based on the actual database schema.
-  # If the schema has changed to support many payment methods and wallets, we should use 'has_many'.
-  # Otherwise, we should keep 'has_one'.
-  has_many :payment_methods, dependent: :destroy
-  has_many :wallets, dependent: :destroy
   has_many :products, dependent: :destroy
   has_many :chat_channels, dependent: :destroy
   has_many :messages, dependent: :destroy
 
-  # Validations from new code
-  validates :email, presence: true, uniqueness: true
-  validates :encrypted_password, presence: true
+  # Validations
+  # Combining new and existing validations
+  validates :email, presence: true, uniqueness: true, length: { in: 0..255 }, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :encrypted_password, presence: true, if: -> { new_record? || encrypted_password.present? }
   validates :username, presence: true, uniqueness: true
 
-  # Existing validations
+  # Password validation from existing code
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
   validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
-  validates :email, length: { in: 0..255 }, if: :email?
-  validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }
+
+  # Additional validations and methods can be added below as needed
 
   # Existing methods
   def generate_reset_password_token
@@ -54,10 +55,4 @@ class User < ApplicationRecord
       false
     end
   end
-
-  # Add any new methods from new code below if needed
-  # For example, a method to check if a user is confirmed:
-  # def confirmed?
-  #   confirmed_at.present?
-  # end
 end

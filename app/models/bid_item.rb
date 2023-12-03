@@ -1,4 +1,5 @@
 class BidItem < ApplicationRecord
+  # Existing relationships
   has_many :item_bids,
            class_name: 'Bid',
            foreign_key: :item_id, dependent: :destroy
@@ -10,23 +11,18 @@ class BidItem < ApplicationRecord
 
   enum status: %w[draft ready done], _suffix: true
 
-  # validations
-
+  # Existing validations
   validates :base_price, presence: true
   validates :base_price, numericality: { greater_than_or_equal_to: 0.0 }
-
   validates :expiration_time, presence: true
-  validates :expiration_time, presence: true, timeliness: { type: :datetime, on_or_after: -> { Time.current } }
-
+  validates :expiration_time, timeliness: { type: :datetime, on_or_after: DateTime.tomorrow }
   validates :name, presence: true
-  validates :name, length: { maximum: 255 }, if: :name?
+  validates :name, length: { in: 0..255 }, if: :name?
 
-  validates :title, presence: true # New validation for title
-  validates :title, length: { maximum: 255 }, if: :title? # New validation for title length
-
-  validates :description, length: { maximum: 65_535 }, if: :description? # New validation for description
-
-  validates :is_paid, inclusion: { in: [true, false] } # New validation for is_paid
+  # New validations for new columns
+  validates :title, presence: true, length: { in: 0..255 }
+  validates :description, length: { maximum: 1000 }, allow_blank: true
+  validates :is_paid, inclusion: { in: [true, false] }
 
   # end for validations
 
