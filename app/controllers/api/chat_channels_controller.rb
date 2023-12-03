@@ -1,6 +1,25 @@
-# PATH: /app/controllers/api/chat_channels_controller.rb
-class Api::ChatChannelsController < Api::BaseController
+class Api::ChatChannelsController < ApplicationController
+  before_action :set_chat_channel, only: [:show, :update, :destroy, :close_by_owner]
+  before_action :authorize_request, except: [:select_biditem_for_chat]
   before_action :doorkeeper_authorize!, only: [:select_biditem_for_chat]
+
+  # Other actions...
+
+  # POST /chat_channels/1/close_by_owner
+  def close_by_owner
+    authorize @chat_channel, :close_by_owner?
+    if @chat_channel.is_active
+      if @chat_channel.update(is_active: false)
+        render json: ResponseHelper.message('Chat channel successfully closed'), status: :ok
+      else
+        render json: ResponseHelper.error('Unable to close chat channel'), status: :unprocessable_entity
+      end
+    else
+      render json: ResponseHelper.error('Chat channel is not available or already closed'), status: :unprocessable_entity
+    end
+  rescue CustomError => e
+    render json: ResponseHelper.error(e.message), status: e.status
+  end
 
   # Add the new action below
   def select_biditem_for_chat
@@ -23,6 +42,8 @@ class Api::ChatChannelsController < Api::BaseController
 
     render json: serialize_chat_channel(chat_channel), status: :ok
   end
+
+  # Other private methods...
 
   private
 
