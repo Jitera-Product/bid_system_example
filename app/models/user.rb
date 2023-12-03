@@ -4,22 +4,15 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable, :confirmable, :lockable, :trackable
   # Associations
-  # The new code has 'has_many' associations for :payment_methods and :wallets,
-  # but the existing code has 'has_one'. Need to decide which one to keep based on the business logic.
-  # If a user can have multiple payment methods and wallets, keep 'has_many'.
-  # If a user should only have one, keep 'has_one'.
-  # For this example, I'll assume a user can have multiple payment methods and wallets.
-  has_many :payment_methods, dependent: :destroy
-  has_many :wallets, dependent: :destroy
-  has_many :products, dependent: :destroy
   has_many :bid_items, dependent: :destroy
   has_many :bids, dependent: :destroy
   has_many :deposits, dependent: :destroy
+  has_many :payment_methods, dependent: :destroy
+  has_many :products, dependent: :destroy
+  has_many :wallets, dependent: :destroy
   has_many :chat_channels, dependent: :destroy
+  has_many :messages, dependent: :destroy
   # Validations
-  # The new code has basic presence and uniqueness validations for :email and :username.
-  # The existing code has more detailed validations for :email, including format and length,
-  # and a password format validation. We should keep all these validations.
   validates :email, presence: true, uniqueness: true, length: { in: 0..255 }, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :username, presence: true, uniqueness: true
   validates :encrypted_password, presence: true
@@ -27,7 +20,6 @@ class User < ApplicationRecord
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
   validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
   # Methods
-  # Keep all methods from the existing code and add any new methods from the new code here.
   def generate_reset_password_token
     raw, enc = Devise.token_generator.generate(self.class, :reset_password_token)
     self.reset_password_token   = enc
