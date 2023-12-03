@@ -1,7 +1,17 @@
 class ChatChannelService
   include ErrorHandling # Assuming ErrorHandling module exists as per guideline
 
-  # Other methods ...
+  # ... other methods ...
+
+  # New method to check the chat channel status
+  def check_chat_channel_status(chat_channel_id)
+    chat_channel = ChatChannel.find_by(id: chat_channel_id)
+    if chat_channel
+      { chat_channel_id: chat_channel.id, is_active: chat_channel.is_active }
+    else
+      raise "ChatChannel with id #{chat_channel_id} does not exist."
+    end
+  end
 
   def create_chat_channel(user_id, bid_item_id)
     validate_user(user_id)
@@ -40,7 +50,7 @@ class ChatChannelService
     raise CustomException.new(e.message)
   end
 
-  # Other methods ...
+  # ... other methods ...
 
   private
 

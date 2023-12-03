@@ -1,9 +1,23 @@
-# PATH: /app/controllers/api/chat_channels_controller.rb
 class Api::ChatChannelsController < Api::BaseController
   include AuthenticationConcern
   include ErrorHandling
+  include ExceptionHandler # Added to include ExceptionHandler from the new code
 
   before_action :doorkeeper_authorize!
+
+  # POST /api/chat_channels/check_status
+  def check_status
+    chat_channel_id = params[:chat_channel_id]
+    chat_channel = ChatChannel.find_by(id: chat_channel_id)
+
+    if chat_channel
+      render json: { chat_channel_id: chat_channel.id, is_active: chat_channel.is_active }, status: :ok
+    else
+      render json: { error: 'Chat channel not found' }, status: :not_found
+    end
+  rescue StandardError => e
+    handle_exception(e) # Using handle_exception from ExceptionHandler
+  end
 
   def create
     validate_user_id(params[:user_id])
@@ -19,7 +33,7 @@ class Api::ChatChannelsController < Api::BaseController
     # Changed the response to return only the chat_channel_id as per requirement
     render json: { chat_channel_id: chat_channel.id }, status: :created
   rescue StandardError => e
-    handle_error(e)
+    handle_error(e) # Using handle_error from ErrorHandling
   end
 
   private
@@ -37,4 +51,6 @@ class Api::ChatChannelsController < Api::BaseController
 
     bid_item
   end
+
+  # Other private methods from the existing code...
 end
