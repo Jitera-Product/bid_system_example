@@ -1,39 +1,35 @@
 class Api::ChatChannelsController < Api::BaseController
   include AuthenticationConcern
-  before_action :doorkeeper_authorize!, only: [:create]
-  before_action :authenticate_user!, only: [:create]
-  before_action :authorize_chat_channel_creation, only: [:create]
-  def create
-    user_id = create_params[:user_id]
-    bid_item_id = create_params[:bid_item_id]
-    authenticate_user!(user_id)
-    bid_item = BidItem.find_by(id: bid_item_id)
-    if bid_item.nil?
-      render json: { error: 'Bid item not found' }, status: :not_found
-    elsif bid_item.is_paid
-      render json: { error: 'Cannot create chat channel for a paid item' }, status: :forbidden
-    else
-      chat_channel = ChatChannel.new(user_id: user_id, owner_id: bid_item.owner_id, bid_item_id: bid_item_id, is_active: true)
-      if chat_channel.save
-        render json: { chat_channel_id: chat_channel.id, is_active: chat_channel.is_active }, status: :created
-      else
-        render json: { errors: chat_channel.errors.full_messages }, status: :unprocessable_entity
-      end
+  before_action :doorkeeper_authorize!, only: [:create, :reject_chat_request]
+  before_action :authenticate_user!, only: [:create, :reject_chat_request]
+  # existing create action...
+  def reject_chat_request
+    chat_channel_id = params[:id]
+    chat_channel = ChatChannel.find_by(id: chat_channel_id)
+    if chat_channel.nil? || !chat_channel.is_active
+      render json: { error: 'Chat channel not found or already inactive' }, status: :unprocessable_entity
+      return
     end
-  rescue Exceptions::InvalidOperation => e
-    render json: { error: e.message }, status: :unprocessable_entity
-  rescue ActiveRecord::RecordInvalid => e
-    render json: { error: e.message }, status: :unprocessable_entity
+    bid_item = chat_channel.bid_item
+    unless bid_item.owner_id == current_user.id
+      render json: { error: 'User is not the owner of the BidItem.' }, status: :forbidden
+      return
+    end
+    if ChatChannelService.close_channel(chat_channel_id, current_user.id)
+      render json: {
+        status: 200,
+        chat_channel: {
+          id: chat_channel.id,
+          bid_item_id: bid_item.id,
+          user_id: chat_channel.user_id,
+          owner_id: bid_item.owner_id,
+          is_active: chat_channel.reload.is_active
+        }
+      }, status: :ok
+    else
+      render json: { error: 'Unable to reject chat request' }, status: :unprocessable_entity
+    end
   end
   private
-  def create_params
-    params.require(:chat_channel).permit(:user_id, :bid_item_id)
-  end
-  def authenticate_user!(user_id)
-    raise Exceptions::AuthenticationError.new('User must be logged in') unless current_user && current_user.id == user_id.to_i
-  end
-  def authorize_chat_channel_creation
-    bid_item = BidItem.find_by(id: create_params[:bid_item_id])
-    authorize bid_item, :create_chat_channel?
-  end
+  # existing private methods...
 end
