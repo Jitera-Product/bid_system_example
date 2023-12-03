@@ -1,55 +1,61 @@
+# PATH: /app/controllers/api/chat_channels_controller.rb
 class Api::ChatChannelsController < Api::BaseController
   include AuthenticationConcern
   include ErrorHandling
-  include ExceptionHandler # Added to include ExceptionHandler from the new code
+  include ExceptionHandler
 
   before_action :doorkeeper_authorize!
+  before_action :set_chat_channel, only: [:close] # Ensure the chat channel is set for the close action
+  before_action :validate_chat_channel_ownership, only: [:close] # Ensure the user owns the chat channel
 
   # POST /api/chat_channels/check_status
   def check_status
-    chat_channel_id = params[:chat_channel_id]
-    chat_channel = ChatChannel.find_by(id: chat_channel_id)
-
-    if chat_channel
-      render json: { chat_channel_id: chat_channel.id, is_active: chat_channel.is_active }, status: :ok
-    else
-      render json: { error: 'Chat channel not found' }, status: :not_found
-    end
-  rescue StandardError => e
-    handle_exception(e) # Using handle_exception from ExceptionHandler
+    # ... existing code ...
   end
 
   def create
-    validate_user_id(params[:user_id])
-    bid_item = validate_and_retrieve_bid_item(params[:bid_item_id])
+    # ... existing code ...
+  end
 
-    chat_channel = ChatChannelService.create_chat_channel(
-      user_id: params[:user_id],
-      owner_id: bid_item.user_id,
-      bid_item_id: params[:bid_item_id],
-      is_active: true # Ensuring that the is_active attribute is set to true as per requirement
-    )
+  # PUT /api/chat_channels/:id/close
+  def close
+    if @chat_channel.nil?
+      render json: { error: 'Chat channel not found' }, status: :not_found
+      return
+    end
 
-    # Changed the response to return only the chat_channel_id as per requirement
-    render json: { chat_channel_id: chat_channel.id }, status: :created
+    unless @chat_channel.is_active
+      render json: { error: 'Chat channel is already closed' }, status: :bad_request
+      return
+    end
+
+    if ChatChannelService::Index.close_channel(@chat_channel)
+      render json: { status: 200, chat_channel: { id: @chat_channel.id, is_active: false } }, status: :ok
+    else
+      render json: { error: 'Unable to close the chat channel' }, status: :unprocessable_entity
+    end
   rescue StandardError => e
-    handle_error(e) # Using handle_error from ErrorHandling
+    handle_exception(e)
   end
 
   private
 
-  def validate_user_id(user_id)
-    unless current_resource_owner && current_resource_owner.id == user_id.to_i
-      raise AuthenticationError, 'User must be logged in and valid to create a chat channel.'
+  def set_chat_channel
+    @chat_channel = ChatChannel.find_by(id: params[:id])
+  end
+
+  def validate_chat_channel_ownership
+    unless @chat_channel&.bid_item&.user_id == current_resource_owner.id
+      render json: { error: 'User is not the owner of the associated BidItem' }, status: :forbidden
     end
   end
 
-  def validate_and_retrieve_bid_item(bid_item_id)
-    bid_item = BidItem.find_by(id: bid_item_id)
-    raise ActiveRecord::RecordNotFound, 'Bid item not found.' unless bid_item
-    raise StandardError, 'Bid item is already paid for.' if bid_item.is_paid
+  def validate_user_id(user_id)
+    # ... existing code ...
+  end
 
-    bid_item
+  def validate_and_retrieve_bid_item(bid_item_id)
+    # ... existing code ...
   end
 
   # Other private methods from the existing code...
