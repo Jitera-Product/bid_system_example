@@ -1,5 +1,5 @@
 class Api::NotificationsController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update filter_by_category]
+  before_action :doorkeeper_authorize!, only: %i[index create show update filter_by_category get_notifications]
   def index
     @notifications = NotificationService::Index.new(params.permit!, current_resource_owner).execute
     @total_pages = @notifications.total_pages
@@ -38,5 +38,16 @@ class Api::NotificationsController < Api::BaseController
     rescue ActiveRecord::RecordNotFound
       render json: { error: 'User or Activity Type not found' }, status: :not_found
     end
+  end
+  def get_notifications
+    user = User.find_by(id: params[:user_id])
+    return render json: { error: 'User not found' }, status: :not_found unless user
+    notifications = Notification.where(user_id: user.id)
+    categorized_notifications = notifications.group_by(&:activity_type)
+    render json: {
+      total_notifications: notifications.count,
+      total_categories: categorized_notifications.count,
+      notifications: categorized_notifications
+    }, status: :ok
   end
 end
