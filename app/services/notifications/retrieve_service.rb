@@ -16,6 +16,16 @@ module Notifications
     rescue ArgumentError => e
       raise e
     end
+    def self.execute(id)
+      raise ArgumentError, 'Wrong format.' unless id.is_a? Integer
+      notification = Notification.find_by(id: id)
+      raise ActiveRecord::RecordNotFound, 'No notification found for this id' if notification.nil?
+      notification
+    rescue ActiveRecord::RecordNotFound => e
+      raise e
+    rescue ArgumentError => e
+      raise e
+    end
   end
 end
 # rubocop:enable Style/ClassAndModuleChildren
