@@ -36,6 +36,11 @@ Rails.application.routes.draw do
       patch 'kyc_status', to: 'users#update_kyc_status', on: :member
       post 'kyc', on: :member
     end
+    resources :kyc_documents, only: [] do
+      member do
+        put :manual_verify
+      end
+    end
   end
   get '/health' => 'pages#health_check'
   get 'api-docs/v1/swagger.yaml' => 'swagger#yaml'

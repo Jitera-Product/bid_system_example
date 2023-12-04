@@ -1,0 +1,12 @@
+<% provide(:title, 'Manual Review Notification') %>
+<h1>Manual Review Notification</h1>
+<p>Dear <%= @user.name %>,</p>
+<p>Your KYC documents have been received and are currently under manual review. This process may take some time, we appreciate your patience.</p>
+<% if @user.kyc_documents.any? { |doc| doc.status == 'verified' } %>
+  <p>We are pleased to inform you that your KYC documents have been manually verified and your KYC status has been updated. You can now proceed with your transactions.</p>
+<% else %>
+  <p>We will notify you once the review is complete and your KYC status has been updated.</p>
+<% end %>
+<p>Thank you for your understanding.</p>
+<p>Best regards,</p>
+<p>Your Team</p>
