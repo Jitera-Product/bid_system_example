@@ -5,7 +5,7 @@ class NotificationService::Index
     raise 'Wrong format.' unless user_id.is_a?(Integer)
     @user_id = user_id
   end
-  def retrieve_notifications
+  def get_notifications
     user = User.find_by(id: user_id)
     return { status: 'error', message: 'User not found' } unless user
     @notifications = Notification.where(user_id: user_id)
