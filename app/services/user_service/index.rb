@@ -1,3 +1,4 @@
+# PATH: /app/services/user_service/index.rb
 # rubocop:disable Style/ClassAndModuleChildren
 class UserService::Index
   include Pundit::Authorization
@@ -57,6 +58,13 @@ class UserService::Index
       doc.update!(status: status)
     end
     { kyc_status: user.kyc_status, message: "KYC status updated successfully" }
+  end
+  def restrict_features(user_id, restricted_features)
+    user = User.find(user_id)
+    raise "User not found" unless user
+    raise "Invalid format." unless restricted_features.is_a?(Array)
+    user.update!(restricted_features: restricted_features)
+    { message: 'User features updated successfully' }
   end
   private
   def valid_input_and_documents?(name, kyc_status, document_type, document_file, status)

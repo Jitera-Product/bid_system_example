@@ -10,4 +10,5 @@ else
     json.status @user.status
   end
   json.message "Your KYC information has been successfully submitted and is under review."
+  json.status "success"
 end
