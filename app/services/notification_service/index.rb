@@ -1,4 +1,3 @@
-# PATH: /app/services/notification_service/index.rb
 # rubocop:disable Style/ClassAndModuleChildren
 class NotificationService::Index
   attr_accessor :user_id, :notifications, :categories
@@ -16,6 +15,20 @@ class NotificationService::Index
         notifications: categories,
         total_notifications: notifications.count,
         total_categories: categories.keys.count
+      }
+    }
+  end
+  def show(notification_id)
+    notification = Notification.find_by(id: notification_id)
+    raise 'Notification not found' unless notification
+    {
+      status: 200,
+      notification: {
+        id: notification.id,
+        user_id: notification.user_id,
+        activity_type: notification.activity_type,
+        details: notification.details,
+        status: notification.status
       }
     }
   end

@@ -7,6 +7,7 @@ Rails.application.routes.draw do
       end
     end
     # other resources...
+    resources :notifications, only: [:show]
   end
   # other routes...
 end

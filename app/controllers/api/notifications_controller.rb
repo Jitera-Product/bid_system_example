@@ -15,4 +15,16 @@ class Api::NotificationsController < Api::BaseController
       notifications: categorized_notifications 
     }, status: :ok
   end
+  def show
+    id = params[:id].to_i
+    return render json: { error: 'Wrong format.' }, status: :bad_request unless id.is_a?(Integer)
+    notification = Notification.find_by(id: id)
+    if notification.nil?
+      render json: { error: 'Notification not found' }, status: :not_found
+    else
+      render json: { status: 200, notification: notification }, status: :ok
+    end
+  rescue => e
+    render json: { error: 'Unexpected error occurred.' }, status: :internal_server_error
+  end
 end
