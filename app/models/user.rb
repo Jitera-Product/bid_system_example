@@ -10,18 +10,18 @@ class User < ApplicationRecord
   has_many :deposits, dependent: :destroy
   has_many :payment_methods, dependent: :destroy
   has_many :products, dependent: :destroy
-  # Corrected relationship from new code (has_one to has_many)
-  has_one :wallet, dependent: :destroy
+  # Relationship corrected from new code (has_many instead of has_one)
+  has_many :wallets, dependent: :destroy
 
   # Validations from new code
   validates :email, presence: true, uniqueness: true
   validates :encrypted_password, presence: true
   validates :username, presence: true, uniqueness: true
+  validates :sign_in_count, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validates :failed_attempts, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :is_owner, inclusion: { in: [true, false] }
 
   # Additional validations from existing code
-  validates :sign_in_count, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
-  validates :failed_attempts, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   # Password format validation from existing code
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
   validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
@@ -54,4 +54,13 @@ class User < ApplicationRecord
       false
     end
   end
+
+  # Callbacks from new code
+  # Add any callbacks like before_save, after_commit, etc here if needed
+
+  # Scopes from new code
+  # Define any custom scopes here if needed
+
+  # Methods from new code
+  # Define any instance or class methods here if needed
 end
