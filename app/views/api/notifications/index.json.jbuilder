@@ -5,6 +5,4 @@ json.notifications @notifications do |notification|
   json.activity_type notification.activity_type
   json.details notification.details
   json.status notification.status
-  json.created_at notification.created_at
-  json.updated_at notification.updated_at
 end

@@ -32,18 +32,17 @@ class Api::NotificationsController < Api::BaseController
       render json: { error: 'Internal Server Error' }, status: :internal_server_error
     end
   end
-  def filter
-    user_id = params[:user_id]
+  def filter_by_activity_type
     activity_type = params[:activity_type]
-    user_id_valid = UserIdValidator.new(user_id).valid?
     activity_type_valid = ActivityTypeValidator.new(activity_type).valid?
-    unless user_id_valid && activity_type_valid
-      render json: { error: 'Invalid parameters.' }, status: :bad_request
+    unless activity_type_valid
+      render json: { error: 'Invalid activity type.' }, status: :bad_request
       return
     end
     begin
-      notifications = Notifications::FilterService.call(user_id, activity_type)
+      notifications = Notification.where(activity_type: activity_type)
       render json: { 
+        status: 200,
         total_notifications: notifications.count, 
         notifications: notifications.map do |notification|
           {
