@@ -14,6 +14,7 @@ Rails.application.routes.draw do
     end
     resources :bid_items, only: [:index]
     # other resources...
+    post 'users_registrations', to: 'users#create'
   end
   # other routes...
   get '/notifications/:id', to: 'notifications#show'
