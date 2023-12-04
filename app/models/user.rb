@@ -4,7 +4,7 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :rememberable, :validatable,
          :trackable, :recoverable, :lockable, :confirmable
 
-  # Existing relationships
+  # Relationships
   has_many :bid_items, dependent: :destroy
   has_many :bids, dependent: :destroy
   has_many :deposits, dependent: :destroy
@@ -12,20 +12,17 @@ class User < ApplicationRecord
   has_many :products, dependent: :destroy
   has_many :wallets, dependent: :destroy
 
-  # Existing validations
-  validates :email, presence: true, uniqueness: true
+  # Validations
+  validates :email, presence: true, uniqueness: true, length: { in: 0..255 }, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :encrypted_password, presence: true
   validates :username, presence: true, uniqueness: true
+  validates :is_owner, inclusion: { in: [true, false] }
   validates :sign_in_count, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :failed_attempts, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
-  validates :is_owner, inclusion: { in: [true, false] }
 
   # Password format validation
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
   validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
-  # Email validations
-  validates :email, length: { in: 0..255 }, if: :email?
-  validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }
 
   # Methods
   def generate_reset_password_token
@@ -60,4 +57,8 @@ class User < ApplicationRecord
 
   # Additional methods
   # Define any instance or class methods here if needed
+
+  # Add any new validations below this line
+  # For example, if you add a new column 'nickname', you might add:
+  # validates :nickname, presence: true, length: { maximum: 50 }
 end

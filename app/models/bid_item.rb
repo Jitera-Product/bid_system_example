@@ -1,7 +1,7 @@
 class BidItem < ApplicationRecord
   has_many :item_bids,
            class_name: 'Bid',
-           foreign_key: :item_id, dependent: :destroy
+           foreign_key: :bid_item_id, dependent: :destroy # Updated foreign_key from :item_id to :bid_item_id
   has_many :listing_bid_items, dependent: :destroy
 
   belongs_to :user
@@ -27,8 +27,7 @@ class BidItem < ApplicationRecord
 
   validates :is_locked, inclusion: { in: [true, false] }
 
-  # Add validation for description
-  validates :description, presence: true, length: { maximum: 1000 }
+  validates :description, presence: true, length: { maximum: 1000 } # Added validation for description
 
   # end for validations
 
