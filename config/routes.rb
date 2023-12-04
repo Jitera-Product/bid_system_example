@@ -12,6 +12,7 @@ Rails.application.routes.draw do
         get 'filter', to: 'notifications#filter'
       end
     end
+    resources :bid_items, only: [:index]
     # other resources...
   end
   # other routes...
