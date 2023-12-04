@@ -8,7 +8,7 @@ class Api::ListingBidItemsController < Api::BaseController
     render json: { listing_bid_items: @listing_bid_items, total_items: @total_items, total_pages: @total_pages }
   end
   def show
-    @listing_bid_item = ListingBidItem.find_by('listing_bid_items.id = ?', params[:id])
+    @listing_bid_item = ListingBidItem.find_by!('listing_bid_items.id = ?', params[:id])
     if @listing_bid_item
       render json: @listing_bid_item
     else
@@ -28,12 +28,14 @@ class Api::ListingBidItemsController < Api::BaseController
     params.require(:listing_bid_items).permit(:listing_id, :bid_item_id)
   end
   def destroy
-    @listing_bid_item = ListingBidItem.find_by('listing_bid_items.id = ?', params[:id])
+    id = params[:id]
+    IdValidator.new(id).validate
+    @listing_bid_item = ListingBidItem.find_by('listing_bid_items.id = ?', id)
     raise ActiveRecord::RecordNotFound if @listing_bid_item.blank?
     if @listing_bid_item.destroy
-      head :ok, message: I18n.t('common.200')
+      render json: { message: I18n.t('common.200') }, status: :ok
     else
-      head :unprocessable_entity
+      render json: { error: I18n.t('common.422') }, status: :unprocessable_entity
     end
   end
   private
