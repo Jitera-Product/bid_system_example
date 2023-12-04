@@ -8,13 +8,17 @@ class Api::BidItemsController < Api::BaseController
     @bid_item = BidItem.find_by!('bid_items.id = ?', params[:id])
   end
   def create
-    @bid_item = BidItem.new(create_params)
-    return if @bid_item.save
-    @error_object = @bid_item.errors.messages
-    render status: :unprocessable_entity
+    validator = BidItemValidator.new(create_params)
+    if validator.valid?
+      @bid_item = BidItemService::CreateService.new(validator.validated_data).execute
+      render 'create.json.jbuilder', status: :created
+    else
+      @error_object = validator.errors
+      render status: :unprocessable_entity
+    end
   end
   def create_params
-    params.require(:bid_items).permit(:user_id, :product_id, :base_price, :status, :name, :expiration_time)
+    params.require(:bid_items).permit(:user_id, :product_id, :base_price, :status, :name, :expiration_time, :description, :start_price, :current_price)
   end
   def update
     @bid_item = BidItem.find_by('bid_items.id = ?', params[:id])
@@ -32,6 +36,6 @@ class Api::BidItemsController < Api::BaseController
     @bid_item.reload
   end
   def update_params
-    params.require(:bid_item).permit(:name, :description, :start_price, :current_price, :status)
+    params.require(:bid_items).permit(:name, :description, :start_price, :current_price, :status)
   end
 end
