@@ -12,12 +12,6 @@ class User < ApplicationRecord
   has_many :products, dependent: :destroy
   has_many :wallets, dependent: :destroy
 
-  # Existing relationships from existing code
-  # Note: The existing code had has_one relationships for payment_method and wallet.
-  # This has been changed to has_many in the new code. If this is intentional and the
-  # business logic now requires users to have many payment_methods and wallets,
-  # the new code takes precedence. If not, this needs to be discussed with the team.
-
   # Validations from new code
   validates :email, presence: true, uniqueness: true
   validates :encrypted_password, presence: true

@@ -27,6 +27,9 @@ class BidItem < ApplicationRecord
 
   validates :is_locked, inclusion: { in: [true, false] }
 
+  # Add validation for description
+  validates :description, presence: true, length: { maximum: 1000 }
+
   # end for validations
 
   class << self
