@@ -9,6 +9,7 @@ Rails.application.routes.draw do
     resources :notifications, only: [:show] do
       collection do
         get ':user_id', to: 'notifications#get_notifications'
+        get 'filter', to: 'notifications#filter'
       end
     end
     # other resources...

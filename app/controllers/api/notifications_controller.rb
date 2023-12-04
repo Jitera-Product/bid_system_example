@@ -32,6 +32,31 @@ class Api::NotificationsController < Api::BaseController
       render json: { error: 'Internal Server Error' }, status: :internal_server_error
     end
   end
+  def filter_notifications
+    activity_type = params[:activity_type]
+    if activity_type.nil?
+      render json: { error: 'Invalid activity type.' }, status: :bad_request
+      return
+    end
+    begin
+      notifications = NotificationService::Filter.call(current_user.id, activity_type)
+      render json: { 
+        status: :ok,
+        total_notifications: notifications.count, 
+        notifications: notifications.map do |notification|
+          {
+            id: notification.id,
+            user_id: notification.user_id,
+            activity_type: notification.activity_type,
+            details: notification.details,
+            status: notification.status
+          }
+        end
+      }, status: :ok
+    rescue => e
+      render json: { error: 'Internal Server Error' }, status: :internal_server_error
+    end
+  end
   def show
     id = params[:id].to_i
     return render json: { error: 'Wrong format.' }, status: :bad_request unless id.is_a?(Integer)

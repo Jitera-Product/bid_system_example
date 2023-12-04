@@ -17,7 +17,7 @@ module Notifications
     def filter_by_activity_type(activity_type)
       ActivityTypeValidator.new(activity_type).validate
       notifications = Notification.where(activity_type: activity_type)
-      { status: 200, notifications: notifications, total: notifications.count }
+      notifications.empty? ? [] : notifications
     rescue Exceptions::InvalidInput => e
       raise e
     end
