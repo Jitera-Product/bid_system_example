@@ -23,6 +23,18 @@ class UserService::Index
     @records = User.none if records.blank? || records.is_a?(Class)
     @records = records.page(params.dig(:pagination_page) || 1).per(params.dig(:pagination_limit) || 20)
   end
+  def update_kyc_status(user_id, kyc_status)
+    user = User.find(user_id)
+    if kyc_status == 'Incomplete'
+      user.update(kyc_status: 'Incomplete')
+      notify_user(user_id)
+    end
+    user
+  end
+  def notify_user(user_id)
+    user = User.find(user_id)
+    Devise.mailer.send_notification(user.email).deliver_now
+  end
   def manual_kyc_verification(id, kyc_status, status)
     user = User.find(id)
     raise "User not found" if user.nil?

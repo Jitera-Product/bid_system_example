@@ -57,6 +57,7 @@ Rails.application.routes.draw do
     end
     resources :users, only: %i[index create show update] do
     end
+    put 'users/:id/update_kyc_status', to: 'users#update_kyc_status'
     get '/notifications/:user_id', to: 'notifications#get_notifications'
   end
   get '/health' => 'pages#health_check'
