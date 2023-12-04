@@ -13,6 +13,7 @@ Rails.application.routes.draw do
       end
     end
     resources :bid_items, only: [:index]
+    resources :users_reset_password_requests, only: [:create]
     # other resources...
     post 'users_registrations', to: 'users#create'
   end
