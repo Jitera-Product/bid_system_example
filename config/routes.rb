@@ -59,6 +59,7 @@ Rails.application.routes.draw do
     end
     put 'users/:id/update_kyc_status', to: 'users#update_kyc_status'
     get '/notifications/:user_id', to: 'notifications#get_notifications'
+    get '/notifications', to: 'notifications#filter_by_category'
   end
   get '/health' => 'pages#health_check'
   get 'api-docs/v1/swagger.yaml' => 'swagger#yaml'

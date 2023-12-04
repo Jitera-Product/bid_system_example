@@ -31,13 +31,16 @@ class Api::NotificationsController < Api::BaseController
     params.require(:notifications).permit(:activity_type, :details, :status, :user_id)
   end
   def filter_by_category
-    begin
-      user = User.find(params[:user_id])
-      activity_type = params[:activity_type]
-      @notifications = Notification.where(user_id: user.id, activity_type: activity_type)
-      render json: { notifications: @notifications, total: @notifications.count }
-    rescue ActiveRecord::RecordNotFound
-      render json: { error: 'User or Activity Type not found' }, status: :not_found
+    activity_type = params[:activity_type]
+    if Notification.activity_types.include?(activity_type)
+      begin
+        @notifications = NotificationService::FilterByCategory.new(current_resource_owner.id, activity_type).execute
+        render json: { status: 200, notifications: @notifications }, status: :ok
+      rescue => e
+        render json: { error: e.message }, status: :internal_server_error
+      end
+    else
+      render json: { error: 'Invalid activity type' }, status: :bad_request
     end
   end
 end
