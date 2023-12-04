@@ -1,4 +1,3 @@
-# PATH: /app/services/user_service/index.rb
 # rubocop:disable Style/ClassAndModuleChildren
 class UserService::Index
   include Pundit::Authorization
@@ -23,6 +22,31 @@ class UserService::Index
   def paginate
     @records = User.none if records.blank? || records.is_a?(Class)
     @records = records.page(params.dig(:pagination_page) || 1).per(params.dig(:pagination_limit) || 20)
+  end
+  def submit_kyc(id, name, kyc_status, document_type, document_file, status)
+    user = User.find_by(id: id)
+    return { error: 'User not found' } unless user
+    kyc_document = KycDocument.new(
+      name: name,
+      kyc_status: kyc_status,
+      document_type: document_type,
+      document_file: document_file,
+      status: status,
+      user_id: user.id
+    )
+    return { error: 'Invalid input or document' } unless kyc_document.valid?
+    if kyc_status == 'Verified'
+      user.update(kyc_status: 'Verified')
+      kyc_document.update(status: 'Verified')
+    elsif kyc_status == 'Pending'
+      user.update(kyc_status: 'Pending')
+      kyc_document.update(status: 'Pending')
+      NotificationService.notify(user, 'Your documents will be reviewed manually.')
+    else
+      return { error: 'Invalid KYC status' }
+    end
+    kyc_document.save
+    { kyc_status: user.kyc_status, document_status: kyc_document.status }
   end
   def filter_notifications(user_id, activity_type)
     begin

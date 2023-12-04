@@ -9,12 +9,15 @@ class User < ApplicationRecord
   has_many :deposits, dependent: :destroy
   has_many :notifications, dependent: :destroy
   has_many :kyc_documents, dependent: :destroy
+  # Add kyc_status field
+  enum kyc_status: { pending: 0, verified: 1, manual_verification: 2 }
   # validations
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
   validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
   validates :email, presence: true, uniqueness: true
   validates :email, length: { in: 0..255 }, if: :email?
   validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :kyc_status, presence: true
   # end for validations
   def generate_reset_password_token
     raw, enc = Devise.token_generator.generate(self.class, :reset_password_token)
