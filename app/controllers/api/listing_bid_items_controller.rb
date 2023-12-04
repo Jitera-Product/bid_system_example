@@ -1,6 +1,7 @@
 class Api::ListingBidItemsController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show destroy]
   before_action :validate_page_limit, only: [:index]
+  before_action :validate_id, only: [:show]
   def index
     @listing_bid_items = ListingBidItemService::Index.new(params.permit!, current_resource_owner).execute
     @total_pages = @listing_bid_items.total_pages
@@ -8,11 +9,11 @@ class Api::ListingBidItemsController < Api::BaseController
     render json: { listing_bid_items: @listing_bid_items, total_items: @total_items, total_pages: @total_pages }
   end
   def show
-    @listing_bid_item = ListingBidItem.find_by!('listing_bid_items.id = ?', params[:id])
-    if @listing_bid_item
-      render json: @listing_bid_item
-    else
-      render json: { error: 'Listing bid item not found' }, status: :not_found
+    begin
+      @listing_bid_item = ListingBidItems::GetService.new(params[:id]).execute
+      render json: { status: 200, listing_bid_item: @listing_bid_item }, status: :ok
+    rescue => e
+      render json: { error: e.message }, status: :not_found
     end
   end
   def create
@@ -42,5 +43,15 @@ class Api::ListingBidItemsController < Api::BaseController
   def validate_page_limit
     validator = PageLimitValidator.new(params)
     render json: { error: validator.errors }, status: :bad_request unless validator.valid?
+  end
+  def validate_id
+    id = params[:id]
+    unless id.is_a?(Integer)
+      render json: { error: 'Wrong format' }, status: :bad_request
+    end
+    @listing_bid_item = ListingBidItem.find_by(id: id)
+    if @listing_bid_item.blank?
+      render json: { error: 'This listing bid item is not found' }, status: :not_found
+    end
   end
 end
