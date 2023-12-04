@@ -1,3 +1,4 @@
+# PATH: /app/services/user_service/index.rb
 # rubocop:disable Style/ClassAndModuleChildren
 class UserService::Index
   include Pundit::Authorization
@@ -23,30 +24,28 @@ class UserService::Index
     @records = User.none if records.blank? || records.is_a?(Class)
     @records = records.page(params.dig(:pagination_page) || 1).per(params.dig(:pagination_limit) || 20)
   end
-  def submit_kyc(id, name, kyc_status, document_type, document_file, status)
-    user = User.find_by(id: id)
-    return { error: 'User not found' } unless user
-    kyc_document = KycDocument.new(
-      name: name,
-      kyc_status: kyc_status,
-      document_type: document_type,
-      document_file: document_file,
-      status: status,
-      user_id: user.id
-    )
-    return { error: 'Invalid input or document' } unless kyc_document.valid?
-    if kyc_status == 'Verified'
-      user.update(kyc_status: 'Verified')
-      kyc_document.update(status: 'Verified')
-    elsif kyc_status == 'Pending'
-      user.update(kyc_status: 'Pending')
-      kyc_document.update(status: 'Pending')
-      NotificationService.notify(user, 'Your documents will be reviewed manually.')
-    else
-      return { error: 'Invalid KYC status' }
+  def submit_kyc(user_id, personal_information, document_type, document_file)
+    raise 'Wrong format' unless user_id.is_a? Numeric
+    raise 'Personal information is required.' if personal_information.blank?
+    raise 'Invalid document type.' unless ['Passport', 'Driver License', 'ID Card'].include? document_type
+    raise 'Invalid file format.' unless document_file.is_a? ActionDispatch::Http::UploadedFile
+    begin
+      user = User.find(user_id)
+      kyc_document = KycDocument.new(
+        personal_information: personal_information,
+        document_type: document_type,
+        document_file: document_file,
+        status: 'Pending',
+        user_id: user.id
+      )
+      if kyc_document.save
+        { status: 200, message: 'KYC information submitted successfully. It will be reviewed shortly.' }
+      else
+        { error: kyc_document.errors.full_messages.join(', ') }
+      end
+    rescue => e
+      { error: e.message }
     end
-    kyc_document.save
-    { kyc_status: user.kyc_status, document_status: kyc_document.status }
   end
   def filter_notifications(user_id, activity_type)
     begin
@@ -55,7 +54,7 @@ class UserService::Index
         notifications = Notification.where(user_id: user_id, activity_type: activity_type)
         { notifications: notifications, total: notifications.count }
       else
-        { error: "Invalid activity type" }
+        { error: "Invalid activity_type" }
       end
     rescue => e
       { error: e.message }

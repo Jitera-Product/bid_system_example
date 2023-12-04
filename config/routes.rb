@@ -4,5 +4,6 @@ Rails.application.routes.draw do
       post 'submit_kyc', on: :collection
     end
     resources :notifications, only: [:show]
+    post '/kyc', to: 'kyc_documents#create'
   end
 end
