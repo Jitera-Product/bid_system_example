@@ -4,16 +4,15 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :rememberable, :validatable,
          :trackable, :recoverable, :lockable, :confirmable
 
-  # Relationships from new code
+  # Existing relationships
   has_many :bid_items, dependent: :destroy
   has_many :bids, dependent: :destroy
   has_many :deposits, dependent: :destroy
   has_many :payment_methods, dependent: :destroy
   has_many :products, dependent: :destroy
-  # Relationship corrected from new code (has_many instead of has_one)
   has_many :wallets, dependent: :destroy
 
-  # Validations from new code
+  # Existing validations
   validates :email, presence: true, uniqueness: true
   validates :encrypted_password, presence: true
   validates :username, presence: true, uniqueness: true
@@ -21,15 +20,14 @@ class User < ApplicationRecord
   validates :failed_attempts, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :is_owner, inclusion: { in: [true, false] }
 
-  # Additional validations from existing code
-  # Password format validation from existing code
+  # Password format validation
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
   validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
-  # Email validations from existing code
+  # Email validations
   validates :email, length: { in: 0..255 }, if: :email?
   validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }
 
-  # Methods from existing code
+  # Methods
   def generate_reset_password_token
     raw, enc = Devise.token_generator.generate(self.class, :reset_password_token)
     self.reset_password_token   = enc
@@ -48,19 +46,18 @@ class User < ApplicationRecord
         return user
       end
 
-      # We will show the error message in TokensController
       return user if user&.access_locked?
 
       false
     end
   end
 
-  # Callbacks from new code
+  # Callbacks
   # Add any callbacks like before_save, after_commit, etc here if needed
 
-  # Scopes from new code
+  # Scopes
   # Define any custom scopes here if needed
 
-  # Methods from new code
+  # Additional methods
   # Define any instance or class methods here if needed
 end
