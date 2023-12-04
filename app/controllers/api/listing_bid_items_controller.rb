@@ -1,11 +1,14 @@
 class Api::ListingBidItemsController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show destroy]
+  before_action :validate_page_limit, only: [:index]
   def index
     @listing_bid_items = ListingBidItemService::Index.new(params.permit!, current_resource_owner).execute
     @total_pages = @listing_bid_items.total_pages
+    @total_items = @listing_bid_items.total_count
+    render json: { listing_bid_items: @listing_bid_items, total_items: @total_items, total_pages: @total_pages }
   end
   def show
-    @listing_bid_item = ListingBidItem.find_by(id: params[:id])
+    @listing_bid_item = ListingBidItem.find_by('listing_bid_items.id = ?', params[:id])
     if @listing_bid_item
       render json: @listing_bid_item
     else
@@ -32,5 +35,10 @@ class Api::ListingBidItemsController < Api::BaseController
     else
       head :unprocessable_entity
     end
+  end
+  private
+  def validate_page_limit
+    validator = PageLimitValidator.new(params)
+    render json: { error: validator.errors }, status: :bad_request unless validator.valid?
   end
 end
