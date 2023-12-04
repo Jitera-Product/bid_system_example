@@ -2,6 +2,7 @@
 class NotificationService::Index
   attr_accessor :user_id, :notifications, :categories
   def initialize(user_id)
+    raise 'Wrong format.' unless user_id.is_a?(Integer)
     @user_id = user_id
   end
   def retrieve_notifications
@@ -17,6 +18,8 @@ class NotificationService::Index
         total_categories: categories.keys.count
       }
     }
+  rescue StandardError => e
+    { status: 'error', message: e.message }
   end
   def show(notification_id)
     notification = Notification.find_by(id: notification_id)
