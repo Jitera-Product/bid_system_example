@@ -8,6 +8,7 @@ class User < ApplicationRecord
   has_many :bids, dependent: :destroy
   has_many :deposits, dependent: :destroy
   has_many :notifications, dependent: :destroy
+  has_many :kyc_documents, dependent: :destroy
   # validations
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
   validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
