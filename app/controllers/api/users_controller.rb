@@ -1,5 +1,5 @@
 class Api::UsersController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update update_kyc_status]
+  before_action :doorkeeper_authorize!, only: %i[index create show update submit_kyc_info]
   def index
     @users = UserService::Index.new(params.permit!, current_resource_owner).execute
     @total_pages = @users.total_pages
@@ -28,6 +28,19 @@ class Api::UsersController < Api::BaseController
   end
   def update_params
     params.require(:users).permit(:email)
+  end
+  def submit_kyc_info
+    @user = User.find_by('users.id = ?', params[:id])
+    raise ActiveRecord::RecordNotFound if @user.blank?
+    authorize @user, policy_class: Api::UsersPolicy
+    result = UpdateKycStatusService.new(@user, params[:kyc_info]).execute
+    if result.success?
+      @user.update(kyc_status: 'Verified')
+      render status: :ok
+    else
+      @error_object = result.errors
+      render status: :unprocessable_entity
+    end
   end
   def update_kyc_status
     @user = User.find_by('users.id = ?', params[:id])
