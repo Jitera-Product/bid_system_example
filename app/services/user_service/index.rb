@@ -23,6 +23,14 @@ class UserService::Index
     @records = User.none if records.blank? || records.is_a?(Class)
     @records = records.page(params.dig(:pagination_page) || 1).per(params.dig(:pagination_limit) || 20)
   end
+  def submit_kyc_info(id, name, kyc_status, document_type, document_file, status)
+    user = User.find(id)
+    raise "User not found" unless user
+    raise "Invalid input or documents" unless valid_input_and_documents?(name, kyc_status, document_type, document_file, status)
+    user.update!(kyc_status: 'Verified')
+    KycDocument.create!(user_id: user.id, document_type: document_type, document_file: document_file, status: status)
+    { kyc_status: user.kyc_status, message: 'KYC information submitted successfully' }
+  end
   def update_kyc_status(user_id, kyc_status)
     user = User.find(user_id)
     if kyc_status == 'Incomplete'
@@ -49,6 +57,10 @@ class UserService::Index
       doc.update!(status: status)
     end
     { kyc_status: user.kyc_status, message: "KYC status updated successfully" }
+  end
+  private
+  def valid_input_and_documents?(name, kyc_status, document_type, document_file, status)
+    name.present? && kyc_status.present? && document_type.present? && document_file.present? && status.present?
   end
 end
 # rubocop:enable Style/ClassAndModuleChildren

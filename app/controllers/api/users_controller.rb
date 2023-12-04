@@ -1,5 +1,5 @@
 class Api::UsersController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update update_kyc_status manual_kyc_verification]
+  before_action :doorkeeper_authorize!, only: %i[index create show update submit_kyc_info update_kyc_status manual_kyc_verification]
   def index
     @users = UserService::Index.new(params.permit!, current_resource_owner).execute
     @total_pages = @users.total_pages
@@ -29,6 +29,18 @@ class Api::UsersController < Api::BaseController
   def update_params
     params.require(:users).permit(:email)
   end
+  def submit_kyc_info
+    begin
+      @user = UserService.submit_kyc_info(submit_kyc_info_params)
+      if @user.kyc_status == 'Verified'
+        render json: { message: 'KYC information submitted successfully.', kyc_status: @user.kyc_status }, status: :ok
+      else
+        render json: { error: 'KYC validation failed. Please correct your input or upload valid documents.' }, status: :unprocessable_entity
+      end
+    rescue StandardError => e
+      render json: { error: e.message }, status: :unprocessable_entity
+    end
+  end
   def update_kyc_status
     @user = User.find_by('users.id = ?', params[:id])
     raise ActiveRecord::RecordNotFound if @user.blank?
@@ -48,5 +60,9 @@ class Api::UsersController < Api::BaseController
     rescue => e
       render json: { error: e.message }, status: :unprocessable_entity
     end
+  end
+  private
+  def submit_kyc_info_params
+    params.require(:user).permit(:id, :name, :kyc_status, :document_type, :document_file, :status)
   end
 end

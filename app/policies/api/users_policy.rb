@@ -8,6 +8,9 @@ class Api::UsersPolicy < ApplicationPolicy
   def create?
     (user.is_a?(User) && record.id == user&.id)
   end
+  def submit_kyc_info?
+    user.kyc_documents.empty?
+  end
   def manual_kyc_verification?
     user.is_a?(User) && user.has_role?(:admin)
   end
