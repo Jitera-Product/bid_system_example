@@ -1,5 +1,5 @@
 class Api::UsersController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update verify_kyc]
+  before_action :doorkeeper_authorize!, only: %i[index create show update verify_kyc update_kyc_status]
   def index
     @users = UserService::Index.new(params.permit!, current_resource_owner).execute
     @total_pages = @users.total_pages
@@ -39,5 +39,20 @@ class Api::UsersController < Api::BaseController
       @error_object = @user.errors.messages
       render status: :unprocessable_entity
     end
+  end
+  def update_kyc_status
+    @user = User.find_by('users.id = ?', params[:id])
+    raise ActiveRecord::RecordNotFound if @user.blank?
+    authorize @user, policy_class: Api::UsersPolicy
+    if @user.update(kyc_status: 'Incomplete')
+      send_notification(@user.id, "Your KYC status has been updated to 'Incomplete'. Please complete the KYC process to regain full access to your account.")
+      render json: { message: "KYC status updated to 'Incomplete'", kyc_status: @user.kyc_status }
+    else
+      @error_object = @user.errors.messages
+      render status: :unprocessable_entity
+    end
+  end
+  def send_notification(user_id, message)
+    # Implement the logic to send notification to the user
   end
 end

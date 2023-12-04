@@ -27,6 +27,7 @@ class UserService::Index
     user = User.find_by(id: id)
     raise Exception.new("User not found") if user.nil?
     user.update!(kyc_status: kyc_status)
+    restrict_features(id)
     notification_message = case kyc_status
                            when 'Under Review'
                              'Your documents will be reviewed manually.'
@@ -35,6 +36,20 @@ class UserService::Index
                            else
                              'Invalid KYC status.'
                            end
+    { kyc_status: user.kyc_status, notification: notification_message }
+  end
+  def restrict_features(id)
+    user = User.find_by(id: id)
+    return if user.nil? || user.kyc_status != 'Rejected'
+    # Add code here to restrict certain features for the user
+    # based on their KYC status.
+  end
+  def kyc_process_timeout(id)
+    user = User.find_by(id: id)
+    return if user.nil?
+    user.update!(kyc_status: 'Incomplete')
+    restrict_features(id)
+    notification_message = 'Your KYC process has timed out. Your status has been updated to Incomplete and certain features may be restricted until you complete the KYC process.'
     { kyc_status: user.kyc_status, notification: notification_message }
   end
 end
