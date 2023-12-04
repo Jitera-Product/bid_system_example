@@ -7,13 +7,13 @@ class KycDocuments::CreateService
     validate_input
     store_documents
     update_user_kyc_status
-    { status: @user.kyc_status, message: 'KYC information submitted successfully.' }
+    { status: @user.kyc_status, message: 'KYC information submitted successfully. It will be reviewed shortly.' }
   end
   private
   def validate_input
-    # Validation logic here
-    # Check the format of the input, the validity of the documents (e.g., whether they are expired), and whether the input matches the documents.
-    # If the validation fails, raise an error with a message to the user to correct their input or upload valid documents.
+    raise 'Wrong format' unless @params[:user_id].is_a?(Numeric)
+    raise 'Wrong format' unless @params[:personal_info].is_a?(Hash)
+    raise 'Wrong format' unless @params[:document_file].is_a?(ActionDispatch::Http::UploadedFile)
   end
   def store_documents
     @user.kyc_documents.create!(@params)

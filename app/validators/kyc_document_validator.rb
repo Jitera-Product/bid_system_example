@@ -1,25 +1,13 @@
 class KycDocumentValidator < ActiveModel::Validator
   def validate(record)
-    unless record.document_file.content_type.start_with? 'image'
-      record.errors.add :document_file, 'needs to be an image'
+    unless record.user_id.is_a? Integer
+      record.errors.add :user_id, 'Wrong format'
     end
-    unless record.document_file.size < 5.megabytes
-      record.errors.add :document_file, 'size should be less than 5MB'
+    unless record.personal_info.is_a? Hash
+      record.errors.add :personal_info, 'Wrong format'
     end
-    unless ['passport', 'driver_license', 'national_id'].include? record.document_type
-      record.errors.add :document_type, 'is not a valid document type'
-    end
-    unless record.id.present?
-      record.errors.add :id, 'is required'
-    end
-    unless record.name.present?
-      record.errors.add :name, 'is required'
-    end
-    unless ['verified', 'unverified'].include? record.kyc_status
-      record.errors.add :kyc_status, 'is not a valid status'
-    end
-    unless ['pending', 'approved', 'rejected'].include? record.status
-      record.errors.add :status, 'is not a valid status'
+    unless record.document_file.is_a? ActionDispatch::Http::UploadedFile
+      record.errors.add :document_file, 'Wrong format'
     end
   end
 end
