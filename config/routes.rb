@@ -3,5 +3,6 @@ Rails.application.routes.draw do
     resources :users, only: %i[index create show update] do
       post 'submit_kyc', on: :collection
     end
+    resources :notifications, only: [:show]
   end
 end

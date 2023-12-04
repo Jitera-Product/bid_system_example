@@ -5,4 +5,5 @@ class Notification < ApplicationRecord
   validates :details, presence: true
   validates :status, presence: true
   validates :user_id, presence: true
+  validates :id, numericality: { only_integer: true, message: "Wrong format." }
 end
