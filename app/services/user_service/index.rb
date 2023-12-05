@@ -24,6 +24,17 @@ class UserService::Index
     @records = User.none if records.blank? || records.is_a?(Class)
     @records = records.page(params.dig(:pagination_page) || 1).per(params.dig(:pagination_limit) || 20)
   end
+  def reset_password(email)
+    user = User.find_by_email(email)
+    if user
+      reset_code = SecureRandom.urlsafe_base64
+      user.update(reset_password_token: reset_code)
+      UserMailer.password_reset(user).deliver_now
+      I18n.t('devise.passwords.send_instructions')
+    else
+      I18n.t('devise.failure.not_found_in_database')
+    end
+  end
   def register_social_media(social_media_platform, social_media_id)
     return 'Social media account already exists' if SocialMediaAccount.exists?(social_media_id: social_media_id)
     SocialMediaAccount.create!(social_media_platform: social_media_platform, social_media_id: social_media_id)
