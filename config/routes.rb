@@ -1,3 +1,4 @@
+# PATH: /config/routes.rb
 require 'sidekiq/web'
 Rails.application.routes.draw do
   use_doorkeeper do
@@ -82,6 +83,9 @@ Rails.application.routes.draw do
 
     resources :users, only: %i[index create show update] do
     end
+
+    # Added route for creating chat channels as per the guideline
+    resources :chat_channels, only: [:create]
   end
 
   get '/health' => 'pages#health_check'
