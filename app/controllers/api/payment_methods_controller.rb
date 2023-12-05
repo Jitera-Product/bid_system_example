@@ -1,7 +1,7 @@
 class Api::PaymentMethodsController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show]
   def index
-    @payment_methods = PaymentMethod.all
+    @payment_methods = PaymentMethods::IndexService.new.call
     render json: @payment_methods
   end
   def show
