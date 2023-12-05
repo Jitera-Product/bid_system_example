@@ -12,6 +12,8 @@ class BidItem < ApplicationRecord
   validates :base_price, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :name, presence: true, length: { maximum: 255 }, if: :name?
   validates :expiration_time, presence: true, timeliness: { type: :datetime, on_or_after: -> { DateTime.current } }
+  validates :status, presence: true
+  validates :is_locked, inclusion: { in: [true, false] }
 
   # Custom validations
   validate :expiration_time_cannot_be_in_the_past
