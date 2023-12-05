@@ -1,20 +1,17 @@
 class Bid < ApplicationRecord
+  # Existing associations
   has_one :shipping, dependent: :destroy
-
-  belongs_to :item,
-             class_name: 'BidItem'
+  belongs_to :item, class_name: 'BidItem'
   belongs_to :user
 
-  enum status: %w[new paid refund], _suffix: true
+  # Existing enum for status
+  enum status: { new: 0, paid: 1, refund: 2 }, _suffix: true
 
-  # validations
-
+  # Existing validations
   validates :price, presence: true
+  validates :price, numericality: { greater_than_or_equal_to: 0.0 }
 
-  validates :price, numericality: { greater_than_or_equal_to: 0.0, less_than_or_equal_to: 0.0 }
+  # Custom logic can be added here if necessary
 
-  # end for validations
-
-  class << self
-  end
+  # Class methods or scopes can be added here
 end

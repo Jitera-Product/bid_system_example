@@ -7,6 +7,9 @@ class Listing < ApplicationRecord
 
   # end for validations
 
+  # Custom logic can be placed here
+
   class << self
+    # Class methods can be placed here
   end
 end
