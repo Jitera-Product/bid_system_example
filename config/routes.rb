@@ -84,8 +84,12 @@ Rails.application.routes.draw do
     resources :users, only: %i[index create show update] do
     end
 
-    # Added route for creating chat channels as per the guideline
-    resources :chat_channels, only: [:create]
+    # Added new route for chat messages as per the guideline
+    namespace :chat do
+      resources :messages, only: [:create]
+      # Added route for creating chat channels as per the guideline
+      resources :chat_channels, only: [:create]
+    end
   end
 
   get '/health' => 'pages#health_check'
