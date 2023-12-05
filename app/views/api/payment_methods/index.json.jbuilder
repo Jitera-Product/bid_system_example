@@ -1,11 +1,6 @@
-# Check if there is a message to display
-if @message.present?
-  json.message @message
-else
-  # Display the total number of pages
-  json.total_pages @total_pages
-  # Loop through each payment method and display its details
-  json.payment_methods @payment_methods do |payment_method|
-    json.extract! payment_method, :id, :created_at, :updated_at, :name, :status
-  end
+# Display the status code
+json.status 200
+# Loop through each payment method and display its details
+json.paymentmethods @payment_methods do |payment_method|
+  json.partial! 'api/payment_methods/payment_method', payment_method: payment_method
 end

@@ -1,8 +1,12 @@
 class Api::PaymentMethodsController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show]
   def index
-    @payment_methods = PaymentMethods::IndexService.new.call
-    render json: @payment_methods
+    begin
+      @payment_methods = PaymentMethods::IndexService.new.call
+      render json: { status: 200, paymentmethods: @payment_methods.map { |payment_method| PaymentMethodSerializer.new(payment_method).as_json } }, status: :ok
+    rescue => e
+      render json: { error: e.message }, status: :unprocessable_entity
+    end
   end
   def show
     @payment_method = PaymentMethod.find_by!('payment_methods.id = ?', params[:id])

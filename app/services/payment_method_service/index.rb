@@ -6,7 +6,16 @@ class PaymentMethodService::Index
     @records = PaymentMethod.all
   end
   def execute
-    @records
+    {
+      status: 200,
+      paymentmethods: @records.map do |record|
+        {
+          id: record.id,
+          name: record.name,
+          status: record.status
+        }
+      end
+    }
   end
   def self.call
     new.execute
