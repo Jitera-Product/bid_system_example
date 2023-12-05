@@ -25,7 +25,19 @@ class BidItem < ApplicationRecord
   validates :name, presence: true
   validates :name, length: { maximum: 255 }, if: :name?
 
+  # Custom validations
+  validate :expiration_time_cannot_be_in_the_past
+
   # end for validations
+
+  # Custom methods
+  def expiration_time_cannot_be_in_the_past
+    if expiration_time.present? && expiration_time < DateTime.now
+      errors.add(:expiration_time, "can't be in the past")
+    end
+  end
+
+  # end for custom methods
 
   class << self
   end
