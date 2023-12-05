@@ -2,6 +2,9 @@
 
 class AddChatEnabledToBidItems < ActiveRecord::Migration[6.1]
   def change
-    add_column :bid_items, :chat_enabled, :boolean, default: false
+    # Check if the column already exists before trying to add it
+    unless column_exists?(:bid_items, :chat_enabled)
+      add_column :bid_items, :chat_enabled, :boolean, default: false, null: false
+    end
   end
 end
