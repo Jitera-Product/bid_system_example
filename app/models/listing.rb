@@ -7,6 +7,10 @@ class Listing < ApplicationRecord
 
   # end for validations
 
+  # Custom methods
+
+  # end Custom methods
+
   class << self
   end
 end

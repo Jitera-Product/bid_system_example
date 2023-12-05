@@ -6,6 +6,10 @@ class Product < ApplicationRecord
   belongs_to :admin
   belongs_to :user
 
+  # New relationships
+  has_many :bid_items, dependent: :destroy
+  has_many :product_categories, dependent: :destroy
+
   has_one_attached :image, dependent: :destroy
 
   # validations
