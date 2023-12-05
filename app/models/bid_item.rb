@@ -13,15 +13,18 @@ class BidItem < ApplicationRecord
 
   validates :base_price, presence: true
 
-  validates :base_price, numericality: { greater_than_or_equal_to: 0.0, less_than_or_equal_to: 0.0 }
+  # Update the numericality validation to remove the upper limit
+  validates :base_price, numericality: { greater_than_or_equal_to: 0.0 }
 
   validates :expiration_time, presence: true
 
-  validates :expiration_time, presence: true, timeliness: { type: :datetime, on_or_after: DateTime.tomorrow }
+  # Update the timeliness validation to ensure expiration_time is in the future
+  validates :expiration_time, presence: true, timeliness: { type: :datetime, on_or_after: -> { DateTime.current } }
 
   validates :name, presence: true
 
-  validates :name, length: { in: 0..255 }, if: :name?
+  # Update the length validation to set the correct range
+  validates :name, length: { maximum: 255 }, if: :name?
 
   # end for validations
 
