@@ -1,9 +1,8 @@
 class Api::PaymentMethodsController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show]
   def index
-    @payment_methods = PaymentMethodService::Index.call(current_resource_owner)
-    @total_pages = @payment_methods.total_pages
-    render 'api/payment_methods/index'
+    @payment_methods = PaymentMethod.all
+    render json: @payment_methods
   end
   def show
     @payment_method = PaymentMethod.find_by!('payment_methods.id = ?', params[:id])
