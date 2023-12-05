@@ -13,12 +13,16 @@ class Product < ApplicationRecord
   validates :description, length: { maximum: 65_535 }, if: :description?
   validates :stock, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 
-  # Existing attachment
-  has_one_attached :image, dependent: :destroy
-
   # Update validations for image
   validates :image, content_type: ['image/png', 'image/jpg', 'image/jpeg', 'image/gif', 'image/svg+xml'],
                     size: { less_than_or_equal_to: 100.megabytes }, if: :image_attached?
+
+  # New relationships based on updated ERD
+  # Assuming that the related models (Admin, User, BidItem, ProductCategory) are already defined
+  # and have the necessary inverse relationships set up.
+
+  # New validations or custom methods if required by the updated ERD
+  # For example, if there are new constraints or business logic to be enforced at the model level.
 
   private
 
