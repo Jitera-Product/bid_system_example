@@ -1,34 +1,20 @@
 class BidItem < ApplicationRecord
-  # Existing associations
-  has_many :item_bids,
-           class_name: 'Bid',
-           foreign_key: :item_id, dependent: :destroy
-  has_many :listing_bid_items, dependent: :destroy
-
-  # Updated relationships
-  belongs_to :user
+  # Existing relationships from both versions
   belongs_to :product
-
-  # New relationships
+  belongs_to :user
+  has_many :listing_bid_items, dependent: :destroy
   has_many :bids, dependent: :destroy # Assuming Bid model has bid_item_id as foreign key
 
-  enum status: { draft: 0, ready: 1, done: 2 }
+  # Merged enum status with both existing and new statuses
+  enum status: { draft: 0, ready: 1, done: 2, active: 3, expired: 4, sold: 5 }
 
-  # validations
-
-  validates :base_price, presence: true
-  validates :base_price, numericality: { greater_than_or_equal_to: 0.0 }
-
-  validates :expiration_time, presence: true
-  validates :expiration_time, timeliness: { type: :datetime, on_or_after: -> { DateTime.current } }
-
-  validates :name, presence: true
-  validates :name, length: { maximum: 255 }, if: :name?
+  # Merged validations
+  validates :base_price, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :name, presence: true, length: { maximum: 255 }, if: :name?
+  validates :expiration_time, presence: true, timeliness: { type: :datetime, on_or_after: -> { DateTime.current } }
 
   # Custom validations
   validate :expiration_time_cannot_be_in_the_past
-
-  # end for validations
 
   # Custom methods
   def expiration_time_cannot_be_in_the_past
@@ -37,8 +23,8 @@ class BidItem < ApplicationRecord
     end
   end
 
-  # end for custom methods
+  # Additional business logic can be added here
 
-  class << self
-  end
+  # Class methods or scopes can be added here
+
 end
