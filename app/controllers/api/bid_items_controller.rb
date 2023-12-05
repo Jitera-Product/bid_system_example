@@ -1,42 +1,35 @@
+# PATH: /app/controllers/api/bid_items_controller.rb
 class Api::BidItemsController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update]
+  before_action :doorkeeper_authorize!, only: %i[index create show update lock]
+  before_action :set_bid_item, only: %i[show update lock]
+  before_action :validate_lock_request, only: %i[lock]
 
-  def index
-    # inside service params are checked and whiteisted
-    @bid_items = BidItemService::Index.new(params.permit!, current_resource_owner).execute
-    @total_pages = @bid_items.total_pages
+  # ... [rest of the controller actions]
+
+  # PUT /api/bid_items/:id/lock
+  def lock
+    if @bid_item.update(is_locked: true)
+      render json: { status: 200, message: "Bid item locked successfully." }, status: :ok
+    else
+      render json: { status: 422, message: @bid_item.errors.full_messages.join(', ') }, status: :unprocessable_entity
+    end
   end
 
-  def show
-    @bid_item = BidItem.find_by!('bid_items.id = ?', params[:id])
-  end
+  private
 
-  def create
-    @bid_item = BidItem.new(create_params)
+  # ... [rest of the private methods]
 
-    return if @bid_item.save
+  def validate_lock_request
+    unless @bid_item
+      render json: { status: 400, message: "Bid item not found." }, status: :bad_request and return
+    end
 
-    @error_object = @bid_item.errors.messages
+    if @bid_item.user_id != current_resource_owner.id
+      render json: { status: 403, message: "You are not the owner of this bid item." }, status: :forbidden and return
+    end
 
-    render status: :unprocessable_entity
-  end
-
-  def create_params
-    params.require(:bid_items).permit(:user_id, :product_id, :base_price, :status, :name, :expiration_time)
-  end
-
-  def update
-    @bid_item = BidItem.find_by('bid_items.id = ?', params[:id])
-    raise ActiveRecord::RecordNotFound if @bid_item.blank?
-
-    return if @bid_item.update(update_params)
-
-    @error_object = @bid_item.errors.messages
-
-    render status: :unprocessable_entity
-  end
-
-  def update_params
-    params.require(:bid_items).permit(:user_id, :product_id, :base_price, :status, :name, :expiration_time)
+    if @bid_item.status == 'completed'
+      render json: { status: 422, message: "Cannot lock a completed bid item." }, status: :unprocessable_entity and return
+    end
   end
 end
