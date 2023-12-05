@@ -3,7 +3,7 @@ class Listing < ApplicationRecord
 
   # validations
 
-  validates :description, length: { in: 0..65_535 }, if: :description?
+  validates :description, length: { maximum: 65_535 }, if: :description?
 
   # end for validations
 

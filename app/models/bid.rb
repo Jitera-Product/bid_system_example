@@ -1,7 +1,7 @@
 class Bid < ApplicationRecord
   # Existing associations
   has_one :shipping, dependent: :destroy
-  belongs_to :item, class_name: 'BidItem'
+  belongs_to :item, class_name: 'BidItem', foreign_key: 'bid_item_id' # Updated foreign_key
   belongs_to :user
 
   # Existing enum for status

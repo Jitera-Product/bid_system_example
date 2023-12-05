@@ -1,11 +1,16 @@
 class BidItem < ApplicationRecord
+  # Existing associations
   has_many :item_bids,
            class_name: 'Bid',
            foreign_key: :item_id, dependent: :destroy
   has_many :listing_bid_items, dependent: :destroy
 
+  # Updated relationships
   belongs_to :user
   belongs_to :product
+
+  # New relationships
+  has_many :bids, dependent: :destroy # Assuming Bid model has bid_item_id as foreign key
 
   enum status: { draft: 0, ready: 1, done: 2 }
 
