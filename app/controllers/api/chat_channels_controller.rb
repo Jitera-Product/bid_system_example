@@ -1,6 +1,6 @@
 class Api::ChatChannelsController < Api::BaseController
   before_action :doorkeeper_authorize!
-  before_action :set_chat_channel, only: [:fetch_chat_messages]
+  before_action :set_chat_channel, only: [:fetch_chat_messages, :create]
 
   # Existing code here...
 
@@ -18,6 +18,9 @@ class Api::ChatChannelsController < Api::BaseController
     if bid_item.status == 'done'
       return render status: :bad_request, json: { error: 'Bid item already done' }
     end
+
+    # Check the maximum number of messages per channel
+    return if check_max_messages_per_channel
 
     chat_channel = ChatChannel.create!(user_id: user.id, bid_item_id: bid_item.id)
 
@@ -40,6 +43,16 @@ class Api::ChatChannelsController < Api::BaseController
 
   def set_chat_channel
     @chat_channel = ChatChannel.find_by(id: params[:channel_id])
+  end
+
+  # Updated private method to check the maximum number of messages per channel
+  def check_max_messages_per_channel
+    message_count = @chat_channel.chat_messages.count
+    if message_count >= 500
+      render status: :bad_request, json: { error: 'Maximum number of messages reached for this channel' }
+      return true
+    end
+    false
   end
 
   # Rest of the existing code...
