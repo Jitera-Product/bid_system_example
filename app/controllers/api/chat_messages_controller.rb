@@ -22,37 +22,24 @@ class Api::ChatMessagesController < Api::BaseController
       return
     end
 
-    if @chat_channel.user_id != current_user.id
-      render json: { error: 'Unauthorized access to chat channel' }, status: :unauthorized
-      return
-    end
-
-    if @chat_channel.chat_messages.count >= 500
-      render json: { error: 'Maximum messages per channel is 500.' }, status: :unprocessable_entity
-      return
-    end
-
     message = params[:message]
-    message_validator = MessageValidator.new(message)
-    unless message_validator.valid?
-      render json: { errors: message_validator.errors.full_messages }, status: :unprocessable_entity
-      return
-    end
+    chat_channel_id = @chat_channel.id
+    user_id = current_user.id
 
-    chat_message = @chat_channel.chat_messages.build(message: message, user_id: current_user.id)
-
-    if chat_message.save
-      @chat_channel.touch
+    begin
+      chat_message = ChatMessageService.send_chat_message(user_id, chat_channel_id, message)
       render json: { status: 201, chat_message: ChatMessageSerializer.new(chat_message).as_json }, status: :created
-    else
-      render json: { errors: chat_message.errors.full_messages }, status: :unprocessable_entity
+    rescue ChatMessageService::ChatMessageError => e
+      render json: { error: e.message }, status: :unprocessable_entity
+    rescue StandardError => e
+      render json: { error: 'An unexpected error occurred' }, status: :internal_server_error
     end
   end
 
   private
 
   def set_chat_channel
-    @chat_channel = ChatChannel.find_by(id: params[:channel_id])
+    @chat_channel = ChatChannel.find_by(id: params[:chat_channel_id])
   end
 
   def authenticate_user!
@@ -89,5 +76,30 @@ class MessageValidator
 
   def initialize(message)
     @message = message
+  end
+end
+
+class ChatMessageService
+  class ChatMessageError < StandardError; end
+
+  def self.send_chat_message(user_id, chat_channel_id, message)
+    chat_channel = ChatChannel.find(chat_channel_id)
+    raise ChatMessageError, 'Chat channel not found' unless chat_channel
+
+    raise ChatMessageError, 'Unauthorized access to chat channel' unless chat_channel.user_id == user_id
+
+    raise ChatMessageError, 'Maximum messages per channel is 500.' if chat_channel.chat_messages.count >= 500
+
+    message_validator = MessageValidator.new(message)
+    raise ChatMessageError, 'Message exceeds 256 characters limit.' if message_validator.errors.any?
+
+    chat_message = chat_channel.chat_messages.build(message: message, user_id: user_id)
+
+    if chat_message.save
+      chat_channel.touch
+      chat_message
+    else
+      raise ChatMessageError, chat_message.errors.full_messages.join(', ')
+    end
   end
 end
