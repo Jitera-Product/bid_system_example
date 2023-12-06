@@ -4,7 +4,7 @@ class ChatMessage < ApplicationRecord
   belongs_to :user
 
   # validations
-  validates :message, presence: true
+  validates :message, presence: true, length: { maximum: 256, too_long: "is too long (maximum is %{count} characters)" }
   validates :chat_channel_id, presence: true
   validates :user_id, presence: true
 

@@ -4,7 +4,16 @@ class ChatMessageService
   include ActiveModel::Model
   MAX_MESSAGES_PER_CHANNEL = 500
 
-  # Add new method send_chat_message here
+  # New method validate_message_length
+  def validate_message_length(message)
+    raise ActiveRecord::RecordInvalid.new('Message can\'t be blank') if message.blank?
+    raise ActiveRecord::RecordInvalid.new('Message is too long (maximum is 256 characters)') if message.length > 256
+
+    # If all checks pass, return a confirmation
+    { success: true, message: 'Message length is valid' }
+  end
+
+  # Updated method send_chat_message with validate_message_length call
   def send_chat_message(user_id, chat_channel_id, message)
     # Validate that the user is logged in
     raise 'User must be logged in' unless UserService.logged_in?(user_id)
@@ -13,11 +22,9 @@ class ChatMessageService
     chat_channel = ChatChannel.find_by_id(chat_channel_id)
     raise 'Chat channel does not exist or user is not associated with it' unless chat_channel && chat_channel.user_id == user_id
 
-    # Validate the length of the message
-    if message.length > 256
-      # Truncate the message to 256 characters if it exceeds the limit
-      message = message[0...256]
-    end
+    # Validate the length of the message using the new method
+    validation_response = validate_message_length(message)
+    return validation_response unless validation_response[:success]
 
     # Check the number of messages in the chat channel
     message_count = ChatMessage.where(chat_channel_id: chat_channel_id).count
