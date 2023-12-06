@@ -1,5 +1,5 @@
 class Api::BidItemsController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update check_chat_status]
+  before_action :doorkeeper_authorize!, only: %i[index create show update check_chat_status create_chat_channel]
 
   def index
     # inside service params are checked and whiteisted
@@ -40,7 +40,6 @@ class Api::BidItemsController < Api::BaseController
     params.require(:bid_items).permit(:user_id, :product_id, :base_price, :status, :name, :expiration_time)
   end
 
-  # New method to check the chat status of a bid item
   def check_chat_status
     bid_item = BidItem.find_by(id: params[:bid_item_id])
     if bid_item
@@ -48,5 +47,36 @@ class Api::BidItemsController < Api::BaseController
     else
       render json: { error: I18n.t('common.404') }, status: :not_found
     end
+  end
+
+  # POST /api/bid_items/:bid_item_id/chat_channels
+  def create_chat_channel
+    bid_item = BidItem.find_by(id: params[:bid_item_id])
+
+    unless bid_item
+      render json: { error: 'Bid item not found.' }, status: :not_found
+      return
+    end
+
+    unless bid_item.chat_enabled
+      render json: { error: 'Can not create a channel for this item.' }, status: :unprocessable_entity
+      return
+    end
+
+    if bid_item.status == 'done'
+      render json: { error: 'Bid item already done.' }, status: :unprocessable_entity
+      return
+    end
+
+    service = ChatChannelService::Index.new(params, current_resource_owner)
+    result = service.create(current_resource_owner.id, bid_item.id)
+
+    render json: { chat_channel: result }, status: :created
+  rescue ActiveRecord::RecordNotFound => e
+    render status: :not_found, json: { error: e.message }
+  rescue Pundit::NotAuthorizedError => e
+    render status: :forbidden, json: { error: e.message }
+  rescue ActiveRecord::RecordInvalid => e
+    render status: :unprocessable_entity, json: { errors: e.record.errors.full_messages }
   end
 end
