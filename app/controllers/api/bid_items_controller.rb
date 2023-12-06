@@ -68,15 +68,12 @@ class Api::BidItemsController < Api::BaseController
       return
     end
 
-    service = ChatChannelService::Index.new(params, current_resource_owner)
-    result = service.create(current_resource_owner.id, bid_item.id)
-
-    render json: { chat_channel: result }, status: :created
-  rescue ActiveRecord::RecordNotFound => e
-    render status: :not_found, json: { error: e.message }
-  rescue Pundit::NotAuthorizedError => e
-    render status: :forbidden, json: { error: e.message }
-  rescue ActiveRecord::RecordInvalid => e
-    render status: :unprocessable_entity, json: { errors: e.record.errors.full_messages }
+    begin
+      chat_channel = ChatChannel.new(user_id: current_resource_owner.id, bid_item_id: bid_item.id)
+      chat_channel.save!
+      render json: { chat_channel_id: chat_channel.id }, status: :created
+    rescue ActiveRecord::RecordInvalid => e
+      render status: :unprocessable_entity, json: { errors: e.record.errors.full_messages }
+    end
   end
 end
