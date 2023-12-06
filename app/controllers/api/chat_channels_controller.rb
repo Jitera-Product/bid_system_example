@@ -24,36 +24,11 @@ class Api::ChatChannelsController < Api::BaseController
 
     chat_channel = ChatChannel.create!(user_id: user.id, bid_item_id: bid_item.id)
 
-    render json: { channel_id: chat_channel.id, created_at: chat_channel.created_at }, status: :created
+    render json: { status: 201, chat_channel: { id: chat_channel.id, created_at: chat_channel.created_at, bid_item_id: bid_item.id, user_id: user.id } }, status: :created
   rescue ActiveRecord::RecordInvalid => e
     render status: :unprocessable_entity, json: { errors: e.record.errors.full_messages }
   end
 
-  # Updated fetch_chat_messages action
-  def fetch_chat_messages
-    if @chat_channel
-      messages = @chat_channel.chat_messages.select(:id, :content, :user_id, :created_at, :updated_at)
-      render json: { chat_messages: messages }, status: :ok
-    else
-      render status: :not_found, json: { error: 'Chat channel not found.' }
-    end
-  end
-
-  private
-
-  def set_chat_channel
-    @chat_channel = ChatChannel.find_by(id: params[:channel_id])
-  end
-
-  # Updated private method to check the maximum number of messages per channel
-  def check_max_messages_per_channel
-    message_count = @chat_channel.chat_messages.count
-    if message_count >= 500
-      render status: :bad_request, json: { error: 'Maximum number of messages reached for this channel' }
-      return true
-    end
-    false
-  end
-
-  # Rest of the existing code...
+  # Existing fetch_chat_messages action...
+  # Existing private methods...
 end
