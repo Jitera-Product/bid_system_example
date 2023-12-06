@@ -24,6 +24,14 @@ class ChatChannelService::Index
     { channel_id: chat_channel.id, created_at: chat_channel.created_at }
   end
 
+  # New method to check chat feature status
+  def check_chat_feature_status(bid_item_id)
+    bid_item = BidItem.find_by(id: bid_item_id)
+    raise ActiveRecord::RecordNotFound, 'Bid item not found' unless bid_item
+
+    bid_item.chat_enabled ? 'enabled' : 'disabled'
+  end
+
   # New method added as per the requirement
   def fetch_messages(chat_channel_id)
     chat_channel = ChatChannel.find(chat_channel_id)
