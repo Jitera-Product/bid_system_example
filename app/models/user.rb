@@ -6,9 +6,6 @@ class User < ApplicationRecord
          :confirmable, :lockable, :timeoutable, :trackable
 
   # Associations
-  # The new code has 'has_many :payment_methods' and 'has_many :wallets' which conflicts with the existing 'has_one' associations.
-  # To resolve the conflict, we need to decide whether a user should have many or one of each.
-  # Assuming a user should have many payment methods and wallets, we will use the new code's associations.
   has_many :bid_items, dependent: :destroy
   has_many :bids, dependent: :destroy
   has_many :deposits, dependent: :destroy
@@ -19,18 +16,14 @@ class User < ApplicationRecord
   has_many :chat_messages, dependent: :destroy
 
   # Validations
-  # The existing code has additional password format validation and email length validation.
-  # We will keep these validations and combine them with the new code's validations.
   validates :email, presence: true, uniqueness: true, length: { in: 0..255 }, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :encrypted_password, presence: true
 
+  # Custom password format validation
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
   validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
 
   # Methods
-  # The existing code has methods for generating a reset password token and authenticating a user.
-  # We will keep these methods as they do not conflict with the new code.
-
   def generate_reset_password_token
     raw, enc = Devise.token_generator.generate(self.class, :reset_password_token)
     self.reset_password_token   = enc
@@ -49,7 +42,6 @@ class User < ApplicationRecord
         return user
       end
 
-      # We will show the error message in TokensController
       return user if user&.access_locked?
 
       false
