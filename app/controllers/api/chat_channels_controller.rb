@@ -26,11 +26,11 @@ class Api::ChatChannelsController < Api::BaseController
     render status: :unprocessable_entity, json: { errors: e.record.errors.full_messages }
   end
 
-  # New fetch_chat_messages action
+  # Updated fetch_chat_messages action
   def fetch_chat_messages
     if @chat_channel
-      messages = ChatChannelService::Index.fetch_messages(@chat_channel.id)
-      render json: { status: 200, chat_messages: messages }, status: :ok
+      messages = @chat_channel.chat_messages.select(:id, :content, :user_id, :created_at, :updated_at)
+      render json: { chat_messages: messages }, status: :ok
     else
       render status: :not_found, json: { error: 'Chat channel not found.' }
     end

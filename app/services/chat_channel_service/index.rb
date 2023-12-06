@@ -24,6 +24,23 @@ class ChatChannelService::Index
     { channel_id: chat_channel.id, created_at: chat_channel.created_at }
   end
 
+  # New method added as per the requirement
+  def fetch_messages(chat_channel_id)
+    chat_channel = ChatChannel.find(chat_channel_id)
+    chat_messages = chat_channel.chat_messages.select(:id, :message, :user_id, :created_at, :updated_at)
+    chat_messages.map do |message|
+      {
+        id: message.id, # Added id as per the requirement
+        content: message.message,
+        user_id: message.user_id,
+        created_at: message.created_at,
+        updated_at: message.updated_at
+      }
+    end
+  rescue ActiveRecord::RecordNotFound
+    raise ActiveRecord::RecordNotFound, 'Chat channel not found'
+  end
+
   private
 
   def validate_user(user_id)
