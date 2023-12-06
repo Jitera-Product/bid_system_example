@@ -1,5 +1,7 @@
 class Api::ChatMessagesController < Api::BaseController
+  include AuthenticationConcern
   before_action :doorkeeper_authorize!, only: %i[index create]
+  before_action :authenticate_user!, only: %i[create]
   before_action :set_chat_channel, only: %i[index create]
 
   def index
@@ -20,9 +22,8 @@ class Api::ChatMessagesController < Api::BaseController
       return
     end
 
-    message = params[:message]
-    if message.length > 256
-      render json: { error: 'Message exceeds 256 characters limit.' }, status: :unprocessable_entity
+    if @chat_channel.user_id != current_user.id
+      render json: { error: 'Unauthorized access to chat channel' }, status: :unauthorized
       return
     end
 
@@ -31,9 +32,17 @@ class Api::ChatMessagesController < Api::BaseController
       return
     end
 
-    chat_message = @chat_channel.chat_messages.build(message: message, user_id: current_resource_owner.id)
+    message = params[:message]
+    message_validator = MessageValidator.new(message)
+    unless message_validator.valid?
+      render json: { errors: message_validator.errors.full_messages }, status: :unprocessable_entity
+      return
+    end
+
+    chat_message = @chat_channel.chat_messages.build(message: message, user_id: current_user.id)
 
     if chat_message.save
+      @chat_channel.touch
       render json: { status: 201, chat_message: ChatMessageSerializer.new(chat_message).as_json }, status: :created
     else
       render json: { errors: chat_message.errors.full_messages }, status: :unprocessable_entity
@@ -46,8 +55,12 @@ class Api::ChatMessagesController < Api::BaseController
     @chat_channel = ChatChannel.find_by(id: params[:channel_id])
   end
 
-  def current_resource_owner
-    User.find(doorkeeper_token.resource_owner_id) if doorkeeper_token
+  def authenticate_user!
+    render json: { error: 'User must be logged in' }, status: :unauthorized unless current_user
+  end
+
+  def current_user
+    @current_user ||= User.find_by(id: doorkeeper_token.resource_owner_id) if doorkeeper_token
   end
 end
 
@@ -64,5 +77,17 @@ class ChatMessageSerializer
       message: @message.message,
       created_at: @message.created_at
     }
+  end
+end
+
+class MessageValidator
+  include ActiveModel::Validations
+
+  attr_accessor :message
+
+  validates :message, presence: true, length: { maximum: 256 }
+
+  def initialize(message)
+    @message = message
   end
 end
