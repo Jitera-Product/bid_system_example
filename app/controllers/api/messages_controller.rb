@@ -1,7 +1,24 @@
 class Api::MessagesController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: [:create]
-  before_action :set_chat_channel, only: [:create]
+  before_action :doorkeeper_authorize!, only: %i[index create]
+  before_action :set_chat_channel, only: %i[create index]
   before_action :validate_message_limit, only: [:create]
+
+  def index
+    begin
+      messages = MessageRetrievalService.new(@chat_channel.id).execute
+      paginated_messages = messages.limit(500)
+      render json: paginated_messages.map { |message| 
+        {
+          message_id: message.id,
+          sender_id: message.user_id,
+          content: message.content,
+          created_at: message.created_at
+        }
+      }
+    rescue => e
+      render json: { error: e.message }, status: :internal_server_error
+    end
+  end
 
   def create
     authorize :message, policy_class: Api::MessagesPolicy
@@ -36,7 +53,18 @@ class Api::MessagesController < Api::BaseController
   private
 
   def set_chat_channel
-    @chat_channel = ChatChannel.find_by!(id: params[:chat_channel_id])
+    chat_channel_id = params[:chat_channel_id]
+    if chat_channel_id.blank?
+      render json: { error: 'chat_channel_id is required' }, status: :bad_request
+      return
+    end
+
+    @chat_channel = ChatChannel.find_by(id: chat_channel_id)
+    unless @chat_channel
+      render json: { error: 'Chat channel not found' }, status: :not_found
+      return
+    end
+
     render_error('Chat channel is not active', :unprocessable_entity) unless @chat_channel.active?
   end
 
