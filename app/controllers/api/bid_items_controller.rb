@@ -1,5 +1,5 @@
 class Api::BidItemsController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update]
+  before_action :doorkeeper_authorize!, only: %i[index create show update check_status]
 
   def index
     # inside service params are checked and whiteisted
@@ -38,5 +38,16 @@ class Api::BidItemsController < Api::BaseController
 
   def update_params
     params.require(:bid_items).permit(:user_id, :product_id, :base_price, :status, :name, :expiration_time)
+  end
+
+  # New action to check the status of a bid item
+  def check_status
+    begin
+      @bid_item = BidItem.find_by!(id: params[:bid_item_id])
+      status = @bid_item.status == 'active' ? 'active' : 'done'
+      render json: { status: status }
+    rescue ActiveRecord::RecordNotFound
+      render json: { error: 'Bid item not found' }, status: :not_found
+    end
   end
 end
