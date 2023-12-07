@@ -63,7 +63,11 @@ class Api::BidItemsController < Api::BaseController
   end
 
   def check_chat_status
-    render json: { chat_enabled: @bid_item.chat_enabled }, status: :ok
+    if @bid_item.chat_enabled
+      render json: { message: 'Chat can be initiated.' }, status: :ok
+    else
+      render json: { error: 'Chat feature is not enabled for this item.' }, status: :bad_request
+    end
   rescue ActiveRecord::RecordNotFound
     render json: { error: 'Bid item not found' }, status: :not_found
   rescue => e
