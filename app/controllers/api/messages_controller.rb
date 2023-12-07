@@ -1,11 +1,11 @@
 class Api::MessagesController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_chat_channel, only: [:create, :index] # Updated to include :index action
+  before_action :set_chat_channel, only: [:create, :index] # Note: :fetch_messages action is not present in the existing code, so it's replaced with :index
   before_action :validate_message_count, only: [:create]
   before_action :validate_sender, only: [:create]
   before_action :validate_content, only: [:create]
 
-  # POST /api/messages
+  # POST /api/chat_channels/:chat_channel_id/messages
   def create
     begin
       message = Message.create!(
@@ -14,7 +14,16 @@ class Api::MessagesController < ApplicationController
         content: params[:content],
         created_at: Time.current
       )
-      render json: { message_id: message.id, created_at: message.created_at }, status: :created
+      render json: {
+        status: 201,
+        message: {
+          id: message.id,
+          chat_channel_id: @chat_channel.id,
+          sender_id: current_user.id,
+          content: message.content,
+          sent_at: message.created_at
+        }
+      }, status: :created
     rescue ActiveRecord::RecordInvalid => e
       render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
     rescue => e
@@ -28,18 +37,18 @@ class Api::MessagesController < ApplicationController
       render json: { error: 'Chat channel not found' }, status: :not_found
     else
       messages = @chat_channel.messages.includes(:user).select(
-        'messages.id',
-        'messages.chat_channel_id',
+        'messages.id as message_id', # Updated to match the new code's alias
         'users.id as sender_id',
+        'users.name as sender_name', # Added to include sender's name in the response
         'messages.content',
         'messages.created_at as sent_at'
       )
 
       serialized_messages = messages.map do |message|
         {
-          id: message.id,
-          chat_channel_id: message.chat_channel_id,
+          message_id: message.message_id,
           sender_id: message.sender_id,
+          sender_name: message.sender_name, # Added to include sender's name in the response
           content: message.content,
           sent_at: message.sent_at
         }
@@ -72,7 +81,7 @@ class Api::MessagesController < ApplicationController
 
   def validate_message_count
     if @chat_channel.messages.count >= 500
-      render json: { error: 'Message limit reached for this chat channel' }, status: :forbidden
+      render json: { error: 'Maximum messages per channel reached.' }, status: :forbidden
       throw(:abort)
     end
   end
@@ -80,7 +89,7 @@ class Api::MessagesController < ApplicationController
   def validate_content
     content = params[:content]
     if content.blank? || content.length > 256
-      render json: { error: 'Content is invalid' }, status: :unprocessable_entity
+      render json: { error: 'Message exceeds 256 characters.' }, status: :unprocessable_entity
       throw(:abort)
     end
   end
