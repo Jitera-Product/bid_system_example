@@ -50,6 +50,9 @@ Rails.application.routes.draw do
 
     resources :bid_items, only: %i[index create show update] do
       member do
+        # The new code has 'status' while the existing code has 'chat_status'.
+        # To resolve the conflict, we include both routes.
+        get 'status', to: 'bid_items#validate_status'
         get 'chat_status', to: 'bid_items#chat_status'
       end
     end

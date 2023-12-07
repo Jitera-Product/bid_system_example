@@ -1,6 +1,6 @@
 class Api::BidItemsController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update disable_chat enable_chat check_chat_status validate_bid_item_status chat_status]
-  before_action :set_bid_item, only: %i[show update disable_chat enable_chat check_chat_status chat_status]
+  before_action :doorkeeper_authorize!, only: %i[index create show update disable_chat enable_chat check_chat_status validate_bid_item_status validate_status chat_status]
+  before_action :set_bid_item, only: %i[show update disable_chat enable_chat check_chat_status validate_status chat_status]
 
   def index
     @bid_items = BidItemService::Index.new(params.permit!, current_resource_owner).execute
@@ -89,6 +89,18 @@ class Api::BidItemsController < Api::BaseController
     end
   end
 
+  # New action for validating the status of a bid item
+  # GET /api/bid_items/:id/status
+  def validate_status
+    if @bid_item.status == 'done'
+      render json: { error: 'Bid item already done.' }, status: :bad_request
+    else
+      render json: { status: 200, bid_item: { id: @bid_item.id, status: @bid_item.status } }, status: :ok
+    end
+  end
+
+  # Existing action for getting the chat status of a bid item
+  # GET /api/bid_items/:id/chat_status
   def chat_status
     if @bid_item.chat_enabled
       render json: { status: 200, chat_enabled: true }, status: :ok
