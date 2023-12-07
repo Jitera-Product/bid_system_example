@@ -2,7 +2,7 @@ class Api::ChatMessagesController < ApplicationController
   include AuthenticationConcern
 
   before_action :authenticate_user!
-  before_action :set_chat_channel, only: [:create, :index] # Updated to include :index action
+  before_action :set_chat_channel, only: [:create, :index]
   before_action :validate_message_length, only: [:create]
   before_action :validate_message_count, only: [:create]
 
@@ -28,7 +28,7 @@ class Api::ChatMessagesController < ApplicationController
     @chat_channel = ChatChannel.find_by(id: params[:chat_channel_id])
     if @chat_channel
       bid_item = BidItem.find_by(id: @chat_channel.bid_item_id)
-      unless bid_item && bid_item.status == 'active' && bid_item.user_id == current_user.id
+      unless bid_item && bid_item.status == 'active' && bid_item.chat_enabled && bid_item.user_id == current_user.id
         render json: { error: 'Chat channel not associated with an active bid item for the current user' }, status: :forbidden
       end
     else
