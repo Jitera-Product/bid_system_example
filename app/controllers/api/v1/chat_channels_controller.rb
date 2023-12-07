@@ -24,7 +24,8 @@ class Api::V1::ChatChannelsController < Api::BaseController
 
     chat_channel = ChatChannel.create!(bid_item_id: bid_item.id, created_at: Time.current, updated_at: Time.current)
 
-    render json: { chat_channel_id: chat_channel.id }, status: :created
+    # Adjusted the response to match the requirement
+    render json: { status: 201, chat_channel: chat_channel.as_json(only: [:id, :created_at, :bid_item_id]) }, status: :created
   end
 
   private
