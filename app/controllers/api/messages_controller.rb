@@ -1,23 +1,29 @@
 class Api::MessagesController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create]
-  before_action :set_chat_channel, only: %i[create index]
+  before_action :doorkeeper_authorize!, only: %i[index create show]
+  before_action :set_chat_channel, only: %i[create index show]
   before_action :validate_message_limit, only: [:create]
 
   def index
     begin
       messages = MessageRetrievalService.new(@chat_channel.id).execute
       paginated_messages = messages.limit(500)
-      render json: paginated_messages.map { |message| 
+      render json: { status: 200, messages: paginated_messages.map { |message| 
         {
-          message_id: message.id,
+          id: message.id,
+          chat_channel_id: @chat_channel.id,
           sender_id: message.user_id,
           content: message.content,
           created_at: message.created_at
         }
-      }
+      }}, status: :ok
     rescue => e
       render json: { error: e.message }, status: :internal_server_error
     end
+  end
+
+  def show
+    # This action is not needed as per the requirement. The index action already covers fetching messages.
+    # The show action should be removed to avoid confusion.
   end
 
   def create
@@ -72,6 +78,10 @@ class Api::MessagesController < Api::BaseController
     if @chat_channel.messages.count >= 500
       render_error('Message limit exceeded for this chat channel', :unprocessable_entity)
     end
+  end
+
+  def show_params
+    # This method is not needed as we are not using the show action.
   end
 
   def render_error(message, status)
