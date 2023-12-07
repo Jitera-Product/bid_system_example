@@ -2,6 +2,10 @@
 class BidItemService::Index
   attr_accessor :params, :records, :query
 
+  # Add NotFoundException and BadRequestException to the list of custom exceptions
+  class NotFoundException < StandardError; end
+  class BadRequestException < StandardError; end
+
   def initialize(params, _current_user = nil)
     @params = params
 
@@ -25,6 +29,23 @@ class BidItemService::Index
 
     paginate
   end
+
+  # New method to check the status of a bid item
+  def check_bid_item_status(bid_item_id)
+    bid_item = BidItem.find_by(id: bid_item_id)
+    raise NotFoundException, "Bid item not found" unless bid_item
+
+    case bid_item.status
+    when 'open'
+      bid_item.status
+    when 'closed'
+      raise BadRequestException, "Bid item already done"
+    else
+      bid_item.status
+    end
+  end
+
+  # Existing methods below...
 
   def base_price_equal
     return if params.dig(:bid_items, :base_price).blank?
