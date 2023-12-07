@@ -1,4 +1,5 @@
 require 'sidekiq/web'
+
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
@@ -48,6 +49,9 @@ Rails.application.routes.draw do
     end
 
     resources :bid_items, only: %i[index create show update] do
+      member do
+        get 'chat_status', to: 'bid_items#chat_status'
+      end
     end
 
     resources :admins_verify_confirmation_token, only: [:create] do

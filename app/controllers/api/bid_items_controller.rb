@@ -1,6 +1,6 @@
 class Api::BidItemsController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update disable_chat enable_chat check_chat_status validate_bid_item_status]
-  before_action :set_bid_item, only: %i[show update disable_chat enable_chat check_chat_status]
+  before_action :doorkeeper_authorize!, only: %i[index create show update disable_chat enable_chat check_chat_status validate_bid_item_status chat_status]
+  before_action :set_bid_item, only: %i[show update disable_chat enable_chat check_chat_status chat_status]
 
   def index
     @bid_items = BidItemService::Index.new(params.permit!, current_resource_owner).execute
@@ -87,6 +87,18 @@ class Api::BidItemsController < Api::BaseController
     else
       render json: { bid_item_status: 'open' }, status: :ok
     end
+  end
+
+  def chat_status
+    if @bid_item.chat_enabled
+      render json: { status: 200, chat_enabled: true }, status: :ok
+    else
+      render json: { status: 200, chat_enabled: false }, status: :ok
+    end
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'Bid item not found' }, status: :not_found
+  rescue => e
+    render json: { error: e.message }, status: :unprocessable_entity
   end
 
   private
