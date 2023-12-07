@@ -2,19 +2,19 @@ class Api::MessagesController < ApplicationController
   before_action :authenticate_user!
   before_action :set_chat_channel, only: [:create, :fetch_messages]
   before_action :validate_message_count, only: [:create]
+  before_action :validate_sender, only: [:create]
+  before_action :validate_content, only: [:create]
 
   # POST /api/messages
   def create
     begin
-      validate_sender(params[:sender_id])
-      validate_content(params[:content])
       message = Message.create!(
         chat_channel: @chat_channel,
-        user_id: params[:sender_id],
+        user_id: current_user.id,
         content: params[:content],
         created_at: Time.current
       )
-      render json: { message_id: message.id, created_at: message.created_at }, status: :created
+      render json: { message_id: message.id, sent_at: message.created_at }, status: :created
     rescue ActiveRecord::RecordInvalid => e
       render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
     rescue => e
@@ -51,8 +51,8 @@ class Api::MessagesController < ApplicationController
 
   private
 
-  def validate_sender(sender_id)
-    unless current_user.id == sender_id.to_i
+  def validate_sender
+    unless current_user.id == params[:sender_id].to_i
       render json: { error: 'Sender ID does not match logged-in user' }, status: :forbidden
       throw(:abort)
     end
@@ -60,17 +60,21 @@ class Api::MessagesController < ApplicationController
 
   def set_chat_channel
     @chat_channel = ChatChannel.find_by(id: params[:chat_channel_id])
-    render json: { error: 'Chat channel not found' }, status: :not_found unless @chat_channel
+    unless @chat_channel
+      render json: { error: 'Chat channel not found' }, status: :not_found
+      throw(:abort)
+    end
   end
 
   def validate_message_count
-    if Message.where(chat_channel_id: params[:chat_channel_id]).count >= 500
+    if @chat_channel.messages.count >= 500
       render json: { error: 'Message limit reached for this chat channel' }, status: :forbidden
       throw(:abort)
     end
   end
 
-  def validate_content(content)
+  def validate_content
+    content = params[:content]
     if content.blank? || content.length > 256
       render json: { error: 'Content is invalid' }, status: :unprocessable_entity
       throw(:abort)
