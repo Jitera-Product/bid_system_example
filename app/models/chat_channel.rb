@@ -5,4 +5,7 @@ class ChatChannel < ApplicationRecord
 
   # validations
   validates :bid_item_id, presence: true
+
+  # Add any new associations, validations, or methods below this line
+  # New associations or methods can be added here as per future requirements
 end

@@ -1,4 +1,5 @@
 class BidItem < ApplicationRecord
+  # Existing associations
   has_many :item_bids,
            class_name: 'Bid',
            foreign_key: :item_id, dependent: :destroy
@@ -8,31 +9,24 @@ class BidItem < ApplicationRecord
   belongs_to :user
   belongs_to :product
 
+  # Existing enum
   enum status: %w[draft ready done], _suffix: true
 
-  # validations
-
+  # Existing validations
   validates :base_price, presence: true
-
-  # Update the numericality validation for base_price to remove the upper limit
   validates :base_price, numericality: { greater_than_or_equal_to: 0.0 }
-
   validates :expiration_time, presence: true
-
-  # Update the validation for expiration_time to ensure it is in the future
-  validates :expiration_time, presence: true, timeliness: { type: :datetime, on_or_after: -> { DateTime.current } }
-
+  validates :expiration_time, timeliness: { type: :datetime, on_or_after: -> { DateTime.current } }
   validates :name, presence: true
-
-  # Update the length validation for name to set the correct range
   validates :name, length: { maximum: 255 }, if: :name?
-
-  # New validations
   validates :is_chat_enabled, inclusion: { in: [true, false] }
   validates :status, presence: true
 
-  # end for validations
+  # New column validation
+  validates :chat_enabled, inclusion: { in: [true, false] }
 
-  class << self
-  end
+  # New association (assuming the related model and foreign key are correctly named)
+  has_many :bids, class_name: 'Bid', foreign_key: 'bid_item_id', dependent: :destroy
+
+  # Methods and other logic can be added here
 end
