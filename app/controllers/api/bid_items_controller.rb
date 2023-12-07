@@ -1,5 +1,5 @@
 class Api::BidItemsController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update check_chat_status check_status]
+  before_action :doorkeeper_authorize!, only: %i[index create show update check_chat_status check_status status]
 
   def index
     # inside service params are checked and whiteisted
@@ -40,7 +40,6 @@ class Api::BidItemsController < Api::BaseController
     params.require(:bid_items).permit(:user_id, :product_id, :base_price, :status, :name, :expiration_time)
   end
 
-  # New action to check the chat feature status
   def check_chat_status
     bid_item = BidItem.find_by(id: params[:bid_item_id])
 
@@ -55,7 +54,6 @@ class Api::BidItemsController < Api::BaseController
     render json: { error: 'Parameter bid_item_id is required' }, status: :bad_request
   end
 
-  # New action to check the status of a bid item
   def check_status
     begin
       @bid_item = BidItem.find_by!(id: params[:bid_item_id])
@@ -64,5 +62,18 @@ class Api::BidItemsController < Api::BaseController
     rescue ActiveRecord::RecordNotFound
       render json: { error: 'Bid item not found' }, status: :not_found
     end
+  end
+
+  # New action to retrieve the status of a bid item by its ID
+  def status
+    bid_item = BidItem.find_by(id: params[:id])
+
+    if bid_item.nil?
+      render json: { error: 'Bid item not found' }, status: :not_found
+    else
+      render json: { status: 200, bid_item_status: bid_item.status }, status: :ok
+    end
+  rescue ActionController::ParameterMissing
+    render json: { error: 'Parameter id is required' }, status: :bad_request
   end
 end
