@@ -1,4 +1,5 @@
 require 'sidekiq/web'
+
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
@@ -11,6 +12,10 @@ Rails.application.routes.draw do
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
   namespace :api do
+    namespace :chat do
+      resources :messages, only: [:create] # Added new route for chat messages
+    end
+
     resources :shippings, only: %i[index show update] do
     end
 
@@ -48,6 +53,10 @@ Rails.application.routes.draw do
     end
 
     resources :bid_items, only: %i[index create show update] do
+      member do
+        get 'status', to: 'bid_items#validate_status'
+        get 'chat_status', to: 'bid_items#chat_status'
+      end
     end
 
     resources :admins_verify_confirmation_token, only: [:create] do
@@ -86,4 +95,5 @@ Rails.application.routes.draw do
 
   get '/health' => 'pages#health_check'
   get 'api-docs/v1/swagger.yaml' => 'swagger#yaml'
+  # ... rest of the file ...
 end
