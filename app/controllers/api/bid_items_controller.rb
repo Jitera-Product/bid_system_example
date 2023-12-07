@@ -1,6 +1,6 @@
 class Api::BidItemsController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update disable_chat enable_chat]
-  before_action :set_bid_item, only: %i[show update disable_chat enable_chat]
+  before_action :doorkeeper_authorize!, only: %i[index create show update disable_chat enable_chat check_chat_status]
+  before_action :set_bid_item, only: %i[show update disable_chat enable_chat check_chat_status]
 
   def index
     @bid_items = BidItemService::Index.new(params.permit!, current_resource_owner).execute
@@ -60,6 +60,14 @@ class Api::BidItemsController < Api::BaseController
     else
       render json: { error: 'You are not authorized to enable chat for this bid item.' }, status: :forbidden
     end
+  end
+
+  def check_chat_status
+    render json: { chat_enabled: @bid_item.chat_enabled }, status: :ok
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'Bid item not found' }, status: :not_found
+  rescue => e
+    render json: { error: e.message }, status: :unprocessable_entity
   end
 
   private
