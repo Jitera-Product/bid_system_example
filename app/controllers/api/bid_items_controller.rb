@@ -1,14 +1,13 @@
 class Api::BidItemsController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update enable_chat]
+  before_action :doorkeeper_authorize!, only: %i[index create show update disable_chat enable_chat]
+  before_action :set_bid_item, only: %i[show update disable_chat enable_chat]
 
   def index
-    # inside service params are checked and whiteisted
     @bid_items = BidItemService::Index.new(params.permit!, current_resource_owner).execute
     @total_pages = @bid_items.total_pages
   end
 
   def show
-    @bid_item = BidItem.find_by!('bid_items.id = ?', params[:id])
   end
 
   def create
@@ -26,9 +25,6 @@ class Api::BidItemsController < Api::BaseController
   end
 
   def update
-    @bid_item = BidItem.find_by('bid_items.id = ?', params[:id])
-    raise ActiveRecord::RecordNotFound if @bid_item.blank?
-
     return if @bid_item.update(update_params)
 
     @error_object = @bid_item.errors.messages
@@ -40,21 +36,36 @@ class Api::BidItemsController < Api::BaseController
     params.require(:bid_items).permit(:user_id, :product_id, :base_price, :status, :name, :expiration_time)
   end
 
-  def enable_chat
-    begin
-      bid_item = BidItem.find_by(id: params[:bid_item_id])
-      raise ActiveRecord::RecordNotFound unless bid_item
-
-      if bid_item.user_id == current_resource_owner.id
-        bid_item.update!(chat_enabled: true, updated_at: Time.current)
-        render json: { message: 'Chat feature enabled successfully.' }, status: :ok
-      else
-        render json: { error: 'You are not authorized to enable chat for this bid item.' }, status: :forbidden
+  def disable_chat
+    if @bid_item.user_id == current_resource_owner.id
+      begin
+        @bid_item.update!(chat_enabled: false, updated_at: Time.current)
+        render json: { message: 'Chat feature has been disabled', bid_item_id: @bid_item.id, chat_enabled: @bid_item.chat_enabled }, status: :ok
+      rescue => e
+        render json: { error: e.message }, status: :unprocessable_entity
       end
-    rescue ActiveRecord::RecordNotFound
-      render json: { error: 'Bid item not found.' }, status: :not_found
-    rescue => e
-      render json: { error: e.message }, status: :unprocessable_entity
+    else
+      render json: { error: 'Unauthorized to disable chat for this bid item' }, status: :unauthorized
     end
+  end
+
+  def enable_chat
+    if @bid_item.user_id == current_resource_owner.id
+      begin
+        @bid_item.update!(chat_enabled: true, updated_at: Time.current)
+        render json: { message: 'Chat feature enabled successfully.' }, status: :ok
+      rescue => e
+        render json: { error: e.message }, status: :unprocessable_entity
+      end
+    else
+      render json: { error: 'You are not authorized to enable chat for this bid item.' }, status: :forbidden
+    end
+  end
+
+  private
+
+  def set_bid_item
+    @bid_item = BidItem.find_by(id: params[:id] || params[:bid_item_id])
+    raise ActiveRecord::RecordNotFound unless @bid_item
   end
 end
