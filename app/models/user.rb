@@ -2,27 +2,26 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :rememberable, :validatable,
          :trackable, :recoverable, :lockable, :confirmable
 
+  # Existing associations
   has_one :payment_method, dependent: :destroy
   has_one :wallet, dependent: :destroy
-
   has_many :products, dependent: :destroy
   has_many :bid_items, dependent: :destroy
   has_many :bids, dependent: :destroy
   has_many :deposits, dependent: :destroy
 
-  # validations
+  # New associations based on the provided TABLE information
+  has_many :chat_channels, dependent: :destroy
+  has_many :messages, dependent: :destroy
 
+  # Existing validations
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
   validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
-
   validates :email, presence: true, uniqueness: true
-
   validates :email, length: { in: 0..255 }, if: :email?
-
   validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }
 
-  # end for validations
-
+  # Custom methods
   def generate_reset_password_token
     raw, enc = Devise.token_generator.generate(self.class, :reset_password_token)
     self.reset_password_token   = enc
