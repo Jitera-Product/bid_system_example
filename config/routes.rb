@@ -12,6 +12,10 @@ Rails.application.routes.draw do
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
   namespace :api do
+    namespace :chat do
+      resources :messages, only: [:create] # Added new route for chat messages
+    end
+
     resources :shippings, only: %i[index show update] do
     end
 
@@ -50,8 +54,6 @@ Rails.application.routes.draw do
 
     resources :bid_items, only: %i[index create show update] do
       member do
-        # The new code has 'status' while the existing code has 'chat_status'.
-        # To resolve the conflict, we include both routes.
         get 'status', to: 'bid_items#validate_status'
         get 'chat_status', to: 'bid_items#chat_status'
       end
@@ -93,4 +95,5 @@ Rails.application.routes.draw do
 
   get '/health' => 'pages#health_check'
   get 'api-docs/v1/swagger.yaml' => 'swagger#yaml'
+  # ... rest of the file ...
 end
