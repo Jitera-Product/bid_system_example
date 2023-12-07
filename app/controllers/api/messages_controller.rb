@@ -1,6 +1,6 @@
 class Api::MessagesController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_chat_channel, only: [:create, :fetch_messages]
+  before_action :set_chat_channel, only: [:create, :index] # Updated to include :index action
   before_action :validate_message_count, only: [:create]
   before_action :validate_sender, only: [:create]
   before_action :validate_content, only: [:create]
@@ -8,7 +8,6 @@ class Api::MessagesController < ApplicationController
   # POST /api/messages
   def create
     begin
-      # The new code uses params[:sender_id] which is validated, but we should use current_user.id to ensure the message is created by the logged-in user
       message = Message.create!(
         chat_channel: @chat_channel,
         user_id: current_user.id,
@@ -24,36 +23,39 @@ class Api::MessagesController < ApplicationController
   end
 
   # GET /api/messages
-  def fetch_messages
+  def index # Renamed from fetch_messages to index as per RESTful conventions
     if @chat_channel.nil?
       render json: { error: 'Chat channel not found' }, status: :not_found
     else
       messages = @chat_channel.messages.includes(:user).select(
-        'messages.id as message_id',
+        'messages.id',
+        'messages.chat_channel_id',
         'users.id as sender_id',
-        'users.name as sender_name',
         'messages.content',
-        'messages.created_at as sent_at' # Use 'sent_at' as in the new code for consistency
+        'messages.created_at as sent_at'
       )
 
       serialized_messages = messages.map do |message|
         {
-          message_id: message.message_id,
+          id: message.id,
+          chat_channel_id: message.chat_channel_id,
           sender_id: message.sender_id,
-          sender_name: message.sender_name, # Keep sender_name from the existing code
           content: message.content,
-          sent_at: message.sent_at # Use 'sent_at' as in the new code for consistency
+          sent_at: message.sent_at
         }
       end
 
-      render json: serialized_messages
+      render json: { status: 200, messages: serialized_messages }, status: :ok
+    rescue ActiveRecord::RecordNotFound => e
+      render json: { error: e.message }, status: :not_found
+    rescue => e
+      handle_exception(e)
     end
   end
 
   private
 
   def validate_sender
-    # The new code uses a separate method to validate the sender, which is a good practice
     unless current_user.id == params[:sender_id].to_i
       render json: { error: 'Sender ID does not match logged-in user' }, status: :forbidden
       throw(:abort)
@@ -69,7 +71,6 @@ class Api::MessagesController < ApplicationController
   end
 
   def validate_message_count
-    # The new code checks the message count differently, but the existing code is more efficient as it uses the association
     if @chat_channel.messages.count >= 500
       render json: { error: 'Message limit reached for this chat channel' }, status: :forbidden
       throw(:abort)
@@ -77,7 +78,6 @@ class Api::MessagesController < ApplicationController
   end
 
   def validate_content
-    # The new code uses a separate method to validate the content, which is a good practice
     content = params[:content]
     if content.blank? || content.length > 256
       render json: { error: 'Content is invalid' }, status: :unprocessable_entity
@@ -86,7 +86,6 @@ class Api::MessagesController < ApplicationController
   end
 
   def handle_exception(exception)
-    # Assuming there's a method in ApplicationController or included module to handle exceptions
     render_exception(exception)
   end
 end
