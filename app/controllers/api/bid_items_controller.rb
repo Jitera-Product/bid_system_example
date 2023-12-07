@@ -42,8 +42,13 @@ class Api::BidItemsController < Api::BaseController
   end
 
   def create_chat_channel
-    unless @bid_item.is_chat_enabled
+    unless @bid_item.chat_enabled
       render json: { error: 'Can not create a channel for this item.' }, status: :forbidden
+      return
+    end
+
+    if @bid_item.status == 'done'
+      render json: { error: 'Bid item already done' }, status: :bad_request
       return
     end
 
@@ -61,7 +66,7 @@ class Api::BidItemsController < Api::BaseController
       return
     end
 
-    if @bid_item.is_chat_enabled
+    if @bid_item.chat_enabled
       render json: { message: 'Chat feature is available for this item' }, status: :ok
     else
       render json: { error: 'Chat feature is disabled for this item' }, status: :bad_request
