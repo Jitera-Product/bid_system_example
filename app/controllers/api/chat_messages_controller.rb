@@ -2,9 +2,14 @@ class Api::ChatMessagesController < ApplicationController
   include AuthenticationConcern
 
   before_action :authenticate_user!
-  before_action :set_chat_channel, only: [:create]
+  before_action :set_chat_channel, only: [:create, :index] # Updated to include :index action
   before_action :validate_message_length, only: [:create]
   before_action :validate_message_count, only: [:create]
+
+  def index
+    chat_messages = @chat_channel.chat_messages.order(:created_at).select(:id, :content, :created_at, :user_id)
+    render json: chat_messages, status: :ok
+  end
 
   def create
     chat_message = @chat_channel.chat_messages.new(chat_message_params.merge(user_id: current_user.id))
