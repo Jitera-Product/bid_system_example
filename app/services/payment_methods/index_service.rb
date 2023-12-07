@@ -3,7 +3,13 @@
 module PaymentMethods
   class IndexService
     def call
-      PaymentMethod.all
+      get_payment_methods
+    end
+    private
+    def get_payment_methods
+      PaymentMethod.all.map do |payment_method|
+        PaymentMethodSerializer.new(payment_method).as_json
+      end
     end
   end
 end
