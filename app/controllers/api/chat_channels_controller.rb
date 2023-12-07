@@ -1,11 +1,14 @@
 class Api::ChatChannelsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_chat_channel, only: [:create]
+  before_action :set_chat_channel, only: [:send_message]
 
   def create
-    bid_item = BidItem.find(params[:bid_item_id])
+    authenticate_user! # Ensure user is authenticated
 
-    unless bid_item.is_chat_enabled
+    bid_item = BidItem.find_by(id: params[:bid_item_id])
+    return render json: { error: 'Bid item not found' }, status: :not_found unless bid_item
+
+    unless bid_item.chat_enabled
       return render json: { error: 'Can not create a channel for this item' }, status: :bad_request
     end
 
@@ -15,7 +18,11 @@ class Api::ChatChannelsController < ApplicationController
 
     chat_channel = ChatChannel.create!(bid_item_id: bid_item.id, created_at: Time.current)
 
-    render json: { chat_channel_id: chat_channel.id }, status: :created
+    render json: { chat_channel_id: chat_channel.id, created_at: chat_channel.created_at }, status: :created
+  rescue ActiveRecord::RecordNotFound => e
+    render json: { error: e.message }, status: :not_found
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
   end
 
   def send_message
