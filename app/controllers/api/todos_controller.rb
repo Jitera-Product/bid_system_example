@@ -1,69 +1,25 @@
 module Api
   class TodosController < BaseController
     include FileValidationConcern
-    before_action :doorkeeper_authorize!, only: %i[create associate_categories_and_tags]
+    before_action :doorkeeper_authorize!, only: %i[associate_categories_and_tags attach_files validate_creation]
     before_action :set_todo, only: %i[associate_categories_and_tags attach_files]
 
     # ... other actions ...
 
-    # POST /api/todos
-    def create
-      todo_params = params.permit(:title, :description, :due_date, :priority, :recurring, :category_id, :tag_id, :file_name, :file_content)
-      
-      # Validation for title
-      return render json: { error_message: "The title is required." }, status: :unprocessable_entity if todo_params[:title].blank?
-      
-      # Validation for due_date
-      due_date = DateTime.parse(todo_params[:due_date]) rescue nil
-      return render json: { error_message: "Please provide a valid future due date and time." }, status: :unprocessable_entity if due_date.nil? || due_date < DateTime.now
-      
-      # Validation for priority
-      valid_priorities = ['low', 'medium', 'high'] # Assuming these are the valid priorities
-      return render json: { error_message: "Invalid priority level." }, status: :unprocessable_entity unless valid_priorities.include?(todo_params[:priority])
-      
-      validate_category_and_tag(todo_params[:category_id], todo_params[:tag_id])
-      
-      todo = Todo.create!(todo_params.except(:file_name, :file_content))
-      
-      associate_categories([todo_params[:category_id]]) if todo_params[:category_id].present?
-      associate_tags([todo_params[:tag_id]]) if todo_params[:tag_id].present?
-      
-      attach_files_to_todo(todo, todo_params[:file_name], todo_params[:file_content]) if todo_params[:file_name].present? && todo_params[:file_content].present?
-      
-      render json: { status: 201, todo: todo.as_json(include: :attachments) }, status: :created
-    rescue ActiveRecord::RecordInvalid => e
-      render json: { error_message: e.record.errors.full_messages.join(', ') }, status: :unprocessable_entity
-    rescue => e
-      render json: { error_message: e.message }, status: :internal_server_error
-    end
-
-    # POST /api/todos/:todo_id/attachments
+    # POST /api/todos/attach_files
     def attach_files
       return render json: { error_message: "Todo item not found." }, status: :not_found unless @todo
 
       authorize @todo, :update?
 
       attachment_ids = []
-      if params[:attachments].respond_to?(:each)
-        params[:attachments].each do |file|
-          file_name = file.original_filename
-          file_content = file
-
-          return render json: { error_message: "File name is required." }, status: :unprocessable_entity if file_name.blank?
-          return render json: { error_message: "Invalid file format." }, status: :unprocessable_entity unless validate_file(file_content)
-
-          attachment = @todo.attachments.create!(file_name: file_name, file_content: file_content)
+      params[:attachments].each do |file|
+        if validate_file(file)
+          attachment = @todo.attachments.create!(file_name: file.original_filename, file_content: file)
           attachment_ids << attachment.id
+        else
+          return render json: error_response(nil, StandardError.new("Invalid file format or size")), status: :unprocessable_entity
         end
-      else
-        file_name = params[:file_name]
-        file_content = params[:file_content]
-
-        return render json: { error_message: "File name is required." }, status: :unprocessable_entity if file_name.blank?
-        return render json: { error_message: "Invalid file format." }, status: :unprocessable_entity unless validate_file(file_content)
-
-        attachment = @todo.attachments.create!(file_name: file_name, file_content: file_content)
-        attachment_ids << attachment.id
       end
 
       render json: {
@@ -78,15 +34,69 @@ module Api
           }
         end
       }, status: :created
-    rescue Pundit::NotAuthorizedError
-      render json: { error_message: "User is not authenticated." }, status: :unauthorized
+    rescue Pundit::NotAuthorizedError => e
+      render json: error_response(nil, e), status: :unauthorized
     rescue ActiveRecord::RecordInvalid => e
-      render json: { error_message: e.record.errors.full_messages.join(', ') }, status: :unprocessable_entity
+      render json: error_response(nil, e.record.errors.full_messages.join(', ')), status: :unprocessable_entity
+    rescue => e
+      render json: error_response(nil, e), status: :internal_server_error
+    end
+
+    # ... other actions ...
+
+    def associate_categories_and_tags
+      if @todo.nil?
+        render json: { error_message: 'Todo not found' }, status: :not_found
+        return
+      end
+
+      ActiveRecord::Base.transaction do
+        if params[:category_ids].present?
+          category_errors = associate_categories(params[:category_ids])
+          if category_errors.any?
+            render json: { error_message: category_errors.join(', ') }, status: :unprocessable_entity
+            return
+          end
+        end
+
+        if params[:tag_ids].present?
+          tag_errors = associate_tags(params[:tag_ids])
+          if tag_errors.any?
+            render json: { error_message: tag_errors.join(', ') }, status: :unprocessable_entity
+            return
+          end
+        end
+      end
+
+      render json: { association_status: true }, status: :ok
     rescue => e
       render json: { error_message: e.message }, status: :internal_server_error
     end
 
-    # ... other actions ...
+    # POST /api/todos/validate
+    def validate_creation
+      title = params[:title]
+      due_date = params[:due_date]
+
+      if title.blank? || due_date.blank?
+        render json: { message: "Title and due date are required." }, status: :bad_request
+        return
+      end
+
+      if Todo.where(user: current_user, title: title).exists?
+        render json: { message: "A todo with this title already exists." }, status: :conflict
+        return
+      end
+
+      if Todo.where(user: current_user).where.not(id: params[:todo_id]).where('due_date = ?', due_date).exists?
+        render json: { message: "The due date conflicts with another scheduled todo." }, status: :conflict
+        return
+      end
+
+      render json: { message: "No conflicts detected. Todo can be created." }, status: :ok
+    rescue => e
+      render json: { error_message: e.message }, status: :internal_server_error
+    end
 
     private
 
@@ -95,30 +105,34 @@ module Api
     end
 
     def associate_categories(category_ids)
-      # ... existing code ...
+      errors = []
+      category_ids.each do |category_id|
+        category = Category.find_by(id: category_id)
+        if category
+          TodoCategory.create!(todo: @todo, category: category)
+        else
+          errors << "Category with id #{category_id} not found"
+        end
+      end
+      errors
     end
 
     def associate_tags(tag_ids)
-      # ... existing code ...
+      errors = []
+      tag_ids.each do |tag_id|
+        tag = Tag.find_by(id: tag_id)
+        if tag
+          TodoTag.create!(todo: @todo, tag: tag)
+        else
+          errors << "Tag with id #{tag_id} not found"
+        end
+      end
+      errors
     end
 
     def validate_file(file)
-      # ... existing code ...
-    end
-
-    def validate_category_and_tag(category_id, tag_id)
-      errors = []
-      errors << "Selected category does not exist." unless Category.exists?(category_id)
-      errors << "Selected tag does not exist." unless Tag.exists?(tag_id)
-      render json: { error_message: errors.join(', ') }, status: :unprocessable_entity if errors.any?
-    end
-
-    def attach_files_to_todo(todo, file_name, file_content)
-      if validate_file(file_content)
-        todo.attachments.create!(file_name: file_name, file_content: file_content)
-      else
-        render json: { error_message: "Invalid file format." }, status: :unprocessable_entity
-      end
+      # Assuming FileValidationConcern provides a method 'valid_file?' to validate the file
+      valid_file?(file)
     end
   end
 end
