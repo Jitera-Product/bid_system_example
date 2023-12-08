@@ -1,28 +1,40 @@
 class User < ApplicationRecord
+  # Include default devise modules. Others available are:
+  # :omniauthable, :timeoutable
   devise :database_authenticatable, :registerable, :rememberable, :validatable,
          :trackable, :recoverable, :lockable, :confirmable
 
+  # Relationships
+  # Updated relationships to reflect both has_one and has_many for similar associations
   has_one :payment_method, dependent: :destroy
   has_one :wallet, dependent: :destroy
+  has_many :payment_methods, dependent: :destroy
+  has_many :wallets, dependent: :destroy
 
-  has_many :products, dependent: :destroy
+  has_many :todos, dependent: :destroy
   has_many :bid_items, dependent: :destroy
   has_many :bids, dependent: :destroy
   has_many :deposits, dependent: :destroy
+  has_many :products, dependent: :destroy
 
-  # validations
+  # Validations
+  # Combined validations from both versions
+  validates :email, presence: true, uniqueness: true
+  validates :encrypted_password, presence: true
+  validates :name, presence: true
 
+  # Password complexity validation
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
   validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
 
-  validates :email, presence: true, uniqueness: true
-
+  # Email length and format validations
   validates :email, length: { in: 0..255 }, if: :email?
-
   validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }
 
-  # end for validations
+  # Add any new validations below this line
+  # ...
 
+  # Instance methods
   def generate_reset_password_token
     raw, enc = Devise.token_generator.generate(self.class, :reset_password_token)
     self.reset_password_token   = enc
@@ -31,6 +43,7 @@ class User < ApplicationRecord
     raw
   end
 
+  # Class methods
   class << self
     def authenticate?(email, password)
       user = User.find_for_authentication(email: email)
