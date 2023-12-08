@@ -1,7 +1,8 @@
+require 'sidekiq/web'
+
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
-
     skip_controllers :authorizations, :applications, :authorized_applications
   end
 
@@ -47,6 +48,12 @@ Rails.application.routes.draw do
     end
 
     resources :bid_items, only: %i[index create show update] do
+      resources :chat_channels, only: [:create], module: :bid_items
+    end
+
+    # Added route for MessagesController#create as per the guideline
+    resources :chat_channels, only: [] do
+      resources :messages, only: [:create]
     end
 
     resources :admins_verify_confirmation_token, only: [:create] do
@@ -80,11 +87,6 @@ Rails.application.routes.draw do
     end
 
     resources :users, only: %i[index create show update] do
-    end
-
-    # Added route for MessagesController#create as per the guideline
-    resources :chat_channels, only: [] do
-      resources :messages, only: [:create]
     end
   end
 
