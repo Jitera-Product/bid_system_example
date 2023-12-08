@@ -42,8 +42,7 @@ module Api
       render json: error_response(nil, e), status: :internal_server_error
     end
 
-    # ... other actions ...
-
+    # POST /api/todos/:todo_id/categories_tags
     def associate_categories_and_tags
       if @todo.nil?
         render json: { error_message: 'Todo not found' }, status: :not_found
@@ -57,6 +56,13 @@ module Api
             render json: { error_message: category_errors.join(', ') }, status: :unprocessable_entity
             return
           end
+        elsif params[:category_id].present?
+          category = Category.find_by(id: params[:category_id])
+          unless category
+            render json: { error_message: 'Selected category does not exist.' }, status: :unprocessable_entity
+            return
+          end
+          TodoCategory.create!(todo: @todo, category: category)
         end
 
         if params[:tag_ids].present?
@@ -65,10 +71,19 @@ module Api
             render json: { error_message: tag_errors.join(', ') }, status: :unprocessable_entity
             return
           end
+        elsif params[:tag_id].present?
+          tag = Tag.find_by(id: params[:tag_id])
+          unless tag
+            render json: { error_message: 'Selected tag does not exist.' }, status: :unprocessable_entity
+            return
+          end
+          TodoTag.create!(todo: @todo, tag: tag)
         end
       end
 
-      render json: { association_status: true }, status: :ok
+      render json: { status: 200, message: 'Categories and tags associated successfully.' }, status: :ok
+    rescue ActiveRecord::RecordInvalid => e
+      render json: { error_message: e.message }, status: :unprocessable_entity
     rescue => e
       render json: { error_message: e.message }, status: :internal_server_error
     end
