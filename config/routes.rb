@@ -1,4 +1,3 @@
-require 'sidekiq/web'
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
@@ -81,6 +80,11 @@ Rails.application.routes.draw do
     end
 
     resources :users, only: %i[index create show update] do
+    end
+
+    # Added route for MessagesController#create as per the guideline
+    resources :chat_channels, only: [] do
+      resources :messages, only: [:create]
     end
   end
 

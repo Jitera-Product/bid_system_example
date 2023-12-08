@@ -10,24 +10,21 @@ class Api::MessagesController < ApplicationController
     # Ensure the chat channel is associated with the user's bid item
     authorize chat_channel, :create_message?
 
-    user = User.find_by(id: params[:user_id])
-    return render json: { error: 'User not found' }, status: :not_found unless user
-    return render json: { error: 'User must be logged in' }, status: :unauthorized unless user == current_user
+    return render json: { error: 'User must be logged in' }, status: :unauthorized unless current_user
 
     content = params[:content]
     if content.length > 256
-      # As per requirement, we can either truncate or return an error. Here we choose to truncate the message
-      content = content[0...256]
+      return render json: { error: 'You cannot input more than 256 characters.' }, status: :bad_request
     end
 
     if chat_channel.messages.count >= 500
-      return render json: { error: 'Message limit reached for this chat channel' }, status: :forbidden
+      return render json: { error: 'Maximum messages per channel is 500.' }, status: :bad_request
     end
 
-    message = chat_channel.messages.new(content: content, user_id: user.id)
+    message = chat_channel.messages.new(content: content, user_id: current_user.id)
 
     if message.save
-      render json: { message: 'Message sent successfully', message_id: message.id }, status: :created
+      render json: { status: 201, message: message.as_json }, status: :created
     else
       render json: { errors: message.errors.full_messages }, status: :unprocessable_entity
     end
