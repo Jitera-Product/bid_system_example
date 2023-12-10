@@ -66,6 +66,9 @@ Rails.application.routes.draw do
     resources :users_reset_password_requests, only: [:create]
 
     resources :users, only: %i[index create show update]
+
+    # Added new resource route for chat_channels as per the guideline
+    resources :chat_channels, only: [:create]
   end
 
   get '/health' => 'pages#health_check'

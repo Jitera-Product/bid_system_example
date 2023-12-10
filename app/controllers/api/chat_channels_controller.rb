@@ -3,14 +3,14 @@ class Api::ChatChannelsController < Api::BaseController
   before_action :validate_user, only: [:create]
 
   def create
-    bid_item = BidItem.find_by(id: params[:bid_item_id])
+    bid_item = BidItem.find_by(id: chat_channel_params[:bid_item_id])
 
     unless bid_item
       render json: { error: 'Bid item not found.' }, status: :not_found and return
     end
 
     unless bid_item.chat_enabled
-      render json: { error: 'Can not create a channel for this item.' }, status: :bad_request and return
+      render json: { error: 'Cannot create a channel for this item.' }, status: :bad_request and return
     end
 
     if bid_item.status == 'done' # Assuming 'done' is a valid status value
@@ -19,14 +19,12 @@ class Api::ChatChannelsController < Api::BaseController
 
     authorize bid_item, :create_chat_channel?
 
-    # Updated code to include the current timestamp for created_at and updated_at
-    chat_channel = ChatChannel.create!(
-      bid_item_id: bid_item.id,
+    chat_channel = bid_item.chat_channels.create!(
       created_at: Time.current, # Assuming Time.current is the method to get the current timestamp
       updated_at: Time.current
     )
 
-    render json: { chat_channel_id: chat_channel.id }, status: :created
+    render json: { status: 201, channel: chat_channel.as_json(only: [:id, :bid_item_id, :created_at]) }, status: :created
   rescue Pundit::NotAuthorizedError
     render json: { error: 'You are not authorized to perform this action.' }, status: :forbidden
   rescue ActiveRecord::RecordInvalid => e
@@ -34,6 +32,10 @@ class Api::ChatChannelsController < Api::BaseController
   end
 
   private
+
+  def chat_channel_params
+    params.require(:chat_channel).permit(:bid_item_id)
+  end
 
   def validate_user
     unless current_user.id == params[:user_id].to_i
