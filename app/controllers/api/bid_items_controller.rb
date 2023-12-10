@@ -1,6 +1,6 @@
 class Api::BidItemsController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update check_chat_status]
-  before_action :set_bid_item, only: [:check_chat_status]
+  before_action :doorkeeper_authorize!, only: %i[index create show update chat_status]
+  before_action :set_bid_item, only: [:chat_status]
   before_action :validate_bid_item_status, only: [:show] # Add other actions if needed
 
   def index
@@ -42,12 +42,8 @@ class Api::BidItemsController < Api::BaseController
   end
 
   # New action to check the chat status of a bid item
-  def check_chat_status
-    if @bid_item.chat_enabled
-      render json: { message: 'Chat feature is available.' }, status: :ok
-    else
-      render json: { error: 'Chat feature is not enabled for this item.' }, status: :bad_request
-    end
+  def chat_status
+    render json: { status: 200, chat_enabled: @bid_item.chat_enabled }, status: :ok
   end
 
   private
