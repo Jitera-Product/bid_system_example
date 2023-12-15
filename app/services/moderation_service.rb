@@ -35,6 +35,21 @@ class ModerationService
     end
   end
 
+  # New method added to validate content
+  def self.validate_content(content)
+    # Implement content validation logic here
+    # For example, check for profanity or spam
+    # This is a placeholder for actual validation logic
+    profanity_filter = %w[badword inappropriate]
+    spam_indicator = 'http://'
+
+    if profanity_filter.any? { |word| content.include?(word) } || content.include?(spam_indicator)
+      false
+    else
+      true
+    end
+  end
+
   private
 
   def validate_administrator
@@ -54,5 +69,46 @@ class ModerationService
     raise StandardError, 'Submission not found' unless submission
 
     submission
+  end
+end
+
+# Additional code to handle question editing
+class QuestionEditingService
+  include ActiveModel::Model
+
+  attr_accessor :question_id, :content, :user_id
+
+  def initialize(question_id, content, user_id)
+    @question_id = question_id
+    @content = content
+    @user_id = user_id
+  end
+
+  def edit_question
+    ActiveRecord::Base.transaction do
+      user = validate_user
+      question = find_question
+
+      raise StandardError, 'Content cannot be empty' if content.blank?
+      raise StandardError, 'Content does not meet guidelines' unless ModerationService.validate_content(content)
+
+      question.update!(content: content)
+
+      { message: 'Question has been updated.' }
+    end
+  end
+
+  private
+
+  def validate_user
+    user = User.find_by(id: user_id, role: 'Contributor')
+    raise StandardError, 'Invalid user or insufficient permissions' unless user
+    user
+  end
+
+  def find_question
+    question = Question.find_by(id: question_id, user_id: user_id)
+    raise StandardError, 'Question not found or not owned by user' unless question
+    question
   end
 end

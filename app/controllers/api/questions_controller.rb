@@ -4,6 +4,9 @@ class Api::QuestionsController < Api::BaseController
   before_action :validate_contributor_session, only: [:update, :create, :submit]
   before_action :validate_contributor_role, only: [:update, :submit]
   before_action :set_question, only: [:update]
+  before_action :validate_question_id, only: [:update]
+  before_action :validate_question_ownership, only: [:update]
+  before_action :validate_question_content, only: [:update]
 
   # ... other actions ...
 
@@ -35,32 +38,32 @@ class Api::QuestionsController < Api::BaseController
   end
 
   def update
-    validate_question_id(params[:id])
-    validate_question_ownership(@question, contributor_id)
-    validate_question_content(params[:content])
-    validate_tags(params[:tags])
-
     Question.transaction do
-      @question.update!(content: params[:content])
-      @question.question_tags.destroy_all
-      params[:tags].each do |tag_id|
-        @question.question_tags.create!(tag_id: tag_id)
+      validate_tags(question_params[:tags]) # Added validation for tags from existing code
+
+      if @question.update(content: question_params[:content])
+        @question.question_tags.destroy_all # Destroy existing tags before creating new ones
+        question_params[:tags].each do |tag_id| # Associate new tags
+          @question.question_tags.create!(tag_id: tag_id)
+        end
+
+        render json: {
+          status: 200,
+          question: {
+            id: @question.id,
+            content: @question.content,
+            contributor_id: @question.user_id,
+            updated_at: @question.updated_at.iso8601
+          }
+        }, status: :ok
+      else
+        render json: { errors: @question.errors.full_messages }, status: :unprocessable_entity
       end
     end
-
-    render json: {
-      status: 200,
-      question: {
-        id: @question.id,
-        content: @question.content,
-        contributor_id: @question.user_id,
-        updated_at: @question.updated_at.iso8601
-      }
-    }, status: :ok
   rescue ActiveRecord::RecordInvalid => e
-    render json: { error: e.message }, status: :unprocessable_entity
+    render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
   rescue ActiveRecord::RecordNotFound => e
-    render json: { error: e.message }, status: :not_found
+    render json: { message: 'Question not found' }, status: :not_found
   end
 
   # New submit action
@@ -87,30 +90,31 @@ class Api::QuestionsController < Api::BaseController
 
   def set_question
     @question = Question.find_by(id: params[:id])
-    raise ActiveRecord::RecordNotFound.new("Question not found or you do not have permission to edit this question.") unless @question && @question.user_id == contributor_id
+    raise ActiveRecord::RecordNotFound.new("Question not found or you do not have permission to edit this question.") unless @question && @question.user_id == current_user.id
   end
 
-  def validate_question_id(question_id)
-    raise ActiveRecord::RecordNotFound.new("Question not found or you do not have permission to edit this question.") if Question.find_by(id: question_id).nil?
+  def validate_question_id
+    unless Question.exists?(params[:id])
+      render json: { message: 'Question not found' }, status: :not_found and return
+    end
   end
 
-  def validate_question_ownership(question, contributor_id)
-    raise ActiveRecord::RecordInvalid.new("Question not found or you do not have permission to edit this question.") unless question.user_id == contributor_id
+  def validate_question_ownership
+    unless @question.user_id == current_user.id
+      render json: { message: 'You are not the owner of this question' }, status: :forbidden and return
+    end
   end
 
-  def validate_question_content(content)
-    raise ActiveRecord::RecordInvalid.new("Question content cannot be empty.") if content.blank?
+  def validate_question_content
+    if question_params[:content].blank?
+      render json: { message: 'Content cannot be blank' }, status: :unprocessable_entity and return
+    end
   end
 
   def validate_tags(tags)
     unless Tag.where(id: tags).count == tags.size
       raise ActiveRecord::RecordInvalid.new("One or more tags are invalid.")
     end
-  end
-
-  def contributor_id
-    # Assuming SessionConcern provides a method to get contributor_id from session
-    session_contributor_id
   end
 
   def question_params
