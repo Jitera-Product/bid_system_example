@@ -4,9 +4,11 @@ class Api::FeedbacksController < ApplicationController
   before_action :validate_answer, only: [:create]
   before_action :validate_rating, only: [:create], if: -> { feedback_params[:rating].present? }
   before_action :check_existing_feedback, only: [:create]
+  before_action :validate_user, only: [:create] # Added new before_action for user validation
+  before_action :validate_comment_length, only: [:create] # Added new before_action for comment length validation
 
   def create
-    feedback = Feedback.new(feedback_params)
+    feedback = Feedback.new(feedback_params.except(:inquirer_id)) # Removed :inquirer_id from feedback_params as it's not needed for the new requirements
     if feedback_params[:rating].present?
       handle_rating_feedback(feedback)
     else
@@ -17,11 +19,11 @@ class Api::FeedbacksController < ApplicationController
   private
 
   def feedback_params
-    params.require(:feedback).permit(:answer_id, :user_id, :inquirer_id, :rating, :usefulness, :comment)
+    params.require(:feedback).permit(:answer_id, :user_id, :rating, :usefulness, :comment) # Removed :inquirer_id from permitted params
   end
 
   def validate_inquirer
-    inquirer_id = params[:feedback][:inquirer_id] || params[:feedback][:user_id]
+    inquirer_id = params[:feedback][:user_id]
     unless current_user.role == 'Inquirer' && User.exists?(id: inquirer_id)
       render json: { error: 'Invalid inquirer ID or inquirer not found.' }, status: :unauthorized and return
     end
@@ -35,23 +37,34 @@ class Api::FeedbacksController < ApplicationController
 
   def validate_rating
     rating = params[:feedback][:rating].to_i
-    unless rating.between?(1, 5)
-      render json: { error: 'Invalid rating: must be between 1 and 5' }, status: :unprocessable_entity and return
+    unless rating.is_a?(Integer) && rating.between?(1, 5)
+      render json: { error: 'Rating must be a number between 1 and 5.' }, status: :unprocessable_entity and return
+    end
+  end
+
+  def validate_user
+    unless User.exists?(id: params[:feedback][:user_id])
+      render json: { error: 'User not found.' }, status: :bad_request and return
+    end
+  end
+
+  def validate_comment_length
+    if params[:feedback][:comment].length > 500
+      render json: { error: 'Comment cannot exceed 500 characters.' }, status: :unprocessable_entity and return
     end
   end
 
   def check_existing_feedback
-    inquirer_id = params[:feedback][:inquirer_id] || params[:feedback][:user_id]
-    existing_feedback = Feedback.find_by(answer_id: params[:feedback][:answer_id], user_id: inquirer_id)
+    existing_feedback = Feedback.find_by(answer_id: params[:feedback][:answer_id], user_id: params[:feedback][:user_id])
     if existing_feedback
-      render json: { error: 'Feedback already exists for this answer by the inquirer' }, status: :conflict and return
+      render json: { error: 'Feedback already exists for this answer by the user' }, status: :conflict and return
     end
   end
 
   def handle_rating_feedback(feedback)
     if feedback.save
       update_answer_rating(feedback)
-      render json: { message: 'Feedback successfully recorded', feedback: feedback }, status: :created
+      render json: { status: 201, feedback: feedback.as_json.merge({ created_at: feedback.created_at.iso8601 }) }, status: :created
     else
       render json: { errors: feedback.errors.full_messages }, status: :unprocessable_entity
     end
