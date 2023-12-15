@@ -8,7 +8,6 @@ module Api
       before_action :validate_query, only: [:search]
       before_action :validate_contributor_ownership, only: [:update]
 
-      # GET /api/answers/search
       def search
         search_service = SearchService.new
         results = search_service.get_relevant_answer(params[:query])
@@ -21,7 +20,7 @@ module Api
         validate_content!(answer_params[:content] || params[:content])
         validate_answer_ownership_and_question_id!(@answer, answer_params[:question_id], current_resource_owner.id)
         @answer.update!(answer_params)
-        render json: { status: 200, answer: @answer.as_json }, status: :ok
+        render json: { status: 200, answer: @answer.as_json.merge(updated_at: @answer.updated_at.iso8601) }, status: :ok
       rescue ActiveRecord::RecordNotFound => e
         render json: { message: e.message }, status: :not_found
       rescue ActiveRecord::RecordInvalid => e
@@ -33,7 +32,12 @@ module Api
       private
 
       def set_answer
-        @answer = Answer.find_by!(id: params[:id] || params[:answer_id])
+        # Merged the condition to find by id or answer_id and added the ownership check
+        @answer = Answer.find_by(id: params[:id] || params[:answer_id])
+        unless @answer && @answer.user_id == current_user.id
+          render json: { message: "Answer not found or you can only edit your own answers." }, status: :not_found
+          return
+        end
       end
 
       def authorize_contributor!
@@ -58,8 +62,9 @@ module Api
       end
 
       def validate_query
+        # Standardized error message
         if params[:query].blank?
-          render json: { message: "The query is required." }, status: :bad_request
+          render json: { message: "Query cannot be empty." }, status: :bad_request
           false
         end
       end
@@ -74,8 +79,10 @@ module Api
       end
 
       def validate_content!(content)
-        raise ActiveRecord::RecordInvalid.new('Content is invalid') if content.blank? || content.length < ContentValidator::MIN_CONTENT_LENGTH
-
+        # Merged the validation logic for content presence and length
+        if content.blank?
+          raise ActiveRecord::RecordInvalid.new('The content is required.')
+        end
         unless ContentValidator.valid?(content)
           raise ActiveRecord::RecordInvalid.new('Content is invalid')
         end
