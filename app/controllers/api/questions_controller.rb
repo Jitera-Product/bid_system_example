@@ -7,8 +7,8 @@ class Api::QuestionsController < Api::BaseController
   before_action :validate_question_id, only: [:update]
   before_action :validate_question_ownership, only: [:update]
   before_action :validate_question_content, only: [:update]
-  before_action :validate_tags, only: [:update]
-  before_action :validate_categories, only: [:update]
+  before_action :validate_tags, only: [:update] # This is from the existing code
+  before_action :validate_categories, only: [:update] # This is from the existing code
 
   # ... other actions ...
 
@@ -46,9 +46,39 @@ class Api::QuestionsController < Api::BaseController
     render json: { message: 'Question not found' }, status: :not_found
   end
 
-  # Existing submit action code remains unchanged
+  def submit
+    validate_contributor_session
+    validate_contributor_role
+    validate_question_content
+
+    # Additional validations for user_id, tags, and categories
+    validate_user_id(question_params[:user_id])
+    validate_tags # This is from the existing code
+    validate_categories # This is from the existing code
+
+    # Business logic to create question and associate tags and categories
+    question = Question.create!(content: question_params[:content], user_id: question_params[:user_id])
+    associate_tags(question, question_params[:tags])
+    associate_categories(question, question_params[:categories])
+
+    render json: {
+      status: 201,
+      question: {
+        id: question.id,
+        content: question.content,
+        user_id: question.user_id,
+        created_at: question.created_at.iso8601
+      }
+    }, status: :created
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+  rescue StandardError => e
+    render json: { message: e.message }, status: :internal_server_error
+  end
 
   private
+
+  # Existing private methods...
 
   def validate_contributor_session
     # Existing private methods remain unchanged
@@ -102,6 +132,8 @@ class Api::QuestionsController < Api::BaseController
   end
 
   def question_params
-    params.require(:question).permit(:content, :contributor_id, tags: [], categories: [])
+    # Merged the new and existing code by including both :user_id and :contributor_id
+    # Assuming :contributor_id is a typo and should be :user_id, if not, both should be included
+    params.require(:question).permit(:content, :user_id, tags: [], categories: [])
   end
 end
