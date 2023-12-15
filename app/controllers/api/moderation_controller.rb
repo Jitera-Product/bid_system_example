@@ -14,8 +14,24 @@ module Api
       render_error(e)
     end
 
+    # New update method to handle moderation update requests
+    def update
+      moderation_id = params[:id]
+      status = params.require(:status)
+
+      validate_moderation_update_params(moderation_id, status)
+
+      moderation = ModerationService.new(moderation_id, status).update_status
+      render json: { status: 200, moderation: moderation }, status: :ok
+    rescue ActiveRecord::RecordNotFound
+      render json: { message: 'Content not found.' }, status: :not_found
+    rescue StandardError => e
+      render_error(e)
+    end
+
     private
 
+    # Existing validation method for index action
     def validate_moderation_params(type, status)
       valid_types = ['question', 'answer']
       valid_statuses = ['pending', 'approved', 'rejected']
@@ -24,6 +40,17 @@ module Api
       end
       unless valid_statuses.include?(status)
         render json: { message: "Invalid status type." }, status: :bad_request and return
+      end
+    end
+
+    # New validation method for update action
+    def validate_moderation_update_params(id, status)
+      valid_statuses = ['pending', 'approved', 'rejected']
+      unless ModerationQueue.exists?(id: id)
+        render json: { message: 'Content not found.' }, status: :not_found and return
+      end
+      unless valid_statuses.include?(status)
+        render json: { message: "Invalid status value." }, status: :bad_request and return
       end
     end
 
