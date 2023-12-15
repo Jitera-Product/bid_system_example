@@ -2,22 +2,16 @@
 module Api
   module V1
     class AnswersController < BaseController
-      before_action :validate_contributor_session, only: [:update]
+      before_action :authenticate_user!, only: [:update]
+      before_action :set_answer, only: [:update]
+      before_action :authorize_contributor!, only: [:update]
 
       def update
-        answer = Answer.find_by(id: params[:answer_id])
-        return base_render_record_not_found('Answer not found') unless answer
-
-        if current_resource_owner.id == answer.question.contributor_id
-          validate_content!(params[:content])
-          answer.content = params[:content]
-          if answer.save
-            render json: { update_status: true }, status: :ok
-          else
-            render json: { message: answer.errors.full_messages }, status: :unprocessable_entity
-          end
+        validate_content!(answer_params[:content])
+        if @answer.update(answer_params)
+          render json: { status: 200, answer: @answer.as_json }, status: :ok
         else
-          base_render_unauthorized_error('You do not have permission to edit this answer')
+          render json: { message: @answer.errors.full_messages }, status: :unprocessable_entity
         end
       rescue ActiveRecord::RecordNotFound => e
         base_render_record_not_found(e)
@@ -29,20 +23,27 @@ module Api
 
       private
 
-      def validate_contributor_session
-        # Assuming SessionConcern provides a method to validate session
-        # and check if the user has a contributor role
-        unless SessionConcern.validate_contributor_session(current_resource_owner)
-          raise Exceptions::AuthenticationError, 'Invalid session or insufficient permissions'
+      def set_answer
+        @answer = Answer.find_by(id: params[:id])
+        base_render_record_not_found('Answer not found or you do not have permission to edit this answer.') unless @answer
+      end
+
+      def authorize_contributor!
+        unless current_resource_owner.id == @answer.question.contributor_id
+          base_render_unauthorized_error('Answer not found or you do not have permission to edit this answer.')
         end
       end
 
-      def validate_content!(content)
-        raise ActiveRecord::RecordInvalid.new('Content is invalid') if content.blank? || content.length < ContentValidator::MIN_CONTENT_LENGTH
+      def answer_params
+        params.require(:answer).permit(:content)
+      end
 
-        unless ContentValidator.valid?(content)
-          raise ActiveRecord::RecordInvalid.new('Content is invalid')
+      def validate_content!(content)
+        if content.blank?
+          render json: { message: 'Answer content cannot be empty.' }, status: :unprocessable_entity
+          return false
         end
+        true
       end
     end
   end
