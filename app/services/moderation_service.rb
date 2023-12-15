@@ -2,34 +2,38 @@
 class ModerationService
   include ActiveModel::Model
 
-  attr_accessor :submission_id, :content_type, :administrator_id, :action
+  attr_accessor :content_id, :content_type, :admin_id, :action
 
-  def initialize(submission_id, content_type, administrator_id, action)
-    @submission_id = submission_id
+  # Renamed parameters to match the new code's naming convention
+  def initialize(content_id, content_type, admin_id, action)
+    @content_id = content_id
     @content_type = content_type
-    @administrator_id = administrator_id
+    @admin_id = admin_id
     @action = action
   end
 
   def moderate
     ActiveRecord::Base.transaction do
       validate_administrator
-      submission = find_submission
+      validate_moderation_queue_entry
+      moderation_queue_entry = find_moderation_queue_entry
 
       case action
       when 'approve'
-        submission.update!(status: 'approved')
+        update_content_status('approved')
+        moderation_queue_entry.update!(status: 'approved') if moderation_queue_entry
         moderation_status = 'approved'
       when 'reject'
-        submission.update!(status: 'rejected')
-        # Optionally remove the submission from the database if rejected
-        submission.destroy if content_type == 'Answer' # Assuming only Answers can be removed
+        update_content_status('rejected')
+        moderation_queue_entry.update!(status: 'rejected') if moderation_queue_entry
+        send_rejection_notification
         moderation_status = 'rejected'
       else
         raise StandardError, "Invalid action: #{action}"
       end
 
-      AuditLogger.log(administrator_id, submission_id, content_type, action)
+      # Renamed administrator_id to admin_id to match the new code's naming convention
+      AuditLogger.log(admin_id, content_id, content_type, action)
 
       { moderation_status: moderation_status }
     end
@@ -53,22 +57,42 @@ class ModerationService
   private
 
   def validate_administrator
-    admin = User.find_by(id: administrator_id, role: 'Administrator')
+    admin = User.find_by(id: admin_id, role: 'Administrator')
     raise StandardError, 'Invalid administrator' unless admin
   end
 
-  def find_submission
-    submission = case content_type
-                 when 'Question'
-                   Question.find_by(id: submission_id)
-                 when 'Answer'
-                   Answer.find_by(id: submission_id)
-                 else
-                   raise StandardError, "Invalid content type: #{content_type}"
-                 end
-    raise StandardError, 'Submission not found' unless submission
+  def validate_moderation_queue_entry
+    entry = ModerationQueue.find_by(content_id: content_id, content_type: content_type)
+    raise StandardError, 'Moderation queue entry not found' unless entry
+  end
 
-    submission
+  def find_moderation_queue_entry
+    ModerationQueue.find_by(content_id: content_id, content_type: content_type)
+  end
+
+  def update_content_status(new_status)
+    content = case content_type
+              when 'Question'
+                Question.find_by(id: content_id)
+              when 'Answer'
+                Answer.find_by(id: content_id)
+              else
+                raise StandardError, "Invalid content type: #{content_type}"
+              end
+    raise StandardError, 'Content not found' unless content
+
+    content.update!(status: new_status)
+  end
+
+  def send_rejection_notification
+    # Assuming NotificationJob or UserNotifierMailer exists and is configured
+    if content_type == 'Question'
+      question = Question.find_by(id: content_id)
+      UserNotifierMailer.notify_rejection(question.user_id, question.id).deliver_later if question
+    elsif content_type == 'Answer'
+      answer = Answer.find_by(id: content_id)
+      UserNotifierMailer.notify_rejection(answer.question.user_id, answer.id).deliver_later if answer
+    end
   end
 end
 
