@@ -8,6 +8,7 @@ module Api
       before_action :validate_query, only: [:search]
       before_action :validate_contributor_ownership, only: [:update]
 
+      # GET /api/answers/search
       def search
         search_service = SearchService.new
         results = search_service.get_relevant_answer(params[:query])
@@ -58,7 +59,7 @@ module Api
 
       def validate_query
         if params[:query].blank?
-          render json: { message: "Query cannot be empty." }, status: :bad_request
+          render json: { message: "The query is required." }, status: :bad_request
           false
         end
       end

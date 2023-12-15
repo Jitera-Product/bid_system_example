@@ -6,6 +6,20 @@ module Api
     before_action :authorize_answer!, only: [:update]
     before_action :validate_content, only: [:update]
 
+    # New search action
+    def search
+      query = params[:query]
+      if query.blank?
+        render json: { message: "The query is required." }, status: :bad_request
+      else
+        search_service = SearchService.new
+        answers = search_service.search_answers_for_query(query)
+        render json: { status: 200, answers: answers }, status: :ok
+      end
+    rescue StandardError => e
+      render json: { message: e.message }, status: :internal_server_error
+    end
+
     def update
       if @answer.update(answer_params)
         render json: { message: I18n.t('answers.update.success'), answer: @answer }, status: :ok
