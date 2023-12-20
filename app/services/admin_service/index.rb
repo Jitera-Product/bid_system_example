@@ -15,6 +15,9 @@ class AdminService::Index
     order
     paginate
 
+    # Add the verification of the confirmation token to the execution flow if provided
+    verify_confirmation_token if params[:confirmation_token].present?
+
     {
       admins: @records.as_json(only: [:id, :email, :name, :created_at, :updated_at]),
       total_items: @total_count,
@@ -50,6 +53,22 @@ class AdminService::Index
     @records = @records.page(page).per(limit)
     @total_count = @records.total_count
     @total_pages = @records.total_pages
+  end
+
+  # New method to verify confirmation token
+  def verify_confirmation_token
+    confirmation_token = params[:confirmation_token]
+    admin = Admin.find_by(confirmation_token: confirmation_token)
+    if admin && admin.confirmation_token_valid?
+      admin.update(confirmed_at: Time.current, confirmation_token: nil)
+      { success: 'Email confirmed successfully.' }
+    elsif admin
+      { error: 'Confirmation token is invalid or expired.' }
+    else
+      { error: 'No admin found with the provided confirmation token.' }
+    end
+  rescue StandardError => e
+    raise AuthenticationError, e.message
   end
 end
 # rubocop:enable Style/ClassAndModuleChildren
