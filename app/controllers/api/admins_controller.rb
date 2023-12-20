@@ -7,23 +7,28 @@ class Api::AdminsController < Api::BaseController
     authorize :admin, policy_class: Api::AdminsPolicy # Ensure only authorized users can access the list of admins
 
     service = AdminService::Index.new(params.permit!, current_resource_owner)
-    @admins = service.execute
+    result = service.execute
 
-    # Utilize PaginationService for pagination
-    pagination_service = PaginationService.new(@admins, params[:page], params[:per_page])
-    @admins = pagination_service.paginate
+    if result[:error].present?
+      render json: { error: result[:error] }, status: result[:status]
+    else
+      # Utilize PaginationService for pagination
+      pagination_service = PaginationService.new(result[:admins], params[:page], params[:per_page])
+      paginated_admins = pagination_service.paginate
 
-    # Format the admin records for the response
-    admin_serializer = AdminSerializer.new(@admins)
+      # Format the admin records for the response
+      admin_serializer = AdminSerializer.new(paginated_admins)
 
-    # Include the list of admins, total items, and total pages in the response
-    render json: {
-      admins: admin_serializer.serializable_hash(data: { fields: [:id, :email, :name, :created_at, :updated_at] }),
-      total_items: pagination_service.total_items,
-      total_pages: pagination_service.total_pages
-    }
+      # Include the list of admins, total items, and total pages in the response
+      render json: {
+        status: 200,
+        admins: admin_serializer.serializable_hash(data: { fields: [:id, :email, :name, :created_at, :updated_at] }),
+        total_items: pagination_service.total_items,
+        total_pages: pagination_service.total_pages
+      }, status: :ok
+    end
   rescue => e
-    render json: { error: e.message }, status: :unprocessable_entity
+    render json: { error: e.message }, status: :internal_server_error
   end
 
   def show
