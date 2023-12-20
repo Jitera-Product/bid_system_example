@@ -1,6 +1,7 @@
 class Api::AdminsController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update]
-  before_action :authenticate_and_authorize_admin_action, only: [:create]
+  before_action :set_admin, only: %i[show update]
+  rescue_from Exceptions::AuthenticationError, with: :handle_authentication_error
 
   def index
     authorize :admin, policy_class: Api::AdminsPolicy # Ensure only authorized users can access the list of admins
@@ -26,63 +27,57 @@ class Api::AdminsController < Api::BaseController
   end
 
   def show
-    @admin = Admin.find_by!('admins.id = ?', params[:id])
     authorize @admin, policy_class: Api::AdminsPolicy
+    render 'show.json.jbuilder', status: :ok
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: I18n.t('controller.admin.not_found') }, status: :not_found
   end
 
   def create
-    # Check if an admin with the provided email already exists
-    existing_admin = Admin.find_by(email: create_params[:email])
-    if existing_admin
-      render json: { error: 'Admin with this email already exists' }, status: :unprocessable_entity
-      return
-    end
-
-    @admin = Admin.new(create_params.except(:password_confirmation))
-
-    # Validate password confirmation
-    unless create_params[:password] == create_params[:password_confirmation]
-      render json: { error: 'Password confirmation does not match' }, status: :unprocessable_entity
-      return
-    end
+    @admin = Admin.new(create_params)
 
     authorize @admin, policy_class: Api::AdminsPolicy
 
     if @admin.save
-      render json: AdminSerializer.new(@admin).serializable_hash, status: :created
+      # Handle successful creation, e.g., render or redirect as needed
     else
       @error_object = @admin.errors.messages
       render status: :unprocessable_entity
     end
-  rescue Exceptions::AuthenticationError => e
-    render json: { error: e.message }, status: :unauthorized
-  end
-
-  def update
-    @admin = Admin.find_by('admins.id = ?', params[:id])
-    raise ActiveRecord::RecordNotFound if @admin.blank?
-    authorize @admin, policy_class: Api::AdminsPolicy
-
-    if @admin.update(update_params)
-      render json: AdminSerializer.new(@admin).serializable_hash, status: :ok
-    else
-      @error_object = @admin.errors.messages
-      render status: :unprocessable_entity
-    end
-  end
-
-  private
-
-  def authenticate_and_authorize_admin_action
-    authenticate_admin!
-    authorize :admin, :create?
   end
 
   def create_params
-    params.require(:admin).permit(:email, :password, :password_confirmation, :name)
+    params.require(:admins).permit(:name, :email)
+  end
+
+  def update
+    authorize @admin, policy_class: Api::AdminsPolicy
+
+    if @admin.update(update_params)
+      render json: @admin, status: :ok
+    else
+      @error_object = @admin.errors.messages
+      render json: { errors: @error_object }, status: :unprocessable_entity
+    end
+  rescue ActiveRecord::RecordNotFound => e
+    render json: { error: e.message }, status: :not_found
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { errors: e.record.errors.messages }, status: :unprocessable_entity
   end
 
   def update_params
     params.require(:admin).permit(:name, :email)
+  end
+
+  private
+
+  def set_admin
+    @admin = Admin.find_by!(id: params[:id])
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: I18n.t('controller.admin.not_found') }, status: :not_found
+  end
+
+  def handle_authentication_error
+    render json: { error: I18n.t('controller.authentication_error') }, status: :unauthorized
   end
 end
