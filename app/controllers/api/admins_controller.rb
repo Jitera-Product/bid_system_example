@@ -1,5 +1,7 @@
 class Api::AdminsController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update]
+  before_action :set_admin, only: %i[show update]
+  rescue_from Exceptions::AuthenticationError, with: :handle_authentication_error
 
   def index
     authorize :admin, policy_class: Api::AdminsPolicy # Ensure only authorized users can access the list of admins
@@ -25,9 +27,10 @@ class Api::AdminsController < Api::BaseController
   end
 
   def show
-    @admin = Admin.find_by!('admins.id = ?', params[:id])
-
     authorize @admin, policy_class: Api::AdminsPolicy
+    render 'show.json.jbuilder', status: :ok
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: I18n.t('controller.admin.not_found') }, status: :not_found
   end
 
   def create
@@ -35,11 +38,12 @@ class Api::AdminsController < Api::BaseController
 
     authorize @admin, policy_class: Api::AdminsPolicy
 
-    return if @admin.save
-
-    @error_object = @admin.errors.messages
-
-    render status: :unprocessable_entity
+    if @admin.save
+      # Handle successful creation, e.g., render or redirect as needed
+    else
+      @error_object = @admin.errors.messages
+      render status: :unprocessable_entity
+    end
   end
 
   def create_params
@@ -47,19 +51,29 @@ class Api::AdminsController < Api::BaseController
   end
 
   def update
-    @admin = Admin.find_by('admins.id = ?', params[:id])
-    raise ActiveRecord::RecordNotFound if @admin.blank?
-
     authorize @admin, policy_class: Api::AdminsPolicy
 
-    return if @admin.update(update_params)
-
-    @error_object = @admin.errors.messages
-
-    render status: :unprocessable_entity
+    if @admin.update(update_params)
+      # Handle successful update, e.g., render or redirect as needed
+    else
+      @error_object = @admin.errors.messages
+      render status: :unprocessable_entity
+    end
   end
 
   def update_params
     params.require(:admins).permit(:name, :email)
+  end
+
+  private
+
+  def set_admin
+    @admin = Admin.find_by!(id: params[:id])
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: I18n.t('controller.admin.not_found') }, status: :not_found
+  end
+
+  def handle_authentication_error
+    render json: { error: I18n.t('controller.authentication_error') }, status: :unauthorized
   end
 end
