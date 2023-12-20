@@ -1,4 +1,3 @@
-require 'sidekiq/web'
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
@@ -50,6 +49,9 @@ Rails.application.routes.draw do
     resources :bid_items, only: %i[index create show update] do
     end
 
+    # The new route for changing admin password should be defined here
+    post '/admins_passwords/change_password', to: 'admins_passwords#change_password'
+
     resources :admins_verify_confirmation_token, only: [:create] do
     end
 
@@ -59,8 +61,8 @@ Rails.application.routes.draw do
     resources :admins_registrations, only: [:create] do
     end
 
-    resources :admins_verify_reset_password_requests, only: [:create] do
-    end
+    # Merged the new route with the existing corrected route
+    post '/admins_verify_reset_password_requests', to: 'admins_verify_reset_password_requests#create', as: :admins_verify_reset_password_requests
 
     resources :admins_reset_password_requests, only: [:create] do
     end
