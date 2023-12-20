@@ -1,5 +1,6 @@
 class Api::AdminsController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update]
+  before_action :validate_id_format, only: [:show] # Add this line to validate ID format
   before_action :set_admin, only: %i[show update]
   rescue_from Exceptions::AuthenticationError, with: :handle_authentication_error
 
@@ -33,7 +34,16 @@ class Api::AdminsController < Api::BaseController
 
   def show
     authorize @admin, policy_class: Api::AdminsPolicy
-    render 'show.json.jbuilder', status: :ok
+    render json: {
+      status: 200,
+      admin: {
+        id: @admin.id,
+        email: @admin.email,
+        name: @admin.name,
+        created_at: @admin.created_at,
+        updated_at: @admin.updated_at
+      }
+    }, status: :ok
   rescue ActiveRecord::RecordNotFound
     render json: { error: I18n.t('controller.admin.not_found') }, status: :not_found
   end
@@ -80,6 +90,12 @@ class Api::AdminsController < Api::BaseController
     @admin = Admin.find_by!(id: params[:id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: I18n.t('controller.admin.not_found') }, status: :not_found
+  end
+
+  def validate_id_format
+    unless params[:id] =~ /\A\d+\z/
+      render json: { error: 'Wrong format.' }, status: :bad_request
+    end
   end
 
   def handle_authentication_error
