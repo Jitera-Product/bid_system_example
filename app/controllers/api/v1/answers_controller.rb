@@ -91,6 +91,37 @@ class Api::V1::AnswersController < Api::BaseController
     end
   end
 
+  # GET /api/answers/retrieve_answer
+  def retrieve_answer
+    query = params[:query]
+    if query.blank?
+      render json: { error: "The query is required." }, status: :bad_request
+      return
+    end
+
+    begin
+      nlp = NaturalLanguageProcessor.new(query)
+      key_terms = nlp.extract_key_terms
+      relevant_questions = Question.search_by_terms(key_terms)
+
+      if relevant_questions.empty?
+        render json: { error: 'No relevant questions found' }, status: :not_found
+        return
+      end
+
+      answers = Answer.where(question_id: relevant_questions.map(&:id)).order(feedback_score: :desc)
+      if answers.empty?
+        render json: { error: 'No answers found for the relevant questions' }, status: :not_found
+        return
+      end
+
+      top_answer = answers.first
+      render json: { content: top_answer.content }, status: :ok # Removed unnecessary fields to match the requirement
+    rescue StandardError => e
+      render json: { error: e.message }, status: :internal_server_error
+    end
+  end
+
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_answer
