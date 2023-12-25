@@ -18,7 +18,7 @@ class Api::AnswersController < Api::BaseController
         render json: { error: search_results[:error] }, status: :internal_server_error
       else
         # Updated to match the requirement format
-        render json: { status: 200, answers: search_results[:answers] }, status: :ok
+        render json: { status: 200, answers: format_answers(search_results[:answers]) }, status: :ok
       end
     rescue => e
       render json: { error: e.message }, status: :internal_server_error
@@ -57,6 +57,19 @@ class Api::AnswersController < Api::BaseController
   def validate_query_presence
     # Added method to validate query presence
     render json: { error: 'The query is required.' }, status: :unprocessable_entity if params[:query].blank?
+  end
+
+  def format_answers(answers)
+    # Method to format the answers according to the requirement
+    answers.map do |answer|
+      {
+        id: answer.id,
+        content: answer.content,
+        question_id: answer.question_id,
+        feedback_score: answer.feedback_score,
+        created_at: answer.created_at
+      }
+    end
   end
 
   def answer_params
