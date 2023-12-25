@@ -4,29 +4,33 @@ module Api
     class FeedbacksController < BaseController
       include OauthTokensConcern
 
+      before_action :authenticate_inquirer!, only: [:create_feedback]
+
       # POST /api/v1/feedbacks/provide_feedback
       def provide_feedback
         authenticate_inquirer!
 
-        answer_id = feedback_params[:answer_id]
-        inquirer_id = current_resource_owner.id
-        return render json: { error: 'Invalid answer ID.' }, status: :bad_request unless Answer.exists?(answer_id)
-        return render json: { error: 'Invalid inquirer ID or insufficient permissions.' }, status: :forbidden unless User.exists?(id: inquirer_id, role: 'Inquirer')
-        return render json: { error: 'Usefulness must be true or false.' }, status: :unprocessable_entity unless [true, false].include?(feedback_params[:usefulness])
+        answer = Answer.find_by(id: feedback_params[:answer_id])
+        return render json: { error: 'Invalid answer ID.' }, status: :not_found unless answer
+        return render json: { error: 'Score must be within the allowed range.' }, status: :unprocessable_entity unless feedback_params[:score].to_i.between?(1, 5)
 
         feedback = Feedback.new(
-          answer_id: answer_id,
-          inquirer_id: inquirer_id,
-          usefulness: feedback_params[:usefulness],
-          comment: feedback_params[:comment],
-          created_at: Time.current
+          answer_id: answer.id,
+          inquirer_id: current_resource_owner.id,
+          score: feedback_params[:score],
+          comment: feedback_params[:comment]
         )
 
         if feedback.save
-          render json: { status: 201, feedback: feedback.as_json.merge(created_at: feedback.created_at.iso8601) }, status: :created
+          AnswerUpdatingService.new(answer).update_feedback_score
+          render json: { message: 'Feedback created successfully.', feedback: feedback }, status: :created
         else
           render json: { errors: feedback.errors.full_messages }, status: :unprocessable_entity
         end
+      rescue ActiveRecord::RecordNotFound => e
+        render json: { error: e.message }, status: :not_found
+      rescue => e
+        render json: { error: e.message }, status: :internal_server_error
       end
 
       private
@@ -40,7 +44,7 @@ module Api
       end
 
       def feedback_params
-        params.require(:feedback).permit(:answer_id, :inquirer_id, :usefulness, :comment)
+        params.require(:feedback).permit(:answer_id, :score, :comment)
       end
     end
   end
