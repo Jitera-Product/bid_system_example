@@ -1,5 +1,5 @@
 class Api::V1::AnswersController < Api::BaseController
-  before_action :authenticate_user!, only: [:create, :search] # Added :search to the authentication filter
+  before_action :authenticate_user!, only: [:create, :search, :retrieve_answer] # Added :retrieve_answer to the authentication filter
   before_action :set_answer, only: [:show, :update, :destroy]
 
   # GET /answers
@@ -50,36 +50,43 @@ class Api::V1::AnswersController < Api::BaseController
     @answer.destroy
   end
 
-  # POST /answers/retrieve
-  def retrieve
-    # Assuming NaturalLanguageProcessor and AnswerRetrievalService are already implemented
-    question_id = params[:question_id] || NaturalLanguageProcessor.new(params[:query]).interpret
-    @answers = Answer.where(question_id: question_id)
-    @answer = AnswerRetrievalService.new(@answers).retrieve_most_relevant
-    if @answer
-      render json: { content: @answer.content }
-    else
-      render json: { error: 'No relevant answer found' }, status: :not_found
-    end
-  rescue ActiveRecord::RecordNotFound => e
-    render json: { error: e.message }, status: :not_found
-  end
-
   # GET /api/answers/search
   def search
     query = params[:query]
     if query.blank?
-      render json: { error: "The query is required." }, status: :unprocessable_entity
+      render json: { error: "The query is required." }, status: :bad_request
       return
     end
 
     begin
-      # Assuming AnswerRetrievalService has a method `search_by_natural_language_query`
-      answers = AnswerRetrievalService.new.search_by_natural_language_query(query)
-      render json: { status: 200, answers: answers.as_json(only: [:id, :question_id, :content, :created_at]) }, status: :ok
-    rescue ActiveRecord::RecordNotFound
-      render json: { error: 'No relevant answer found' }, status: :not_found
-    rescue => e
+      nlp = NaturalLanguageProcessor.new(query)
+      key_terms = nlp.extract_key_terms
+      relevant_questions = Question.search_by_terms(key_terms)
+
+      if relevant_questions.empty?
+        render json: { error: 'No relevant questions found' }, status: :not_found
+        return
+      end
+
+      answers = Answer.where(question_id: relevant_questions.map(&:id)).order(feedback_score: :desc)
+      if answers.empty?
+        render json: { error: 'No answers found for the relevant questions' }, status: :not_found
+        return
+      end
+
+      # Format the answers as per the requirement
+      formatted_answers = answers.map do |answer|
+        {
+          id: answer.id,
+          content: answer.content,
+          question_id: answer.question_id,
+          feedback_score: answer.feedback_score,
+          created_at: answer.created_at.iso8601
+        }
+      end
+
+      render json: { status: 200, answers: formatted_answers }, status: :ok
+    rescue StandardError => e
       render json: { error: e.message }, status: :internal_server_error
     end
   end
