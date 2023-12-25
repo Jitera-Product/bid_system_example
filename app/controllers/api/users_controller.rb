@@ -2,8 +2,7 @@ class Api::UsersController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update destroy]
   before_action :authenticate_admin!, only: %i[create update destroy]
   before_action :set_user, only: %i[show update destroy]
-  before_action :validate_user_params, only: %i[create update]
-  before_action :validate_unique_username, only: %i[create update]
+  before_action :validate_user_params, only: %i[create update] # This combines the validation steps from both versions
 
   def index
     @users = UserService::Index.new(params.permit!, current_resource_owner).execute
@@ -61,18 +60,26 @@ class Api::UsersController < Api::BaseController
   end
 
   def user_params
-    params.require(:user).permit(:username, :password_hash, :role)
-  end
-
-  def validate_user_params
-    render json: { error: 'The username is required.' }, status: :bad_request if user_params[:username].blank?
-    render json: { error: 'The password hash is required.' }, status: :bad_request if user_params[:password_hash].blank?
-    unless ['Contributor', 'Inquirer', 'Administrator'].include?(user_params[:role])
-      render json: { error: 'Invalid role value.' }, status: :bad_request
+    params.require(:user).permit(:username, :password_hash, :role).tap do |user_params|
+      validate_user_params(user_params)
     end
   end
 
-  def validate_unique_username
+  def validate_user_params(user_params = nil)
+    user_params ||= self.user_params # This line allows for the method to be called without arguments, as in the old code
+    errors = []
+    errors << 'The username is required.' if user_params[:username].blank?
+    errors << 'The password hash is required.' if user_params[:password_hash].blank?
+    errors << 'Invalid role value.' unless ['Contributor', 'Inquirer', 'Administrator'].include?(user_params[:role])
+    if errors.any?
+      render json: { errors: errors }, status: :unprocessable_entity
+      false
+    else
+      validate_unique_username(user_params) # This line ensures that username uniqueness is checked
+    end
+  end
+
+  def validate_unique_username(user_params)
     if params[:action] == 'update' && @user.username == user_params[:username]
       return true
     end
