@@ -1,4 +1,5 @@
-class Api::V1::AnswersController < ApplicationController
+class Api::V1::AnswersController < Api::BaseController
+  before_action :authenticate_user!, only: [:create]
   before_action :set_answer, only: [:show, :update, :destroy]
 
   # GET /answers
@@ -14,11 +15,24 @@ class Api::V1::AnswersController < ApplicationController
 
   # POST /answers
   def create
-    @answer = Answer.new(answer_params)
-    if @answer.save
-      render json: @answer, status: :created, location: @answer
-    else
-      render json: @answer.errors, status: :unprocessable_entity
+    begin
+      question = Question.find(params[:question_id])
+      @answer = question.answers.new(answer_params.merge(user_id: current_user.id))
+
+      if @answer.content.blank?
+        render json: { errors: 'Content cannot be empty' }, status: :unprocessable_entity
+        return
+      end
+
+      if @answer.save
+        render json: { id: @answer.id }, status: :created
+      else
+        render json: { errors: @answer.errors.full_messages }, status: :unprocessable_entity
+      end
+    rescue ActiveRecord::RecordNotFound
+      render json: { error: 'Question not found' }, status: :not_found
+    rescue ActiveRecord::RecordInvalid => e
+      render json: { errors: e.record.errors.full_messages }, status: :bad_request
     end
   end
 
@@ -59,6 +73,10 @@ class Api::V1::AnswersController < ApplicationController
 
     # Only allow a trusted parameter "white list" through.
     def answer_params
-      params.require(:answer).permit(:content, :question_id)
+      params.require(:answer).permit(:content).merge(
+        question_id: params[:question_id],
+        created_at: Time.current,
+        updated_at: Time.current
+      )
     end
 end
