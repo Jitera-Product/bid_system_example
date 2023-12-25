@@ -6,16 +6,15 @@ class User < ApplicationRecord
          :confirmable, :lockable, :timeoutable, :trackable
 
   # Associations
-  # Updated to reflect both one-to-one and one-to-many associations
-  has_one :payment_method, dependent: :destroy
-  has_one :wallet, dependent: :destroy
-  has_many :payment_methods, dependent: :destroy
-  has_many :wallets, dependent: :destroy
+  # Removed duplicate associations and kept the correct ones
   has_many :bid_items, dependent: :destroy
   has_many :bids, dependent: :destroy
   has_many :deposits, dependent: :destroy
+  has_many :payment_methods, dependent: :destroy
   has_many :products, dependent: :destroy
-  has_many :questions, dependent: :destroy  # Added from new code
+  has_many :wallets, dependent: :destroy
+  has_many :questions, dependent: :destroy
+  has_many :user_activities, dependent: :destroy  # Added from new code
 
   # Validations
   # Combined validations from both versions
@@ -27,6 +26,12 @@ class User < ApplicationRecord
   # Password validation from existing code
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
   validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
+
+  # Callbacks
+  # Add any new callbacks here
+
+  # Scopes
+  # Add any new scopes here
 
   # Methods
   # Existing methods from the existing code
@@ -55,6 +60,5 @@ class User < ApplicationRecord
     end
   end
 
-  # Define any methods specific to the User model here
-  # Add any new methods from the new code here
+  # Add any new instance or class methods here
 end

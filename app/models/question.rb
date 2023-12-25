@@ -3,6 +3,7 @@ class Question < ApplicationRecord
   belongs_to :user
   has_many :answers, dependent: :destroy
   has_many :question_categories, dependent: :destroy
+  has_many :question_category_mappings, dependent: :destroy # New association added
 
   # Validations
   validates :title, presence: true

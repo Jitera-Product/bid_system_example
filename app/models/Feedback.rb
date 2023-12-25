@@ -6,6 +6,7 @@ class Feedback < ApplicationRecord
   # Validations
   validates :usefulness, presence: true
   validates :comment, length: { maximum: 500 }, allow_blank: true
+  validates :score, numericality: { only_integer: true, greater_than_or_equal_to: 1, less_than_or_equal_to: 5 }, allow_nil: true
 
   # Methods specific to the Feedback model can be defined here
 end
