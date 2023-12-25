@@ -1,4 +1,3 @@
-require 'sidekiq/web'
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
@@ -11,6 +10,10 @@ Rails.application.routes.draw do
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
   namespace :api do
+    namespace :v1 do
+      put '/moderate/:type/:id', to: 'moderation#update', as: :moderate_content
+    end
+
     resources :shippings, only: %i[index show update] do
     end
 
