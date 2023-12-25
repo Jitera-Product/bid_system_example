@@ -1,5 +1,5 @@
 class Api::V1::AnswersController < Api::BaseController
-  before_action :authenticate_user!, only: [:create]
+  before_action :authenticate_user!, only: [:create, :search] # Added :search to the authentication filter
   before_action :set_answer, only: [:show, :update, :destroy]
 
   # GET /answers
@@ -63,6 +63,25 @@ class Api::V1::AnswersController < Api::BaseController
     end
   rescue ActiveRecord::RecordNotFound => e
     render json: { error: e.message }, status: :not_found
+  end
+
+  # GET /api/answers/search
+  def search
+    query = params[:query]
+    if query.blank?
+      render json: { error: "The query is required." }, status: :unprocessable_entity
+      return
+    end
+
+    begin
+      # Assuming AnswerRetrievalService has a method `search_by_natural_language_query`
+      answers = AnswerRetrievalService.new.search_by_natural_language_query(query)
+      render json: { status: 200, answers: answers.as_json(only: [:id, :question_id, :content, :created_at]) }, status: :ok
+    rescue ActiveRecord::RecordNotFound
+      render json: { error: 'No relevant answer found' }, status: :not_found
+    rescue => e
+      render json: { error: e.message }, status: :internal_server_error
+    end
   end
 
   private
