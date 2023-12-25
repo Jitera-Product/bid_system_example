@@ -8,30 +8,42 @@ class Api::V1::UsersController < ApplicationController
   # Add other actions here if they exist
 
   def update_profile
-    if user_params[:username].blank?
-      return render json: { error: 'The username is required.' }, status: :bad_request
+    # Validate the input
+    unless params[:user_id] && !params[:username].blank? && !params[:password_hash].blank?
+      error_messages = []
+      error_messages << 'User ID is required.' unless params[:user_id]
+      error_messages << 'Username is required and cannot be empty.' if params[:username].blank?
+      error_messages << 'Password hash is required.' if params[:password_hash].blank?
+      return render json: { error: error_messages.join(' ') }, status: :bad_request
     end
 
-    if user_params[:password_hash].blank?
-      return render json: { error: 'The password is required.' }, status: :bad_request
-    end
+    # Use the `set_user` private method to find the user by 'user_id'
+    set_user
+    return unless @user
 
-    if @user.update(user_params)
-      render json: { status: 200, user: user_response(@user) }, status: :ok
-    else
-      render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
+    begin
+      # Perform the update operation on the user's 'username' and 'password_hash'
+      if @user.update(username: params[:username], password_hash: params[:password_hash])
+        render json: { status: 200, user: user_response(@user) }, status: :ok
+      else
+        render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
+      end
+    rescue => e
+      render json: { error: e.message }, status: :internal_server_error
     end
   end
 
   private
 
   def set_user
-    @user = User.find_by(id: params[:id])
+    @user = User.find_by(id: params[:user_id])
     render json: { error: 'User not found.' }, status: :not_found unless @user
   end
 
   def authorize_user!
-    render json: { error: 'Forbidden' }, status: :forbidden unless current_user == @user
+    unless current_user == @user || current_user.role == 'Administrator'
+      render json: { error: 'Forbidden' }, status: :forbidden
+    end
   end
 
   def user_params
