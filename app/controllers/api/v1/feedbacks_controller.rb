@@ -4,26 +4,30 @@ module Api
     class FeedbacksController < BaseController
       include OauthTokensConcern
 
-      before_action :authenticate_inquirer!, only: [:create_feedback]
+      before_action :authenticate_inquirer!, only: [:create_feedback, :provide_feedback]
 
       # POST /api/v1/feedbacks/provide_feedback
       def provide_feedback
         authenticate_inquirer!
 
         answer = Answer.find_by(id: feedback_params[:answer_id])
-        return render json: { error: 'Invalid answer ID.' }, status: :not_found unless answer
-        return render json: { error: 'Score must be within the allowed range.' }, status: :unprocessable_entity unless feedback_params[:score].to_i.between?(1, 5)
+        inquirer = User.find_by(id: feedback_params[:inquirer_id])
+
+        return render json: { error: 'Answer not found.' }, status: :not_found unless answer
+        return render json: { error: 'Inquirer not found.' }, status: :not_found unless inquirer
+        return render json: { error: 'Score must be between 1 and 5.' }, status: :unprocessable_entity unless feedback_params[:score].to_i.between?(1, 5)
+        return render json: { error: 'You cannot input more than 1000 characters.' }, status: :unprocessable_entity if feedback_params[:comment].length > 1000
 
         feedback = Feedback.new(
           answer_id: answer.id,
-          inquirer_id: current_resource_owner.id,
+          inquirer_id: inquirer.id,
           score: feedback_params[:score],
           comment: feedback_params[:comment]
         )
 
         if feedback.save
           AnswerUpdatingService.new(answer).update_feedback_score
-          render json: { message: 'Feedback created successfully.', feedback: feedback }, status: :created
+          render json: { status: 201, feedback: feedback.as_json.merge(created_at: feedback.created_at.iso8601) }, status: :created
         else
           render json: { errors: feedback.errors.full_messages }, status: :unprocessable_entity
         end
@@ -44,7 +48,7 @@ module Api
       end
 
       def feedback_params
-        params.require(:feedback).permit(:answer_id, :score, :comment)
+        params.require(:feedback).permit(:answer_id, :inquirer_id, :score, :comment)
       end
     end
   end

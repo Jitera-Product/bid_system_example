@@ -8,11 +8,13 @@ module Api
       inquirer = User.find_by(id: feedback_params[:inquirer_id], role: 'Inquirer')
 
       if answer.nil?
-        render json: { error: 'Invalid answer ID.' }, status: :bad_request and return
+        render json: { error: 'Answer not found.' }, status: :bad_request and return
       elsif inquirer.nil?
-        render json: { error: 'Invalid inquirer ID or insufficient permissions.' }, status: :forbidden and return
-      elsif !is_boolean?(feedback_params[:usefulness])
-        render json: { error: 'Usefulness must be true or false.' }, status: :bad_request and return
+        render json: { error: 'Inquirer not found.' }, status: :forbidden and return
+      elsif !feedback_params[:score].to_i.between?(1, 5)
+        render json: { error: 'Score must be between 1 and 5.' }, status: :bad_request and return
+      elsif feedback_params[:comment].length > 1000
+        render json: { error: 'You cannot input more than 1000 characters.' }, status: :bad_request and return
       end
 
       feedback = Feedback.new(feedback_params)
@@ -27,7 +29,7 @@ module Api
     private
 
     def feedback_params
-      params.require(:feedback).permit(:answer_id, :inquirer_id, :usefulness, :comment)
+      params.require(:feedback).permit(:answer_id, :inquirer_id, :score, :comment)
     end
 
     def authenticate_inquirer
@@ -35,8 +37,8 @@ module Api
       render json: { error: 'Unauthorized' }, status: :unauthorized unless current_user&.role == 'Inquirer'
     end
 
-    def is_boolean?(value)
-      [true, false].include? value
+    def error_response(resource, errors)
+      { error: "Error saving #{resource.class.name.downcase}", details: errors.full_messages }
     end
   end
 end
