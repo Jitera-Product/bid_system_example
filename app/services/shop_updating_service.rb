@@ -16,18 +16,18 @@ class ShopUpdatingService
     shop = fetch_shop
     update_shop_record(shop)
     log_user_activity
-    shop
+    confirmation_message(shop) # Added method call to return confirmation message
+  rescue StandardError => e
+    handle_exception(e)
   end
 
   private
 
   def authenticate_user
-    # Assuming ApplicationPolicy or similar policy object exists in the application
     raise 'Not authorized' unless ApplicationPolicy.new(user, :shop).update?
   end
 
   def validate_input
-    # Assuming ShopValidator or similar validator exists in the application
     raise 'Name cannot be empty' if name.blank?
     raise 'Address cannot be empty' if address.blank?
     raise 'Invalid shop ID' unless shop_id.is_a?(Integer) && shop_id.positive?
@@ -49,5 +49,14 @@ class ShopUpdatingService
       activity_type: 'shop_update',
       activity_description: "Updated shop ##{shop_id} with new name '#{name}' and address '#{address}'."
     )
+  end
+
+  def handle_exception(exception)
+    Rails.logger.error(exception.message)
+    raise exception
+  end
+
+  def confirmation_message(shop)
+    "Shop ##{shop.id} has been updated with name '#{shop.name}' and address '#{shop.address}'."
   end
 end
