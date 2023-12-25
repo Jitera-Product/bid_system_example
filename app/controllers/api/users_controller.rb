@@ -31,7 +31,10 @@ class Api::UsersController < Api::BaseController
   def update
     authorize @user, policy_class: Api::UsersPolicy
 
-    if @user.update(user_params)
+    user_parameters = user_params
+    user_parameters[:password] = user_parameters.delete(:password_hash) if user_parameters[:password_hash]
+
+    if @user.update(user_parameters)
       render json: { message: 'User updated successfully', user: @user }, status: :ok
     else
       render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
