@@ -4,16 +4,24 @@ class Api::V1::QuestionsController < Api::BaseController
   before_action :authenticate_user!, except: %i[update]
   before_action :set_question, only: %i[update]
   before_action :validate_question_owner, only: %i[update]
+  before_action :validate_contributor_role, only: %i[create]
 
   def create
-    return unless validate_contributor_role
-
     question_params = params.require(:question).permit(:title, :content, :category_id)
-    question_params[:contributor_id] = current_user.id
+    question_params[:user_id] = current_user.id
 
-    validator = QuestionValidator.new(question_params)
-    unless validator.valid?
-      render json: { errors: validator.errors.full_messages }, status: :unprocessable_entity
+    unless current_user.role == 'contributor'
+      render json: { error: 'You must have a contributor role to submit a question.' }, status: :forbidden
+      return
+    end
+
+    unless User.exists?(question_params[:user_id])
+      render json: { error: 'Invalid user ID.' }, status: :not_found
+      return
+    end
+
+    if question_params[:title].blank? || question_params[:content].blank?
+      render json: { error: 'Title and content cannot be blank.' }, status: :unprocessable_entity
       return
     end
 
@@ -25,29 +33,11 @@ class Api::V1::QuestionsController < Api::BaseController
     question = Question.new(question_params)
 
     if question.save
-      QuestionCategory.create(question_id: question.id, category_id: question_params[:category_id])
-      render json: { status: 201, question: question.as_json.merge(created_at: question.created_at) }, status: :created
+      QuestionCategoryMapping.create(question_id: question.id, category_id: question_params[:category_id])
+      render json: { id: question.id, title: question.title, content: question.content, category_id: question_params[:category_id] }, status: :created
     else
       render json: { errors: question.errors.full_messages }, status: :unprocessable_entity
     end
-  end
-
-  def update
-    validate_update_params
-
-    if @question.update(update_params.merge(updated_at: Time.current))
-      render json: { status: 200, question: QuestionSerializer.new(@question).serializable_hash }, status: :ok
-    else
-      render json: { errors: @question.errors.full_messages }, status: :unprocessable_entity
-    end
-  rescue Exceptions::AuthenticationError => e
-    render json: { errors: [e.message] }, status: :unauthorized
-  rescue ActiveRecord::RecordNotFound
-    render json: { errors: ['Question not found or permission denied.'] }, status: :not_found
-  rescue ActiveRecord::RecordInvalid => e
-    render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
-  rescue StandardError => e
-    render json: { errors: [e.message] }, status: :forbidden
   end
 
   # ... other actions in the controller ...
@@ -55,37 +45,10 @@ class Api::V1::QuestionsController < Api::BaseController
   private
 
   def validate_contributor_role
-    unless current_user.role == 'Contributor'
-      render json: { error: 'Invalid contributor ID or insufficient permissions.' }, status: :forbidden
-      return false
-    end
-    true
+    render json: { error: 'You must have a contributor role to submit a question.' }, status: :forbidden unless current_user.role == 'contributor'
   end
 
-  def validate_update_params
-    required_params = %i[title content category_id]
-    required_params.each do |param|
-      if update_params[param].blank?
-        error_message = case param
-                        when :title
-                          'The title is required.'
-                        when :content
-                          'The content is required.'
-                        when :category_id
-                          'Invalid category ID.'
-                        end
-        raise StandardError, error_message
-      end
-    end
-
-    unless Category.exists?(update_params[:category_id])
-      raise StandardError, 'Invalid category ID.'
-    end
-
-    if update_params[:title].length > 200
-      raise StandardError, 'The title cannot exceed 200 characters.'
-    end
-  end
+  # ... other private methods ...
 
   def set_question
     @question = Question.find_by!(id: params[:id])
