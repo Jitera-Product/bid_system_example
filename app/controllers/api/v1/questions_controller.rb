@@ -1,43 +1,103 @@
-class Api::V1::QuestionsController < ApplicationController
-  before_action :authenticate_user!
+class Api::V1::QuestionsController < Api::BaseController
+  include Authenticable
+  before_action :doorkeeper_authorize!, only: %i[create update]
+  before_action :authenticate_user!, except: %i[update]
+  before_action :set_question, only: %i[update]
+  before_action :validate_question_owner, only: %i[update]
 
   def create
-    # Use strong parameters to permit title, content, and category_id
-    question_params = params.require(:question).permit(:title, :content, :category_id)
+    return unless validate_contributor_role
 
-    # Validate the presence of title and content using the QuestionValidator class
+    question_params = params.require(:question).permit(:title, :content, :category_id)
+    question_params[:contributor_id] = current_user.id
+
     validator = QuestionValidator.new(question_params)
     unless validator.valid?
       render json: { errors: validator.errors.full_messages }, status: :unprocessable_entity
       return
     end
 
-    # Ensure that category_id corresponds to an existing Category record
     unless Category.exists?(question_params[:category_id])
-      render json: { error: 'Category not found' }, status: :not_found
+      render json: { error: 'Invalid category ID.' }, status: :not_found
       return
     end
 
-    # Create a new entry in the "questions" table with the provided title, content, contributor_id, and timestamps.
-    question = Question.new(
-      contributor_id: current_user.id,
-      title: question_params[:title],
-      content: question_params[:content],
-      created_at: Time.current, # Use the current time for created_at
-      updated_at: Time.current  # Use the current time for updated_at
-    )
+    question = Question.new(question_params)
 
     if question.save
-      # Associate the new question with the selected category by creating an entry in the "question_categories" table linking the question_id and category_id.
       QuestionCategory.create(question_id: question.id, category_id: question_params[:category_id])
-
-      # Return the id of the newly created question as a JSON response
-      render json: { id: question.id }, status: :created
+      render json: { status: 201, question: question.as_json.merge(created_at: question.created_at) }, status: :created
     else
-      # Handle cases where the question could not be created
       render json: { errors: question.errors.full_messages }, status: :unprocessable_entity
     end
   end
 
+  def update
+    validate_update_params
+
+    if @question.update(update_params.merge(updated_at: Time.current))
+      render json: { status: 200, question: QuestionSerializer.new(@question).serializable_hash }, status: :ok
+    else
+      render json: { errors: @question.errors.full_messages }, status: :unprocessable_entity
+    end
+  rescue Exceptions::AuthenticationError => e
+    render json: { errors: [e.message] }, status: :unauthorized
+  rescue ActiveRecord::RecordNotFound
+    render json: { errors: ['Question not found or permission denied.'] }, status: :not_found
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+  rescue StandardError => e
+    render json: { errors: [e.message] }, status: :forbidden
+  end
+
   # ... other actions in the controller ...
+
+  private
+
+  def validate_contributor_role
+    unless current_user.role == 'Contributor'
+      render json: { error: 'Invalid contributor ID or insufficient permissions.' }, status: :forbidden
+      return false
+    end
+    true
+  end
+
+  def validate_update_params
+    required_params = %i[title content category_id]
+    required_params.each do |param|
+      if update_params[param].blank?
+        error_message = case param
+                        when :title
+                          'The title is required.'
+                        when :content
+                          'The content is required.'
+                        when :category_id
+                          'Invalid category ID.'
+                        end
+        raise StandardError, error_message
+      end
+    end
+
+    unless Category.exists?(update_params[:category_id])
+      raise StandardError, 'Invalid category ID.'
+    end
+
+    if update_params[:title].length > 200
+      raise StandardError, 'The title cannot exceed 200 characters.'
+    end
+  end
+
+  def set_question
+    @question = Question.find_by!(id: params[:id])
+  end
+
+  def validate_question_owner
+    unless @question.user_id == current_resource_owner.id
+      raise StandardError, 'You are not authorized to update this question.'
+    end
+  end
+
+  def update_params
+    params.require(:question).permit(:title, :content, :category_id)
+  end
 end
