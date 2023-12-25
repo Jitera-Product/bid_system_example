@@ -7,7 +7,7 @@ class Api::V1::QuestionsController < Api::BaseController
   before_action :validate_contributor_role, only: %i[create]
 
   def create
-    question_params = params.require(:question).permit(:title, :content, :category_id)
+    question_params = params.require(:question).permit(:title, :content, category_ids: [])
     question_params[:user_id] = current_user.id
 
     if question_params[:title].blank?
@@ -25,19 +25,27 @@ class Api::V1::QuestionsController < Api::BaseController
       return
     end
 
-    unless Category.exists?(question_params[:category_id])
-      render json: { error: 'Category not found.' }, status: :not_found
+    invalid_category_ids = question_params[:category_ids].reject { |id| Category.exists?(id) }
+    if invalid_category_ids.any?
+      render json: { error: "Categories not found: #{invalid_category_ids.join(', ')}." }, status: :not_found
       return
     end
 
-    question = Question.new(question_params)
+    question = Question.new(question_params.except(:category_ids))
 
-    if question.save
-      QuestionCategoryMapping.create(question_id: question.id, category_id: question_params[:category_id])
-      render json: { status: 201, question: { id: question.id, title: question.title, content: question.content, user_id: question.user_id, category_id: question_params[:category_id], created_at: question.created_at } }, status: :created
-    else
-      render json: { errors: question.errors.full_messages }, status: :unprocessable_entity
+    ActiveRecord::Base.transaction do
+      if question.save
+        question_params[:category_ids].each do |category_id|
+          QuestionCategoryMapping.create!(question_id: question.id, category_id: category_id)
+        end
+        render json: { status: 201, question: { id: question.id } }, status: :created
+      else
+        render json: { errors: question.errors.full_messages }, status: :unprocessable_entity
+        raise ActiveRecord::Rollback
+      end
     end
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { error: e.message }, status: :unprocessable_entity
   end
 
   # ... other actions in the controller ...
@@ -47,8 +55,6 @@ class Api::V1::QuestionsController < Api::BaseController
   def validate_contributor_role
     render json: { error: 'You must have a contributor role to submit a question.' }, status: :forbidden unless current_user.role == 'contributor'
   end
-
-  # ... other private methods ...
 
   def set_question
     @question = Question.find_by!(id: params[:id])
