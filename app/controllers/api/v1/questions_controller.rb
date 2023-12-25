@@ -10,23 +10,23 @@ class Api::V1::QuestionsController < Api::BaseController
     question_params = params.require(:question).permit(:title, :content, :category_id)
     question_params[:user_id] = current_user.id
 
-    unless current_user.role == 'contributor'
-      render json: { error: 'You must have a contributor role to submit a question.' }, status: :forbidden
+    if question_params[:title].blank?
+      render json: { error: 'The title is required.' }, status: :unprocessable_entity
+      return
+    end
+
+    if question_params[:content].blank?
+      render json: { error: 'The content is required.' }, status: :unprocessable_entity
       return
     end
 
     unless User.exists?(question_params[:user_id])
-      render json: { error: 'Invalid user ID.' }, status: :not_found
-      return
-    end
-
-    if question_params[:title].blank? || question_params[:content].blank?
-      render json: { error: 'Title and content cannot be blank.' }, status: :unprocessable_entity
+      render json: { error: 'User not found.' }, status: :not_found
       return
     end
 
     unless Category.exists?(question_params[:category_id])
-      render json: { error: 'Invalid category ID.' }, status: :not_found
+      render json: { error: 'Category not found.' }, status: :not_found
       return
     end
 
@@ -34,7 +34,7 @@ class Api::V1::QuestionsController < Api::BaseController
 
     if question.save
       QuestionCategoryMapping.create(question_id: question.id, category_id: question_params[:category_id])
-      render json: { id: question.id, title: question.title, content: question.content, category_id: question_params[:category_id] }, status: :created
+      render json: { status: 201, question: { id: question.id, title: question.title, content: question.content, user_id: question.user_id, category_id: question_params[:category_id], created_at: question.created_at } }, status: :created
     else
       render json: { errors: question.errors.full_messages }, status: :unprocessable_entity
     end
@@ -56,7 +56,7 @@ class Api::V1::QuestionsController < Api::BaseController
 
   def validate_question_owner
     unless @question.user_id == current_resource_owner.id
-      raise StandardError, 'You are not authorized to update this question.'
+      render json: { error: 'You are not authorized to update this question.' }, status: :forbidden
     end
   end
 
