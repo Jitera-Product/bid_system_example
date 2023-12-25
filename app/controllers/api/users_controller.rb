@@ -2,7 +2,7 @@ class Api::UsersController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update destroy]
   before_action :authenticate_admin!, only: %i[create update destroy]
   before_action :set_user, only: %i[show update destroy]
-  before_action :validate_user_params, only: %i[create update] # This combines the validation steps from both versions
+  before_action :validate_user_params, only: %i[create update]
 
   def index
     @users = UserService::Index.new(params.permit!, current_resource_owner).execute
@@ -35,6 +35,12 @@ class Api::UsersController < Api::BaseController
     user_parameters[:password] = user_parameters.delete(:password_hash) if user_parameters[:password_hash]
 
     if @user.update(user_parameters)
+      # Log the profile edit action
+      UserActivity.create(
+        user_id: @user.id,
+        activity_type: 'profile_edit',
+        activity_description: "User updated profile with username: #{@user.username}"
+      )
       render json: { message: 'User updated successfully', user: @user }, status: :ok
     else
       render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
@@ -69,7 +75,7 @@ class Api::UsersController < Api::BaseController
   end
 
   def validate_user_params(user_params = nil)
-    user_params ||= self.user_params # This line allows for the method to be called without arguments, as in the old code
+    user_params ||= self.user_params
     errors = []
     errors << 'The username is required.' if user_params[:username].blank?
     errors << 'The password hash is required.' if user_params[:password_hash].blank?
@@ -78,7 +84,7 @@ class Api::UsersController < Api::BaseController
       render json: { errors: errors }, status: :unprocessable_entity
       false
     else
-      validate_unique_username(user_params) # This line ensures that username uniqueness is checked
+      validate_unique_username(user_params)
     end
   end
 
