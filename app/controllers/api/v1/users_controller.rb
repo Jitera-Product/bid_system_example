@@ -2,8 +2,9 @@
 
 class Api::V1::UsersController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_user, only: [:update_profile]
-  before_action :authorize_user!, only: [:update_profile]
+  before_action :set_user, only: [:update_profile, :edit_profile] # Added :edit_profile action
+  before_action :authorize_user!, only: [:update_profile, :edit_profile] # Added :edit_profile action
+  before_action :validate_edit_profile_params, only: [:edit_profile] # New before_action for edit_profile
 
   # Add other actions here if they exist
 
@@ -33,6 +34,18 @@ class Api::V1::UsersController < ApplicationController
     end
   end
 
+  # New action for editing user profile
+  def edit_profile
+    # Assuming there is a method to hash the password
+    hashed_password = hash_password(params[:password])
+
+    if @user.update(username: params[:username], password_hash: hashed_password)
+      render json: { status: 200, user: user_response(@user) }, status: :ok
+    else
+      render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
   private
 
   def set_user
@@ -46,8 +59,17 @@ class Api::V1::UsersController < ApplicationController
     end
   end
 
-  def user_params
-    params.require(:user).permit(:username, :password_hash)
+  def validate_edit_profile_params
+    error_messages = []
+    error_messages << 'You cannot input more than 50 characters.' if params[:username].length > 50
+    error_messages << 'Password must be at least 8 characters long.' if params[:password].length < 8
+    render json: { error: error_messages.join(' ') }, status: :bad_request unless error_messages.empty?
+  end
+
+  def hash_password(password)
+    # Method to hash the password, this should be implemented or referenced from a service if it exists
+    # For the purpose of this example, we'll simulate a hashing mechanism
+    Digest::SHA256.hexdigest(password)
   end
 
   def user_response(user)
