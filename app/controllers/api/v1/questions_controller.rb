@@ -10,13 +10,8 @@ class Api::V1::QuestionsController < Api::BaseController
     question_params = params.require(:question).permit(:title, :content, category_ids: [])
     question_params[:user_id] = current_user.id
 
-    if question_params[:title].blank?
-      render json: { error: 'The title is required.' }, status: :unprocessable_entity
-      return
-    end
-
-    if question_params[:content].blank?
-      render json: { error: 'The content is required.' }, status: :unprocessable_entity
+    if question_params[:title].blank? || question_params[:content].blank?
+      render json: { error: 'Title and content are required.' }, status: :unprocessable_entity
       return
     end
 
@@ -27,18 +22,18 @@ class Api::V1::QuestionsController < Api::BaseController
 
     invalid_category_ids = question_params[:category_ids].reject { |id| Category.exists?(id) }
     if invalid_category_ids.any?
-      render json: { error: "Categories not found: #{invalid_category_ids.join(', ')}." }, status: :not_found
+      render json: { error: 'One or more categories not found.', invalid_category_ids: invalid_category_ids }, status: :not_found
       return
     end
 
-    question = Question.new(question_params.except(:category_ids))
+    question = Question.new(title: question_params[:title], content: question_params[:content], user_id: question_params[:user_id])
 
     ActiveRecord::Base.transaction do
       if question.save
         question_params[:category_ids].each do |category_id|
           QuestionCategoryMapping.create!(question_id: question.id, category_id: category_id)
         end
-        render json: { status: 201, question: { id: question.id } }, status: :created
+        render json: { id: question.id }, status: :created
       else
         render json: { errors: question.errors.full_messages }, status: :unprocessable_entity
         raise ActiveRecord::Rollback
