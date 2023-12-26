@@ -1,9 +1,10 @@
 class Api::V1::ModerationController < Api::BaseController
   before_action :authenticate_user!
   before_action :check_admin_role
+  before_action :validate_moderation_input, only: [:update]
   before_action :set_moderatable, only: [:update]
 
-  # PUT /api/moderate/:type/:id
+  # PUT /api/v1/moderate
   def update
     action = params[:action]
     moderator_id = params[:moderator_id]
@@ -27,7 +28,9 @@ class Api::V1::ModerationController < Api::BaseController
         UserActivity.create(
           user_id: moderator_id,
           activity_type: 'moderation',
-          activity_description: "Moderation action '#{action}' performed on #{@moderatable.class.name} with ID: #{params[:id]}"
+          activity_description: "Moderation action '#{action}' performed on #{@moderatable.class.name} with ID: #{params[:submission_id]}",
+          action: action,
+          timestamp: Time.current
         )
 
         render json: { message: "Content has been successfully #{action}d" }, status: :ok
@@ -49,8 +52,15 @@ class Api::V1::ModerationController < Api::BaseController
     render json: { error: 'Forbidden' }, status: :forbidden unless current_user.role == 'Administrator'
   end
 
+  def validate_moderation_input
+    required_params = %w[submission_id moderator_id action]
+    missing_params = required_params.select { |param| params[param].blank? }
+    unless missing_params.empty?
+      render json: { error: "Missing parameters: #{missing_params.join(', ')}" }, status: :unprocessable_entity
+    end
+  end
+
   def set_moderatable
-    # Adjusted to use 'submission_id' instead of 'id' to match the requirement
     submission_id = params[:submission_id]
     case params[:type]
     when 'question'
@@ -70,7 +80,6 @@ class Api::V1::ModerationController < Api::BaseController
     when 'approve'
       { status: 'approved' }
     when 'reject'
-      # Allow for an optional reason when rejecting
       { status: 'rejected', reason: params[:reason] }
     when 'edit'
       { content: params[:content] }
