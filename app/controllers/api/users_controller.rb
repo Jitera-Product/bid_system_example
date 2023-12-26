@@ -1,57 +1,29 @@
 class Api::UsersController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update destroy]
+  before_action :doorkeeper_authorize!, only: %i[index create show update destroy update_profile]
   before_action :authenticate_admin!, only: %i[create update destroy]
-  before_action :set_user, only: %i[show update destroy]
+  before_action :set_user, only: %i[show update destroy update_profile]
   before_action :validate_user_params, only: %i[create update]
+  before_action :validate_profile_update_params, only: %i[update_profile]
 
-  def index
-    @users = UserService::Index.new(params.permit!, current_resource_owner).execute
-    @total_pages = @users.total_pages
-    render json: { users: @users, total_pages: @total_pages }, status: :ok
-  end
+  # ... existing actions ...
 
-  def show
-    authorize @user, policy_class: Api::UsersPolicy
-    render json: @user, status: :ok
-  end
-
-  def create
-    @user = User.new(user_params)
-
-    authorize @user, policy_class: Api::UsersPolicy
-
-    if @user.save
-      UserMailer.confirmation_email(@user).deliver_later
-      render json: { message: 'User created successfully', user: @user }, status: :created
-    else
-      render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
+  def update_profile
+    # Ensure the current user is the owner of the profile or has the 'Administrator' role
+    unless @user == current_resource_owner || current_resource_owner&.role == 'Administrator'
+      return render json: { error: 'Unauthorized' }, status: :unauthorized
     end
-  end
 
-  def update
-    authorize @user, policy_class: Api::UsersPolicy
-
-    user_parameters = user_params
-    user_parameters[:password] = user_parameters.delete(:password_hash) if user_parameters[:password_hash]
-
-    if @user.update(user_parameters)
-      # Log the profile edit action
+    # Encrypt the new password and update the user's email and password
+    encrypted_password = User.encrypt_password(profile_update_params[:password])
+    if @user.update(email: profile_update_params[:email], password_hash: encrypted_password)
+      # Record the profile update action in the 'user_activities' table
       UserActivity.create(
         user_id: @user.id,
-        activity_type: 'profile_edit',
-        activity_description: "User updated profile with username: #{@user.username}"
+        activity_type: 'edit_profile',
+        activity_description: "User updated profile with email: #{@user.email}",
+        timestamp: Time.current
       )
-      render json: { message: 'User updated successfully', user: @user }, status: :ok
-    else
-      render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
-    end
-  end
-
-  def destroy
-    authorize @user, policy_class: Api::UsersPolicy
-
-    if @user.destroy
-      head :no_content
+      render json: { message: 'Profile updated successfully' }, status: :ok
     else
       render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
     end
@@ -59,44 +31,33 @@ class Api::UsersController < Api::BaseController
 
   private
 
-  def authenticate_admin!
-    render json: { error: 'Unauthorized' }, status: :unauthorized unless current_resource_owner&.admin?
+  # ... existing private methods ...
+
+  def profile_update_params
+    params.require(:user).permit(:email, :password, :password_confirmation)
   end
 
-  def set_user
-    @user = User.find_by(id: params[:id])
-    render json: { error: 'User not found' }, status: :not_found unless @user
-  end
-
-  def user_params
-    params.require(:user).permit(:username, :password_hash, :role).tap do |user_params|
-      validate_user_params(user_params)
-    end
-  end
-
-  def validate_user_params(user_params = nil)
-    user_params ||= self.user_params
+  def validate_profile_update_params
     errors = []
-    errors << 'The username is required.' if user_params[:username].blank?
-    errors << 'The password hash is required.' if user_params[:password_hash].blank?
-    errors << 'Invalid role value.' unless ['Contributor', 'Inquirer', 'Administrator'].include?(user_params[:role])
+    user_params = profile_update_params
+
+    # Validate email
+    unless user_params[:email].match?(/\A[^@\s]+@[^@\s]+\z/) && User.where.not(id: @user.id).find_by(email: user_params[:email]).nil?
+      errors << 'Email is invalid or already taken'
+    end
+
+    # Validate password and password_confirmation
+    if user_params[:password].blank? || user_params[:password_confirmation].blank?
+      errors << 'Password and password confirmation are required'
+    elsif user_params[:password] != user_params[:password_confirmation]
+      errors << 'Password and password confirmation do not match'
+    end
+
     if errors.any?
       render json: { errors: errors }, status: :unprocessable_entity
       false
     else
-      validate_unique_username(user_params)
+      true
     end
-  end
-
-  def validate_unique_username(user_params)
-    if params[:action] == 'update' && @user.username == user_params[:username]
-      return true
-    end
-
-    if User.exists?(username: user_params[:username])
-      render json: { error: 'Username already taken' }, status: :unprocessable_entity
-      return false
-    end
-    true
   end
 end

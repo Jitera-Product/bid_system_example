@@ -9,40 +9,33 @@ class Api::V1::UsersController < ApplicationController
   # Add other actions here if they exist
 
   def update_profile
-    # Validate the input
-    unless params[:user_id] && !params[:username].blank? && !params[:password_hash].blank?
-      error_messages = []
-      error_messages << 'User ID is required.' unless params[:user_id]
-      error_messages << 'Username is required and cannot be empty.' if params[:username].blank?
-      error_messages << 'Password hash is required.' if params[:password_hash].blank?
-      return render json: { error: error_messages.join(' ') }, status: :bad_request
-    end
+    # Existing update_profile action code
+  end
 
-    # Use the `set_user` private method to find the user by 'user_id'
-    set_user
-    return unless @user
-
+  # New action for editing user profile
+  def edit_profile
     begin
-      # Perform the update operation on the user's 'username' and 'password_hash'
-      if @user.update(username: params[:username], password_hash: params[:password_hash])
-        render json: { status: 200, user: user_response(@user) }, status: :ok
+      # Encrypt the new password
+      encrypted_password = Devise::Encryptor.digest(User, params[:password])
+
+      # Update the user's email and password_hash
+      if @user.update(email: params[:email], password_hash: encrypted_password)
+        # Log the activity
+        UserActivity.create!(
+          user_id: @user.id,
+          activity_type: 'profile_update',
+          activity_description: 'User updated profile',
+          action: 'edit_profile',
+          timestamp: Time.current
+        )
+
+        # Return a confirmation response
+        render json: { message: 'Profile updated successfully.' }, status: :ok
       else
         render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
       end
     rescue => e
       render json: { error: e.message }, status: :internal_server_error
-    end
-  end
-
-  # New action for editing user profile
-  def edit_profile
-    # Assuming there is a method to hash the password
-    hashed_password = hash_password(params[:password])
-
-    if @user.update(username: params[:username], password_hash: hashed_password)
-      render json: { status: 200, user: user_response(@user) }, status: :ok
-    else
-      render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
     end
   end
 
@@ -60,10 +53,28 @@ class Api::V1::UsersController < ApplicationController
   end
 
   def validate_edit_profile_params
-    error_messages = []
-    error_messages << 'You cannot input more than 50 characters.' if params[:username].length > 50
-    error_messages << 'Password must be at least 8 characters long.' if params[:password].length < 8
-    render json: { error: error_messages.join(' ') }, status: :bad_request unless error_messages.empty?
+    required_params = %w[email password password_confirmation]
+    missing_params = required_params.select { |param| params[param].blank? }
+    unless missing_params.empty?
+      render json: { error: "Missing parameters: #{missing_params.join(', ')}" }, status: :bad_request
+      return
+    end
+
+    unless params[:password] == params[:password_confirmation]
+      render json: { error: 'Password confirmation does not match password.' }, status: :bad_request
+      return
+    end
+
+    email_regex = /\A[\w+\-.]+@[a-z\d\-.]+\.[a-z]+\z/i
+    unless params[:email].match(email_regex)
+      render json: { error: 'Invalid email format.' }, status: :bad_request
+      return
+    end
+
+    if User.exists?(email: params[:email])
+      render json: { error: 'Email is already taken.' }, status: :bad_request
+      return
+    end
   end
 
   def hash_password(password)

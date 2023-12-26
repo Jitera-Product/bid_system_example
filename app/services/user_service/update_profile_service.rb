@@ -1,6 +1,15 @@
 # typed: true
 class UpdateProfileService < BaseService
-  def update_profile(user_id, username, password_hash)
+  attr_reader :user_id, :email, :password, :password_confirmation
+
+  def initialize(user_id, email, password, password_confirmation)
+    @user_id = user_id
+    @email = email
+    @password = password
+    @password_confirmation = password_confirmation
+  end
+
+  def execute
     # Authenticate the user
     user = User.find_by(id: user_id)
     raise 'User not found' unless user
@@ -8,17 +17,37 @@ class UpdateProfileService < BaseService
 
     # Validate the input data
     raise 'User ID cannot be blank' if user_id.blank?
-    raise 'Username cannot be blank' if username.blank?
-    raise 'Password hash cannot be blank' if password_hash.blank?
+    raise 'Email cannot be blank' if email.blank?
+    raise 'Password cannot be blank' if password.blank?
+    raise 'Password confirmation cannot be blank' if password_confirmation.blank?
+    raise 'Password does not match confirmation' unless password == password_confirmation
 
     # Check if the user has the 'Administrator' role or is the owner of the 'user_id'
-    unless user.has_role?(:Administrator) || user.id == user_id
+    unless user.has_role?(:Administrator) || user.id == user_id.to_i
       raise Pundit::NotAuthorizedError, "You are not authorized to update this profile."
     end
 
-    # Update the user's username and password_hash
-    user.update!(username: username, password_hash: Devise::Encryptor.digest(User, password_hash))
-    user
+    # Check if the email is in the correct format and is unique
+    email_regex = /\A[\w+\-.]+@[a-z\d\-.]+\.[a-z]+\z/i
+    raise 'Invalid email format' unless email =~ email_regex
+    raise 'Email already taken' if User.exists?(email: email)
+
+    # Encrypt the new password
+    encrypted_password = Devise::Encryptor.digest(User, password)
+
+    # Update the user's email and encrypted_password
+    user.update!(email: email, encrypted_password: encrypted_password)
+
+    # Record the profile update action
+    UserActivity.create!(
+      user_id: user_id,
+      activity_type: 'edit_profile',
+      activity_description: 'User has updated their profile.',
+      action: 'edit_profile',
+      timestamp: Time.current
+    )
+
+    { message: 'Profile updated successfully' }
   rescue Pundit::NotAuthorizedError => e
     logger.error "UpdateProfileService Authorization Error: #{e.message}"
     raise e
