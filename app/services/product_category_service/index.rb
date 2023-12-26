@@ -4,45 +4,48 @@ class ProductCategoryService::Index
 
   def initialize(params, _current_user = nil)
     @params = params
-
     @records = ProductCategory
   end
 
   def execute
-    category_id_equal
-
-    product_id_equal
-
-    order
-
-    paginate
+    filter_by_category_id
+    filter_by_product_id
+    order_records
+    paginate_records
+    {
+      records: @records,
+      pagination: pagination_details
+    }
   end
 
-  def category_id_equal
-    return if params.dig(:product_categories, :category_id).blank?
+  private
 
-    @records = ProductCategory.where('category_id = ?', params.dig(:product_categories, :category_id))
+  def filter_by_category_id
+    category_id = params.dig(:product_categories, :category_id)
+    @records = @records.where(category_id: category_id) if category_id.present?
   end
 
-  def product_id_equal
-    return if params.dig(:product_categories, :product_id).blank?
-
-    @records = if records.is_a?(Class)
-                 ProductCategory.where(value.query)
-               else
-                 records.or(ProductCategory.where('product_id = ?', params.dig(:product_categories, :product_id)))
-               end
+  def filter_by_product_id
+    product_id = params.dig(:product_categories, :product_id)
+    @records = @records.where(product_id: product_id) if product_id.present?
   end
 
-  def order
-    return if records.blank?
-
-    @records = records.order('product_categories.created_at desc')
+  def order_records
+    @records = @records.order(created_at: :desc)
   end
 
-  def paginate
-    @records = ProductCategory.none if records.blank? || records.is_a?(Class)
-    @records = records.page(params.dig(:pagination_page) || 1).per(params.dig(:pagination_limit) || 20)
+  def paginate_records
+    page = params.dig(:pagination, :page) || 1
+    limit = params.dig(:pagination, :limit) || 20
+    @records = @records.page(page).per(limit)
+  end
+
+  def pagination_details
+    {
+      current_page: @records.current_page,
+      total_pages: @records.total_pages,
+      total_count: @records.total_count
+    }
   end
 end
 # rubocop:enable Style/ClassAndModuleChildren
