@@ -4,45 +4,36 @@ class ListingBidItemService::Index
 
   def initialize(params, _current_user = nil)
     @params = params
-
-    @records = ListingBidItem
+    @records = ListingBidItem.all
   end
 
   def execute
     listing_id_equal
-
     bid_item_id_equal
-
     order
-
     paginate
   end
 
-  def listing_id_equal
-    return if params.dig(:listing_bid_items, :listing_id).blank?
+  private
 
-    @records = ListingBidItem.where('listing_id = ?', params.dig(:listing_bid_items, :listing_id))
+  def listing_id_equal
+    listing_id = params.dig(:listing_bid_items, :listing_id)
+    @records = records.where(listing_id: listing_id) if listing_id.present?
   end
 
   def bid_item_id_equal
-    return if params.dig(:listing_bid_items, :bid_item_id).blank?
-
-    @records = if records.is_a?(Class)
-                 ListingBidItem.where(value.query)
-               else
-                 records.or(ListingBidItem.where('bid_item_id = ?', params.dig(:listing_bid_items, :bid_item_id)))
-               end
+    bid_item_id = params.dig(:listing_bid_items, :bid_item_id)
+    @records = records.where(bid_item_id: bid_item_id) if bid_item_id.present?
   end
 
   def order
-    return if records.blank?
-
-    @records = records.order('listing_bid_items.created_at desc')
+    @records = records.order(created_at: :desc)
   end
 
   def paginate
-    @records = ListingBidItem.none if records.blank? || records.is_a?(Class)
-    @records = records.page(params.dig(:pagination_page) || 1).per(params.dig(:pagination_limit) || 20)
+    page = params.dig(:pagination, :page) || 1
+    limit = params.dig(:pagination, :limit) || 20
+    @records = records.page(page).per(limit)
   end
 end
 # rubocop:enable Style/ClassAndModuleChildren

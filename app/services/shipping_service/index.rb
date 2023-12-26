@@ -4,12 +4,11 @@ class ShippingService::Index
 
   def initialize(params, _current_user = nil)
     @params = params
-
     @records = Shipping
   end
 
   def execute
-    shiping_address_start_with
+    shipping_address_start_with
 
     post_code_equal
 
@@ -28,81 +27,56 @@ class ShippingService::Index
     paginate
   end
 
-  def shiping_address_start_with
-    return if params.dig(:shippings, :shiping_address).blank?
+  def shipping_address_start_with
+    return if params[:shipping_address].blank?
 
-    @records = Shipping.where('shiping_address like ?', "%#{params.dig(:shippings, :shiping_address)}")
+    @records = records.where('shipping_address ILIKE ?', "#{params[:shipping_address]}%")
   end
 
   def post_code_equal
-    return if params.dig(:shippings, :post_code).blank?
+    return if params[:post_code].blank?
 
-    @records = if records.is_a?(Class)
-                 Shipping.where(value.query)
-               else
-                 records.or(Shipping.where('post_code = ?', params.dig(:shippings, :post_code)))
-               end
+    @records = records.where(post_code: params[:post_code])
   end
 
   def phone_number_start_with
-    return if params.dig(:shippings, :phone_number).blank?
+    return if params[:phone_number].blank?
 
-    @records = if records.is_a?(Class)
-                 Shipping.where(value.query)
-               else
-                 records.or(Shipping.where('phone_number like ?', "%#{params.dig(:shippings, :phone_number)}"))
-               end
+    @records = records.where('phone_number ILIKE ?', "#{params[:phone_number]}%")
   end
 
   def bid_id_equal
-    return if params.dig(:shippings, :bid_id).blank?
+    return if params[:bid_id].blank?
 
-    @records = if records.is_a?(Class)
-                 Shipping.where(value.query)
-               else
-                 records.or(Shipping.where('bid_id = ?', params.dig(:shippings, :bid_id)))
-               end
+    @records = records.where(bid_id: params[:bid_id])
   end
 
   def status_equal
-    return if params.dig(:shippings, :status).blank?
+    return if params[:status].blank?
 
-    @records = if records.is_a?(Class)
-                 Shipping.where(value.query)
-               else
-                 records.or(Shipping.where('status = ?', params.dig(:shippings, :status)))
-               end
+    @records = records.where(status: params[:status])
   end
 
   def full_name_start_with
-    return if params.dig(:shippings, :full_name).blank?
+    return if params[:full_name].blank?
 
-    @records = if records.is_a?(Class)
-                 Shipping.where(value.query)
-               else
-                 records.or(Shipping.where('full_name like ?', "%#{params.dig(:shippings, :full_name)}"))
-               end
+    @records = records.where('full_name ILIKE ?', "#{params[:full_name]}%")
   end
 
   def email_start_with
-    return if params.dig(:shippings, :email).blank?
+    return if params[:email].blank?
 
-    @records = if records.is_a?(Class)
-                 Shipping.where(value.query)
-               else
-                 records.or(Shipping.where('email like ?', "%#{params.dig(:shippings, :email)}"))
-               end
+    @records = records.where('email ILIKE ?', "#{params[:email]}%")
   end
 
   def order
-    return if records.blank?
-
-    @records = records.order('shippings.created_at desc')
+    @records = records.order(created_at: :desc)
   end
 
   def paginate
-    @records = Shipping.none if records.blank? || records.is_a?(Class)
-    @records = records.page(params.dig(:pagination_page) || 1).per(params.dig(:pagination_limit) || 20)
+    page = params.fetch(:page, 1).to_i
+    limit = params.fetch(:limit, 10).to_i.clamp(1, 100) # Ensuring the limit is within a reasonable range
+    @records = records.page(page).per(limit)
   end
 end
 # rubocop:enable Style/ClassAndModuleChildren

@@ -1,10 +1,22 @@
 class Api::ProductsController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update]
 
+  # Define a list of permitted parameters for filtering and pagination
+  INDEX_PARAMS_WHITELIST = [:page, :per_page, :sort, :filter, :user_id, :name, :description, :price, :stock, :approved_id].freeze
+
   def index
-    # inside service params are checked and whiteisted
-    @products = ProductService::Index.new(params.permit!, current_resource_owner).execute
-    @total_pages = @products.total_pages
+    begin
+      # Use strong parameters to permit only the allowed parameters
+      permitted_params = params.permit(INDEX_PARAMS_WHITELIST)
+      # Use ProductService::Index to retrieve products
+      @products = ProductService::Index.list_products(permitted_params, current_resource_owner)
+      @total_pages = @products.total_pages
+      render json: { products: @products, total_pages: @total_pages }, status: :ok
+    rescue Exceptions::AuthenticationError => e
+      render json: { error: e.message }, status: :unauthorized
+    rescue => e
+      render json: { error: e.message }, status: :internal_server_error
+    end
   end
 
   def show
@@ -24,7 +36,7 @@ class Api::ProductsController < Api::BaseController
   end
 
   def create_params
-    params.require(:products).permit(:name, :price, :description, :image, :user_id, :stock, :aproved_id)
+    params.require(:products).permit(:name, :price, :description, :image, :user_id, :stock, :approved_id)
   end
 
   def update
@@ -41,6 +53,6 @@ class Api::ProductsController < Api::BaseController
   end
 
   def update_params
-    params.require(:products).permit(:name, :price, :description, :image, :user_id, :stock, :aproved_id)
+    params.require(:products).permit(:name, :price, :description, :image, :user_id, :stock, :approved_id)
   end
 end

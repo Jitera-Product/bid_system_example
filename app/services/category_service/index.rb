@@ -4,57 +4,56 @@ class CategoryService::Index
 
   def initialize(params, _current_user = nil)
     @params = params
-
-    @records = Category
+    @query = CategoriesQuery.new
   end
 
   def execute
-    created_id_equal
-
-    name_start_with
-
-    disabled_equal
-
-    order
-
+    filter_by_created_id
+    filter_by_name_prefix
+    filter_by_disabled_status
+    order_by_creation_date_desc
     paginate
   end
 
-  def created_id_equal
+  def filter_by_created_id
     return if params.dig(:categories, :created_id).blank?
 
-    @records = Category.where('created_id = ?', params.dig(:categories, :created_id))
+    @query = @query.filter_by_created_id(params.dig(:categories, :created_id))
   end
 
-  def name_start_with
+  def filter_by_name_prefix
     return if params.dig(:categories, :name).blank?
 
-    @records = if records.is_a?(Class)
-                 Category.where(value.query)
-               else
-                 records.or(Category.where('name like ?', "%#{params.dig(:categories, :name)}"))
-               end
+    @query = @query.filter_by_name_prefix(params.dig(:categories, :name))
   end
 
-  def disabled_equal
-    return if params.dig(:categories, :disabled).blank?
+  def filter_by_disabled_status
+    return if params.dig(:categories, :disabled).nil?
 
-    @records = if records.is_a?(Class)
-                 Category.where(value.query)
-               else
-                 records.or(Category.where('disabled = ?', params.dig(:categories, :disabled)))
-               end
+    @query = @query.filter_by_disabled_status(params.dig(:categories, :disabled))
   end
 
-  def order
-    return if records.blank?
-
-    @records = records.order('categories.created_at desc')
+  def order_by_creation_date_desc
+    @query = @query.order_by_creation_date_desc
   end
 
   def paginate
-    @records = Category.none if records.blank? || records.is_a?(Class)
-    @records = records.page(params.dig(:pagination_page) || 1).per(params.dig(:pagination_limit) || 20)
+    current_page = params.dig(:pagination, :page) || 1
+    per_page = params.dig(:pagination, :per_page) || 20
+    @records = Pagination.paginate(@query, current_page, per_page)
+  end
+
+  def list_categories
+    execute
+    {
+      records: @records,
+      pagination: {
+        current_page: @records.current_page,
+        per_page: @records.per_page,
+        total_pages: @records.total_pages,
+        total_count: @records.total_count
+      }
+    }
   end
 end
 # rubocop:enable Style/ClassAndModuleChildren
