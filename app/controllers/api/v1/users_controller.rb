@@ -18,8 +18,8 @@ class Api::V1::UsersController < ApplicationController
       # Encrypt the new password
       encrypted_password = Devise::Encryptor.digest(User, params[:password])
 
-      # Update the user's email and password_hash
-      if @user.update(email: params[:email], password_hash: encrypted_password)
+      # Update the user's username and encrypted password
+      if @user.update(username: params[:username], encrypted_password: encrypted_password)
         # Log the activity
         UserActivity.create!(
           user_id: @user.id,
@@ -29,8 +29,8 @@ class Api::V1::UsersController < ApplicationController
           timestamp: Time.current
         )
 
-        # Return a confirmation response
-        render json: { message: 'Profile updated successfully.' }, status: :ok
+        # Return a confirmation response with the user's updated information
+        render json: { status: 200, user: user_response(@user) }, status: :ok
       else
         render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
       end
@@ -53,40 +53,29 @@ class Api::V1::UsersController < ApplicationController
   end
 
   def validate_edit_profile_params
-    required_params = %w[email password password_confirmation]
+    required_params = %w[username password]
     missing_params = required_params.select { |param| params[param].blank? }
     unless missing_params.empty?
       render json: { error: "Missing parameters: #{missing_params.join(', ')}" }, status: :bad_request
       return
     end
 
-    unless params[:password] == params[:password_confirmation]
-      render json: { error: 'Password confirmation does not match password.' }, status: :bad_request
+    if params[:username].length > 50
+      render json: { error: 'You cannot input more than 50 characters.' }, status: :bad_request
       return
     end
 
-    email_regex = /\A[\w+\-.]+@[a-z\d\-.]+\.[a-z]+\z/i
-    unless params[:email].match(email_regex)
-      render json: { error: 'Invalid email format.' }, status: :bad_request
+    if params[:password].length < 8
+      render json: { error: 'Password must be at least 8 characters long.' }, status: :bad_request
       return
     end
-
-    if User.exists?(email: params[:email])
-      render json: { error: 'Email is already taken.' }, status: :bad_request
-      return
-    end
-  end
-
-  def hash_password(password)
-    # Method to hash the password, this should be implemented or referenced from a service if it exists
-    # For the purpose of this example, we'll simulate a hashing mechanism
-    Digest::SHA256.hexdigest(password)
   end
 
   def user_response(user)
     {
       id: user.id,
       username: user.username,
+      role: user.role,
       updated_at: user.updated_at.iso8601
     }
   end
