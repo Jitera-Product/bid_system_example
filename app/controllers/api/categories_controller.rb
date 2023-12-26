@@ -3,8 +3,18 @@ class Api::CategoriesController < Api::BaseController
 
   def index
     # inside service params are checked and whiteisted
-    @categories = CategoryService::Index.new(params.permit!, current_resource_owner).execute
-    @total_pages = @categories.total_pages
+    service = CategoryService::Index.new(filtered_params, current_resource_owner)
+    result = service.execute
+    render json: {
+      records: result.records,
+      pagination: {
+        total_pages: result.total_pages,
+        current_page: result.current_page,
+        next_page: result.next_page,
+        prev_page: result.prev_page,
+        total_count: result.total_count
+      }
+    }
   end
 
   def show
@@ -38,5 +48,17 @@ class Api::CategoriesController < Api::BaseController
 
   def update_params
     params.require(:categories).permit(:name, :created_id, :disabled)
+  end
+
+  private
+
+  def filtered_params
+    permitted_params = params.permit!.to_h
+    permitted_params[:filters] ||= {}
+    permitted_params[:filters][:created_id] = params[:created_id] if params[:created_id].present?
+    permitted_params[:filters][:name_prefix] = params[:name_prefix] if params[:name_prefix].present?
+    permitted_params[:filters][:disabled] = params[:disabled] if params[:disabled].present?
+    permitted_params[:order] = { created_at: :desc }
+    permitted_params
   end
 end
