@@ -2,6 +2,7 @@ module Api
   class FeedbacksController < BaseController
     before_action :doorkeeper_authorize!
     before_action :authenticate_inquirer, only: [:create]
+    before_action :validate_comment_length, only: [:create] # Added new before_action for comment validation
 
     def create
       answer = Answer.find_by(id: feedback_params[:answer_id])
@@ -41,6 +42,12 @@ module Api
     def authenticate_inquirer
       # Assuming there is a current_user method available from doorkeeper
       render json: { error: 'Unauthorized' }, status: :unauthorized unless current_user&.role == 'Inquirer'
+    end
+
+    def validate_comment_length
+      if feedback_params[:comment].length > 500
+        render json: { error: 'You cannot input more than 500 characters.' }, status: :bad_request and return
+      end
     end
 
     def error_response(resource, errors)
