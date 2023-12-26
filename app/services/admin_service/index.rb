@@ -2,49 +2,42 @@
 class AdminService::Index
   include Pundit::Authorization
 
-  attr_accessor :params, :records, :query
+  attr_accessor :params, :records, :query, :current_user
 
   def initialize(params, current_user = nil)
     @params = params
+    @current_user = current_user
 
     @records = Api::AdminsPolicy::Scope.new(current_user, Admin).resolve
   end
 
   def execute
-    name_start_with
+    filter_by_name_prefix if params.dig(:admins, :name).present?
+    filter_by_email_prefix if params.dig(:admins, :email).present?
 
-    email_start_with
+    order_records
 
-    order
-
-    paginate
+    paginate_records
   end
 
-  def name_start_with
-    return if params.dig(:admins, :name).blank?
+  private
 
-    @records = Admin.where('name like ?', "%#{params.dig(:admins, :name)}")
+  def filter_by_name_prefix
+    @records = @records.where('name LIKE ?', "#{params.dig(:admins, :name)}%")
   end
 
-  def email_start_with
-    return if params.dig(:admins, :email).blank?
-
-    @records = if records.is_a?(Class)
-                 Admin.where(value.query)
-               else
-                 records.or(Admin.where('email like ?', "%#{params.dig(:admins, :email)}"))
-               end
+  def filter_by_email_prefix
+    @records = @records.where('email LIKE ?', "#{params.dig(:admins, :email)}%")
   end
 
-  def order
-    return if records.blank?
-
-    @records = records.order('admins.created_at desc')
+  def order_records
+    @records = @records.order(created_at: :desc)
   end
 
-  def paginate
-    @records = Admin.none if records.blank? || records.is_a?(Class)
-    @records = records.page(params.dig(:pagination_page) || 1).per(params.dig(:pagination_limit) || 20)
+  def paginate_records
+    page = params.dig(:pagination_page) || 1
+    per_page = params.dig(:pagination_limit) || 20
+    @records = @records.page(page).per(per_page)
   end
 end
 # rubocop:enable Style/ClassAndModuleChildren
