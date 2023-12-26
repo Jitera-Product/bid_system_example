@@ -11,16 +11,12 @@ class AnswerSearchService
       key_terms, intent = extract_key_terms_and_intent(query)
       # Search the "questions" table for matching terms in the title and content columns.
       questions = Question.where('title LIKE :query OR content LIKE :query', query: "%#{key_terms}%")
-      # Select the most relevant question based on the search results and intent.
-      relevant_question = select_relevant_question(questions, intent)
-      # Retrieve the corresponding answer(s) from the "answers" table using the question_id.
-      answers = Answer.where(question_id: relevant_question.id) if relevant_question
-      # If multiple answers are found, sort them by the feedback_score to find the most helpful answer.
-      sorted_answers = answers.order(feedback_score: :desc) if answers
-      # Return the most relevant answer's content to the inquirer.
-      most_helpful_answer = sorted_answers.first if sorted_answers
-      # Return the content of the selected answer
-      most_helpful_answer.content if most_helpful_answer
+      # Retrieve the associated answers by joining the 'answers' table with the 'questions' table.
+      answers = Answer.joins(:question).where(question: { id: questions }).order(feedback_score: :desc)
+      # Implement an algorithm to determine the best match based on the query context and feedback scores.
+      most_relevant_answer = select_best_match(answers, intent)
+      # Return the content of the most relevant answer or an appropriate message if no answer is found.
+      most_relevant_answer&.content || 'No relevant answers found.'
     rescue StandardError => e
       # Handle exceptions
       { error: e.message }
@@ -37,16 +33,10 @@ class AnswerSearchService
     return key_terms, intent
   end
 
-  def select_relevant_question(questions, intent)
-    # Logic to score and select the most relevant question based on intent
-    questions.max_by do |question|
-      score_relevance(question, intent)
-    end
-  end
-
-  def score_relevance(question, intent)
-    # Placeholder for relevance scoring logic
-    # This should return a numerical score indicating the relevance of the question to the intent
-    1 # This is a placeholder value
+  def select_best_match(answers, intent)
+    # Placeholder for additional weighting or scoring logic based on intent
+    # This should implement actual logic to select the best match
+    # For now, we return the first answer as a placeholder
+    answers.first
   end
 end
