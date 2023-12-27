@@ -42,5 +42,47 @@ class Api::V1::AnswersController < ApplicationController
     end
   end
 
+  # New action search as per the guideline
+  def search
+    query = params[:query]
+    if query.blank?
+      render json: { error: "The query is required." }, status: :bad_request
+      return
+    elsif query.length > 500
+      render json: { error: "The query cannot exceed 500 characters." }, status: :bad_request
+      return
+    end
+
+    begin
+      # Extract key terms from the query using NlpService
+      key_terms = NlpService.parse_query(query)
+
+      # Retrieve relevant answers using SearchService
+      answers = SearchService.search_answers(key_terms)
+
+      # Format the response with the required JSON structure
+      formatted_answers = answers.map do |answer|
+        {
+          id: answer.id,
+          question_id: answer.question_id,
+          content: answer.content,
+          created_at: answer.created_at
+        }
+      end
+
+      if formatted_answers.any?
+        render json: { status: 200, answers: formatted_answers }, status: :ok
+      else
+        render json: { error: I18n.t('controller.api.v1.answers.search.no_answers_found') }, status: :not_found
+      end
+    rescue => e
+      # Log the error
+      LogService.log_error(e.message)
+
+      # Respond with a 500 internal server error status code and message
+      render json: { error: I18n.t('controller.api.v1.answers.search.internal_server_error') }, status: :internal_server_error
+    end
+  end
+
   # Include any other existing methods or actions here
 end
