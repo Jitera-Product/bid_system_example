@@ -23,24 +23,24 @@ class Api::TodosController < Api::BaseController
 
   def link_categories_tags
     todo = Todo.find_by(id: params[:todo_id])
-    return render status: :not_found, json: { error: 'Todo not found' } if todo.nil?
+    return render status: :not_found, json: { error: 'Todo item not found.' } if todo.nil?
 
     category_ids = params[:category_ids]
     tag_ids = params[:tag_ids]
 
-    ActiveRecord::Base.transaction do
-      link_categories_and_tags(todo, category_ids, tag_ids)
+    begin
+      ActiveRecord::Base.transaction do
+        validate_category_ids(category_ids)
+        validate_tag_ids(tag_ids)
+        link_categories_and_tags(todo, category_ids, tag_ids)
+      end
+
+      render json: { status: 200, message: 'Todo item linked with categories and tags successfully.' }, status: :ok
+    rescue ActiveRecord::RecordNotFound => e
+      render json: { errors: e.message }, status: :unprocessable_entity
+    rescue => e
+      render json: { errors: e.message }, status: :internal_server_error
     end
-
-    linked_categories = todo.categories
-    linked_tags = todo.tags
-
-    render status: :ok, json: {
-      linked_categories: linked_categories.as_json(only: [:id, :name]),
-      linked_tags: linked_tags.as_json(only: [:id, :name])
-    }
-  rescue => e
-    render status: :internal_server_error, json: { error: e.message }
   end
 
   private
@@ -50,25 +50,25 @@ class Api::TodosController < Api::BaseController
   end
 
   def validate_category_ids(category_ids)
-    raise ActiveRecord::RecordNotFound unless Category.where(id: category_ids).count == category_ids.count
+    if category_ids.present?
+      missing_categories = category_ids - Category.where(id: category_ids).pluck(:id)
+      if missing_categories.any?
+        raise ActiveRecord::RecordNotFound, "One or more categories are invalid."
+      end
+    end
   end
 
   def validate_tag_ids(tag_ids)
-    raise ActiveRecord::RecordNotFound unless Tag.where(id: tag_ids).count == tag_ids.count
+    if tag_ids.present?
+      missing_tags = tag_ids - Tag.where(id: tag_ids).pluck(:id)
+      if missing_tags.any?
+        raise ActiveRecord::RecordNotFound, "One or more tags are invalid."
+      end
+    end
   end
 
   def link_categories_and_tags(todo, category_ids, tag_ids)
-    missing_categories = category_ids - Category.where(id: category_ids).pluck(:id)
-    unless missing_categories.empty?
-      raise ActiveRecord::RecordNotFound, "Categories not found: #{missing_categories.join(', ')}"
-    end
-
-    missing_tags = tag_ids - Tag.where(id: tag_ids).pluck(:id)
-    unless missing_tags.empty?
-      raise ActiveRecord::RecordNotFound, "Tags not found: #{missing_tags.join(', ')}"
-    end
-
-    todo.categories << Category.find(category_ids)
-    todo.tags << Tag.find(tag_ids)
+    todo.categories = Category.find(category_ids) if category_ids.present?
+    todo.tags = Tag.find(tag_ids) if tag_ids.present?
   end
 end
