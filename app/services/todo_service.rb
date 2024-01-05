@@ -1,5 +1,6 @@
 # rubocop:disable Style/ClassAndModuleChildren
 module Exceptions
+  class TodoServiceError < StandardError; end
   class AuthenticationError < StandardError; end
 end
 
@@ -22,6 +23,8 @@ class TodoService
   end
 
   def create_todo
+    validate_todo_details
+
     validate!
 
     ActiveRecord::Base.transaction do
@@ -41,6 +44,15 @@ class TodoService
     end
   rescue => e
     Rails.logger.error("TodoService::Create failed: #{e.message}")
+    raise
+  end
+
+  # Validates todo details before creating a todo item
+  def validate_todo_details
+    title_must_be_unique
+    due_date_must_be_future
+  rescue StandardError => e
+    Rails.logger.error("TodoService::validate_todo_details failed: #{e.message}")
     raise
   end
 
@@ -73,6 +85,27 @@ class TodoService
     raise "Record invalid: #{e.message}"
   rescue => e
     raise "An error occurred while linking todo with categories and tags: #{e.message}"
+  end
+
+  # Links a tag to a todo item
+  # @param todo_id [Integer] the ID of the todo
+  # @param tag_id [Integer] the ID of the tag
+  # @return [String] a success message confirming the tag has been linked
+  def link_tag_to_todo(todo_id, tag_id)
+    raise Exceptions::TodoServiceError, 'Todo ID and Tag ID must be present.' if todo_id.blank? || tag_id.blank?
+
+    ActiveRecord::Base.transaction do
+      raise Exceptions::TodoServiceError, 'Todo does not exist.' unless Todo.exists?(todo_id)
+      raise Exceptions::TodoServiceError, 'Tag does not exist.' unless Tag.exists?(tag_id)
+
+      TodoTag.create!(todo_id: todo_id, tag_id: tag_id)
+    end
+
+    "Tag has been successfully linked to the todo item."
+  rescue ActiveRecord::RecordInvalid => e
+    raise Exceptions::TodoServiceError, "Record invalid: #{e.message}"
+  rescue => e
+    raise Exceptions::TodoServiceError, "An error occurred while linking tag to todo: #{e.message}"
   end
 
   private
