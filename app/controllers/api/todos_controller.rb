@@ -3,22 +3,35 @@ class Api::TodosController < Api::BaseController
 
   def create
     ActiveRecord::Base.transaction do
-      todo = Todo.new(todo_params)
+      todo = Todo.new(todo_params.merge(user_id: current_user.id))
       todo.validate_unique_title_for_user
       todo.validate_due_date_in_future
-      validate_category_ids(todo_params[:category_ids])
-      validate_tag_ids(todo_params[:tag_ids])
+      validate_priority(todo_params[:priority])
+      validate_category_ids(todo_params[:category_ids]) if todo_params[:category_ids].present?
+      validate_tag_ids(todo_params[:tag_ids]) if todo_params[:tag_ids].present?
       AttachmentService.new(todo_params[:attachments]).validate_and_create_attachments if todo_params[:attachments].present?
 
       if todo.save
         link_categories_and_tags(todo, todo_params[:category_ids], todo_params[:tag_ids])
-        render json: { todo_id: todo.id }, status: :created
+        render json: {
+          status: 201,
+          todo: todo.as_json(include: {
+            categories: { only: [:id, :name] },
+            tags: { only: [:id, :name] },
+            attachments: { only: [:id, :file_path, :file_name] }
+          }).merge(is_completed: false)
+        }, status: :created
       else
         render json: { errors: todo.errors.full_messages }, status: :unprocessable_entity
       end
     end
   rescue ActiveRecord::RecordInvalid => e
     render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+  rescue Exceptions::AuthenticationError
+    render json: { error: 'User must be authenticated.' }, status: :unauthorized
+  rescue StandardError => e
+    Rails.logger.error("TodosController::Create failed: #{e.message}")
+    render json: { error: 'Internal server error' }, status: :internal_server_error
   end
 
   def link_categories_tags
@@ -46,7 +59,11 @@ class Api::TodosController < Api::BaseController
   private
 
   def todo_params
-    params.require(:todo).permit(:user_id, :title, :description, :due_date, :priority, :recurring, category_ids: [], tag_ids: [], attachments: [])
+    params.require(:todo).permit(:title, :description, :due_date, :priority, :recurring, category_ids: [], tag_ids: [], attachments: [])
+  end
+
+  def validate_priority(priority)
+    raise ActiveRecord::RecordInvalid.new(Todo.new), "Invalid priority level." unless Todo.priorities.keys.include?(priority)
   end
 
   def validate_category_ids(category_ids)
