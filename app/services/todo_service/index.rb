@@ -32,4 +32,21 @@ module TodoService
       errors.add(:due_date, 'cannot be in the past') if due_date < DateTime.now
     end
   end
+
+  def link_category_to_todo(todo_id, category_id)
+    todo = Todo.find_by(id: todo_id)
+    raise ActiveRecord::RecordNotFound, "Todo not found" unless todo
+
+    category = Category.find_by(id: category_id)
+    raise ActiveRecord::RecordNotFound, "Category not found" unless category
+
+    begin
+      TodoCategory.create!(todo_id: todo_id, category_id: category_id)
+      { success_message: "Category has been successfully linked to the todo item." }
+    rescue ActiveRecord::RecordInvalid => e
+      { error_message: e.message }
+    end
+  end
+
+  private :link_category_to_todo
 end

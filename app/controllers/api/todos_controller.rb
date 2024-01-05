@@ -1,5 +1,5 @@
 class Api::TodosController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: [:create, :link_categories_tags, :validate, :save_attachments, :link_tag_to_todo]
+  before_action :doorkeeper_authorize!, only: [:create, :link_categories_tags, :validate, :save_attachments, :link_tag_to_todo, :link_category_to_todo]
 
   def create
     ActiveRecord::Base.transaction do
@@ -53,6 +53,26 @@ class Api::TodosController < Api::BaseController
       render json: { errors: e.message }, status: :unprocessable_entity
     rescue => e
       render json: { errors: e.message }, status: :internal_server_error
+    end
+  end
+
+  def link_category_to_todo
+    ActiveRecord::Base.transaction do
+      todo = Todo.find(params[:todo_id])
+      return render json: { error: 'Todo not found' }, status: :not_found unless todo
+
+      unless Category.exists?(params[:category_id])
+        return render json: { error: 'Category not found' }, status: :unprocessable_entity
+      end
+
+      TodoCategory.create!(todo_id: params[:todo_id], category_id: params[:category_id])
+      render json: { message: 'Category linked to todo successfully' }, status: :ok
+    rescue ActiveRecord::RecordNotFound => e
+      render json: { error: e.message }, status: :not_found
+    rescue ActiveRecord::RecordInvalid => e
+      render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+    rescue => e
+      render json: { error: e.message }, status: :internal_server_error
     end
   end
 

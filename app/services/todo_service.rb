@@ -56,8 +56,6 @@ class TodoService
     raise
   end
 
-  # ... other methods ...
-
   # Links a todo with categories and tags
   # @param todo_id [Integer] the ID of the todo
   # @param category_ids [Array<Integer>] the IDs of the categories
@@ -85,6 +83,27 @@ class TodoService
     raise "Record invalid: #{e.message}"
   rescue => e
     raise "An error occurred while linking todo with categories and tags: #{e.message}"
+  end
+
+  # Links a category to a todo item
+  # @param todo_id [Integer] the ID of the todo
+  # @param category_id [Integer] the ID of the category
+  # @return [String] a success message confirming the category has been linked
+  def link_category_to_todo(todo_id, category_id)
+    raise Exceptions::TodoServiceError, 'Todo ID and Category ID must be present.' if todo_id.blank? || category_id.blank?
+
+    ActiveRecord::Base.transaction do
+      raise Exceptions::TodoServiceError, 'Todo does not exist.' unless Todo.exists?(todo_id)
+      raise Exceptions::TodoServiceError, 'Category does not exist.' unless Category.exists?(category_id)
+
+      TodoCategory.create!(todo_id: todo_id, category_id: category_id)
+    end
+
+    "Category has been successfully linked to the todo item."
+  rescue ActiveRecord::RecordInvalid => e
+    raise Exceptions::TodoServiceError, "Record invalid: #{e.message}"
+  rescue => e
+    raise Exceptions::TodoServiceError, "An error occurred while linking category to todo: #{e.message}"
   end
 
   # Links a tag to a todo item
