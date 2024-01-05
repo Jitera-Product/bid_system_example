@@ -1,5 +1,6 @@
 # typed: true
 class TodoAttachmentService < BaseService
+  MAX_FILE_SIZE = 10.megabytes # Example file size limit
   def save_attachments(todo_id, attachments)
     attachment_ids = []
     ActiveRecord::Base.transaction do
@@ -19,6 +20,32 @@ class TodoAttachmentService < BaseService
   rescue => e
     logger.error "Attachment saving failed: #{e.message}"
     raise
+  end
+
+  def attach_file_to_todo(file, todo_id)
+    ActiveRecord::Base.transaction do
+      todo = Todo.find(todo_id)
+      validate_and_upload_file(file)
+
+      attachment = Attachment.create!(
+        todo_id: todo.id,
+        file_path: file.path,
+        file_name: file.original_filename
+      )
+
+      { id: attachment.id, file_name: attachment.file_name, todo_id: attachment.todo_id }
+    end
+  rescue ActiveRecord::RecordNotFound
+    raise ActiveRecord::RecordNotFound, "Todo with ID #{todo_id} not found"
+  rescue => e
+    logger.error "File attachment failed: #{e.message}"
+    raise
+  end
+
+  private
+
+  def validate_and_upload_file(file)
+    # Implement file validation and upload logic here
   end
 
   private
