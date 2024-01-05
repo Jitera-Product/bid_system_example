@@ -1,5 +1,5 @@
 class Api::TodosController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: [:create, :link_categories_tags]
+  before_action :doorkeeper_authorize!, only: [:create, :link_categories_tags, :save_attachments]
 
   def create
     ActiveRecord::Base.transaction do
@@ -48,7 +48,14 @@ class Api::TodosController < Api::BaseController
         link_categories_and_tags(todo, category_ids, tag_ids)
       end
 
-      render json: { status: 200, message: 'Todo item linked with categories and tags successfully.' }, status: :ok
+      linked_categories = todo.categories
+      linked_tags = todo.tags
+
+      render status: :ok, json: {
+        linked_categories: linked_categories.as_json(only: [:id, :name]),
+        linked_tags: linked_tags.as_json(only: [:id, :name]),
+        message: 'Todo item linked with categories and tags successfully.'
+      }
     rescue ActiveRecord::RecordNotFound => e
       render json: { errors: e.message }, status: :unprocessable_entity
     rescue => e
@@ -56,10 +63,24 @@ class Api::TodosController < Api::BaseController
     end
   end
 
+  def save_attachments
+    todo = Todo.find_by(id: params[:todo_id])
+    return render json: { error: 'Todo item not found.' }, status: :not_found if todo.nil?
+
+    begin
+      attachments = AttachmentService.new(todo, todo_params[:attachments]).create_attachments
+      render json: { status: 200, attachments: attachments.map { |a| a.slice(:id, :file_path, :file_name) } }, status: :ok
+    rescue ActiveRecord::RecordInvalid => e
+      render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+    rescue => e
+      render json: { error: e.message }, status: :bad_request
+    end
+  end
+
   private
 
   def todo_params
-    params.require(:todo).permit(:title, :description, :due_date, :priority, :recurring, category_ids: [], tag_ids: [], attachments: [])
+    params.require(:todo).permit(:user_id, :title, :description, :due_date, :priority, :recurring, category_ids: [], tag_ids: [], attachments: [])
   end
 
   def validate_priority(priority)
@@ -67,24 +88,24 @@ class Api::TodosController < Api::BaseController
   end
 
   def validate_category_ids(category_ids)
-    if category_ids.present?
-      missing_categories = category_ids - Category.where(id: category_ids).pluck(:id)
-      if missing_categories.any?
-        raise ActiveRecord::RecordNotFound, "One or more categories are invalid."
-      end
-    end
+    raise ActiveRecord::RecordNotFound unless Category.where(id: category_ids).count == category_ids.count
   end
 
   def validate_tag_ids(tag_ids)
-    if tag_ids.present?
-      missing_tags = tag_ids - Tag.where(id: tag_ids).pluck(:id)
-      if missing_tags.any?
-        raise ActiveRecord::RecordNotFound, "One or more tags are invalid."
-      end
-    end
+    raise ActiveRecord::RecordNotFound unless Tag.where(id: tag_ids).count == tag_ids.count
   end
 
   def link_categories_and_tags(todo, category_ids, tag_ids)
+    missing_categories = category_ids - Category.where(id: category_ids).pluck(:id)
+    unless missing_categories.empty?
+      raise ActiveRecord::RecordNotFound, "Categories not found: #{missing_categories.join(', ')}"
+    end
+
+    missing_tags = tag_ids - Tag.where(id: tag_ids).pluck(:id)
+    unless missing_tags.empty?
+      raise ActiveRecord::RecordNotFound, "Tags not found: #{missing_tags.join(', ')}"
+    end
+
     todo.categories = Category.find(category_ids) if category_ids.present?
     todo.tags = Tag.find(tag_ids) if tag_ids.present?
   end
