@@ -1,12 +1,12 @@
 class Api::TodosController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: [:create, :link_categories_tags, :save_attachments]
+  before_action :doorkeeper_authorize!, only: [:create, :link_categories_tags, :validate, :save_attachments]
 
   def create
     ActiveRecord::Base.transaction do
       todo = Todo.new(todo_params.merge(user_id: current_user.id))
       todo.validate_unique_title_for_user
       todo.validate_due_date_in_future
-      validate_priority(todo_params[:priority])
+      validate_priority(todo_params[:priority]) if todo_params[:priority].present?
       validate_category_ids(todo_params[:category_ids]) if todo_params[:category_ids].present?
       validate_tag_ids(todo_params[:tag_ids]) if todo_params[:tag_ids].present?
       AttachmentService.new(todo_params[:attachments]).validate_and_create_attachments if todo_params[:attachments].present?
@@ -36,31 +36,47 @@ class Api::TodosController < Api::BaseController
 
   def link_categories_tags
     todo = Todo.find_by(id: params[:todo_id])
-    return render status: :not_found, json: { error: 'Todo item not found.' } if todo.nil?
+    return render status: :not_found, json: { error: 'Todo not found' } if todo.nil?
 
     category_ids = params[:category_ids]
     tag_ids = params[:tag_ids]
 
-    begin
-      ActiveRecord::Base.transaction do
-        validate_category_ids(category_ids)
-        validate_tag_ids(tag_ids)
-        link_categories_and_tags(todo, category_ids, tag_ids)
-      end
-
-      linked_categories = todo.categories
-      linked_tags = todo.tags
-
-      render status: :ok, json: {
-        linked_categories: linked_categories.as_json(only: [:id, :name]),
-        linked_tags: linked_tags.as_json(only: [:id, :name]),
-        message: 'Todo item linked with categories and tags successfully.'
-      }
-    rescue ActiveRecord::RecordNotFound => e
-      render json: { errors: e.message }, status: :unprocessable_entity
-    rescue => e
-      render json: { errors: e.message }, status: :internal_server_error
+    ActiveRecord::Base.transaction do
+      validate_category_ids(category_ids) if category_ids.present?
+      validate_tag_ids(tag_ids) if tag_ids.present?
+      link_categories_and_tags(todo, category_ids, tag_ids)
     end
+
+    linked_categories = todo.categories
+    linked_tags = todo.tags
+
+    render status: :ok, json: {
+      linked_categories: linked_categories.as_json(only: [:id, :name]),
+      linked_tags: linked_tags.as_json(only: [:id, :name]),
+      message: 'Todo item linked with categories and tags successfully.'
+    }
+  rescue ActiveRecord::RecordNotFound => e
+    render json: { errors: e.message }, status: :unprocessable_entity
+  rescue => e
+    render json: { errors: e.message }, status: :internal_server_error
+  end
+
+  def validate
+    todo = Todo.new(todo_params.slice(:user_id, :title, :due_date))
+    todo.validate_unique_title_for_user
+    todo.validate_due_date_in_future
+
+    if todo.errors.empty?
+      render json: { status: 200, message: "Validation passed." }, status: :ok
+    else
+      render json: { errors: todo.errors.full_messages }, status: :unprocessable_entity
+    end
+  rescue Exceptions::AuthenticationError
+    render json: { error: 'User must be authenticated.' }, status: :unauthorized
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { errors: e.record.errors.full_messages }, status: :conflict
+  rescue StandardError => e
+    render json: { error: e.message }, status: :unprocessable_entity
   end
 
   def save_attachments
