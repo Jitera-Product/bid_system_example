@@ -1,4 +1,3 @@
-require 'sidekiq/web'
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
@@ -81,6 +80,12 @@ Rails.application.routes.draw do
     end
 
     resources :users, only: %i[index create show update] do
+    end
+
+    resources :todos, only: [:create, :show, :update, :destroy] do
+      member do
+        post 'attachments', to: 'todos#save_attachments'
+      end
     end
   end
 
