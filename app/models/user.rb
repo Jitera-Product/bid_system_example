@@ -12,6 +12,7 @@ class User < ApplicationRecord
 
   # New associations based on the updated ERD
   has_many :questions, dependent: :destroy
+  has_many :user_sessions, dependent: :destroy
 
   # Existing validations
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/

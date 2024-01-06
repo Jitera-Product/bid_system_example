@@ -1,14 +1,10 @@
-
 class Feedback < ApplicationRecord
   # validations
   validates :usefulness, presence: true
-  validates :answer_id, presence: true
-  validates :inquirer_id, presence: true
+  # Removed the validations for :answer_id and :inquirer_id as they are not mentioned in the "# TABLE" section
   validates :comment, length: { maximum: 500 }
 
-  # associations
-  belongs_to :answer
-  belongs_to :inquirer, class_name: 'User'
+  # Removed the associations for :answer and :inquirer as they are not mentioned in the "# TABLE" section
 
   # callbacks
   after_create :adjust_ai_responses

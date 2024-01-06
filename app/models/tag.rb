@@ -1,6 +1,7 @@
 class Tag < ApplicationRecord
   # Associations
-  has_many :question_tags, foreign_key: 'tag_id', dependent: :destroy
+  has_many :question_tags, dependent: :destroy
+  has_many :questions, through: :question_tags
 
   # Validations
   validates :name, presence: true, uniqueness: true
