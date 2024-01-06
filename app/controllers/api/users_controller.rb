@@ -38,7 +38,30 @@ class Api::UsersController < Api::BaseController
 
     authorize @user, policy_class: Api::UsersPolicy
 
-    if @user.update(update_params)
+    # Check if the current user has the authority to change roles
+    if update_params[:role].present? && current_user.role != 'Administrator'
+      render json: { error: 'You do not have permission to change user roles' }, status: :forbidden
+      return
+    end
+
+    # Check if the username is unique
+    if User.exists?(username: update_params[:username])
+      render json: { error: 'Username is already taken' }, status: :unprocessable_entity
+      return
+    end
+
+    # If a new password is provided, validate it
+    if update_params[:password_hash].present?
+      unless Devise::PasswordValidator.new.validate(update_params[:password_hash])
+        render json: { error: 'Password does not meet security requirements' }, status: :unprocessable_entity
+        return
+      end
+    end
+
+    # Call the UserUpdateService to perform the update
+    update_status = UserUpdateService.new(user_id: @user.id, username: update_params[:username], password_hash: update_params[:password_hash], role: update_params[:role]).execute
+
+    if update_status.success?
       # Return a JSON response with the user ID and success message
       render json: { user_id: @user.id, message: 'User profile updated successfully', status: :ok, updated_fields: update_params.keys }
     else
@@ -54,6 +77,6 @@ class Api::UsersController < Api::BaseController
   end
 
   def update_params
-    params.require(:users).permit(:username, :password_hash)
+    params.require(:users).permit(:username, :password_hash, :role)
   end
 end
