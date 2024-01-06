@@ -1,5 +1,7 @@
+
 class Api::UsersController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update]
+  before_action :authenticate_user!, :authorize_user_or_admin, only: [:update]
 
   def index
     # inside service params are checked and whiteisted
@@ -30,19 +32,28 @@ class Api::UsersController < Api::BaseController
   end
 
   def update
+    # Ensure the user is authorized to update the profile
     @user = User.find_by('users.id = ?', params[:id])
     raise ActiveRecord::RecordNotFound if @user.blank?
 
     authorize @user, policy_class: Api::UsersPolicy
 
-    return if @user.update(update_params)
+    if @user.update(update_params)
+      # Return a JSON response with the user ID and success message
+      render json: { user_id: @user.id, message: 'User profile updated successfully', status: :ok, updated_fields: update_params.keys }
+    else
+      @error_object = @user.errors.messages
+      render json: { errors: @error_object }, status: :unprocessable_entity
+    end
+  end
 
-    @error_object = @user.errors.messages
+  private
 
-    render status: :unprocessable_entity
+  def authorize_user_or_admin
+    head(:unauthorized) unless current_user == @user || current_user.role == 'Administrator'
   end
 
   def update_params
-    params.require(:users).permit(:email)
+    params.require(:users).permit(:username, :password_hash)
   end
 end
