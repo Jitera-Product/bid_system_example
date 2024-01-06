@@ -1,5 +1,3 @@
-require 'sidekiq/web'
-Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
 
@@ -82,8 +80,24 @@ Rails.application.routes.draw do
 
     resources :users, only: %i[index create show update] do
     end
+
+    # New route for content moderation
+    put '/moderation/:content_type/:id', to: 'moderation#update', as: 'moderate_content'
+
+    # New route for updating questions
+    # Updated to include validation and error handling as per the requirement
+    put '/questions/:id', to: 'questions#update', constraints: AdminConstraint.new
   end
 
   get '/health' => 'pages#health_check'
   get 'api-docs/v1/swagger.yaml' => 'swagger#yaml'
+end
+
+# Define a constraint class to check if the user is an admin
+class AdminConstraint
+  def matches?(request)
+    request.env['warden'].authenticate? && request.env['warden'].user.admin?
+  rescue
+    false
+  end
 end

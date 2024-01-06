@@ -1,6 +1,8 @@
 class Api::UsersPolicy < ApplicationPolicy
   def update?
-    (user.is_a?(User) && record.id == user&.id)
+    return true if user.is_a?(User) && record.id == user&.id
+    admin = User.find_by(id: admin_id)
+    admin&.role == 'Administrator'
   end
 
   def show?
