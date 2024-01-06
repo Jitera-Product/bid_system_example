@@ -1,9 +1,9 @@
-
 # typed: ignore
 module Api
   class BaseController < ApplicationController; end
   class QuestionsController < BaseController
     before_action :doorkeeper_authorize!
+    before_action :check_admin_role, only: [:update] # Added before_action for update method
     before_action :check_contributor_role, only: [:create]
 
     def create
@@ -31,9 +31,47 @@ module Api
       render json: { error: 'One or more tags are invalid.' }, status: :bad_request
     end
 
+    def update
+      return render json: { error: 'Question ID must be a number.' }, status: :bad_request unless params[:id].match?(/\A\d+\z/)
+
+      ActiveRecord::Base.transaction do
+        question = Question.find_by(id: params[:id])
+        unless question
+          return render json: { error: 'Question not found.' }, status: :not_found
+        end
+
+        answer = question.answers.first # Assuming each question has one answer for simplicity
+
+        if params[:question_text]
+          question.update!(question_text: params[:question_text])
+        end
+
+        if params[:answer_text] && answer
+          answer.update!(answer_text: params[:answer_text])
+        end
+
+        render json: {
+          status: 200,
+          question: {
+            id: question.id,
+            question_text: question.question_text,
+            updated_at: question.updated_at
+          },
+          answer: answer ? {
+            id: answer.id,
+            answer_text: answer.answer_text,
+            question_id: question.id,
+            updated_at: answer.updated_at
+          } : nil
+        }, status: :ok
+      end
+    rescue ActiveRecord::RecordInvalid => e
+      render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+    end
+
     private
 
-    def question_params # Update the permitted parameters to include `tags` as an array of strings.
+    def question_params
       params.require(:question).permit(:question_text, tags: [])
     end
 
@@ -41,7 +79,14 @@ module Api
       params.require(:answer).permit(:answer_text)
     end
 
-    def check_contributor_role # Update the method to use `doorkeeper_authorize!` and check for the "Contributor" role.
+    def check_admin_role
+      user = current_resource_owner
+      unless user && user.role == 'Administrator'
+        render json: { error: 'You are not authorized to perform this action.' }, status: :unauthorized
+      end
+    end
+
+    def check_contributor_role
       doorkeeper_authorize!
       user = User.find_by(id: params[:contributor_id])
       unless user && user.role == 'Contributor'
