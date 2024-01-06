@@ -1,15 +1,10 @@
+
 class Api::FeedbacksController < ApplicationController
   before_action :authenticate_inquirer!
 
   def create
-    # Validate that the answer exists
-    return render json: { error: 'Invalid answer ID.' }, status: :bad_request unless Answer.exists?(feedback_params[:answer_id])
-
-    # Validate that the inquirer exists and has the correct role
-    inquirer = User.find_by(id: feedback_params[:inquirer_id])
-    unless inquirer && inquirer.role == 'Inquirer'
-      return render json: { error: 'Invalid inquirer ID or insufficient permissions.' }, status: :unauthorized
-    end
+    answer = Answer.find_by(id: feedback_params[:answer_id])
+    return render json: { error: 'Invalid answer ID.' }, status: :bad_request unless answer
 
     # Validate that the usefulness is a boolean
     unless [true, false].include?(feedback_params[:usefulness])
@@ -19,11 +14,13 @@ class Api::FeedbacksController < ApplicationController
     # Create the feedback
     feedback = Feedback.new(feedback_params.merge(created_at: Time.current))
     if feedback.save
-      # Logic to adjust AI's future responses based on feedback
-      # This could be a service call or background job
-      # Example: AiAdjustmentService.new(feedback).perform
+      # Update the associated answer's feedback score
+      AnswerService::Index.new(answer).update_feedback_score(feedback)
 
-      render json: { status: 201, feedback: feedback.as_json }, status: :created
+      # Logic to adjust AI's future responses based on feedback
+      AiAdjustmentService.new(feedback).perform if defined?(AiAdjustmentService)
+
+      render json: { status: 201, feedback_id: feedback.id }, status: :created
     else
       render json: { errors: feedback.errors.full_messages }, status: :unprocessable_entity
     end
@@ -32,7 +29,7 @@ class Api::FeedbacksController < ApplicationController
   private
 
   def authenticate_inquirer!
-    head :unauthorized unless current_user&.role == 'Inquirer' && current_user.id == feedback_params[:inquirer_id].to_i
+    head :unauthorized unless current_user&.role == 'Inquirer'
   end
 
   def feedback_params
