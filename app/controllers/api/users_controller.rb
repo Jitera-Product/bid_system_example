@@ -1,10 +1,9 @@
-
 class Api::UsersController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update]
   before_action :authenticate_user!, :authorize_user_or_admin, only: [:update]
+  before_action :validate_user_id, only: [:update]
 
   def index
-    # inside service params are checked and whiteisted
     @users = UserService::Index.new(params.permit!, current_resource_owner).execute
     @total_pages = @users.total_pages
   end
@@ -32,41 +31,33 @@ class Api::UsersController < Api::BaseController
   end
 
   def update
-    # Ensure the user is authorized to update the profile
     @user = User.find_by('users.id = ?', params[:id])
-    raise ActiveRecord::RecordNotFound if @user.blank?
+    return render json: { error: 'User not found.' }, status: :unprocessable_entity unless @user
 
     authorize @user, policy_class: Api::UsersPolicy
 
-    # Check if the current user has the authority to change roles
-    if update_params[:role].present? && current_user.role != 'Administrator'
-      render json: { error: 'You do not have permission to change user roles' }, status: :forbidden
-      return
-    end
+    return render json: { error: 'Username cannot exceed 50 characters.' }, status: :unprocessable_entity if update_params[:username]&.length.to_i > 50
+    return render json: { error: 'Password must be at least 8 characters long.' }, status: :unprocessable_entity if update_params[:password]&.length.to_i < 8
 
-    # Check if the username is unique
     if User.exists?(username: update_params[:username])
       render json: { error: 'Username is already taken' }, status: :unprocessable_entity
       return
     end
 
-    # If a new password is provided, validate it
-    if update_params[:password_hash].present?
-      unless Devise::PasswordValidator.new.validate(update_params[:password_hash])
+    if update_params[:password].present?
+      unless Devise::PasswordValidator.new.validate(update_params[:password])
         render json: { error: 'Password does not meet security requirements' }, status: :unprocessable_entity
         return
       end
     end
 
-    # Call the UserUpdateService to perform the update
-    update_status = UserUpdateService.new(user_id: @user.id, username: update_params[:username], password_hash: update_params[:password_hash], role: update_params[:role]).execute
+    update_service = UserUpdateService.new(user_id: @user.id, username: update_params[:username], password_hash: update_params[:password], role: update_params[:role], current_user: current_user)
+    update_result = update_service.call
 
-    if update_status.success?
-      # Return a JSON response with the user ID and success message
-      render json: { user_id: @user.id, message: 'User profile updated successfully', status: :ok, updated_fields: update_params.keys }
+    if update_result[:error].present?
+      render json: { error: update_result[:error] }, status: :unprocessable_entity
     else
-      @error_object = @user.errors.messages
-      render json: { errors: @error_object }, status: :unprocessable_entity
+      render json: { status: 200, user: { id: @user.id, username: update_params[:username], updated_at: @user.updated_at } }, status: :ok
     end
   end
 
@@ -77,6 +68,12 @@ class Api::UsersController < Api::BaseController
   end
 
   def update_params
-    params.require(:users).permit(:username, :password_hash, :role)
+    params.require(:user).permit(:username, :password, :role)
+  end
+
+  def validate_user_id
+    unless params[:id].match?(/\A\d+\z/)
+      render json: { error: 'User ID must be a number.' }, status: :bad_request
+    end
   end
 end
