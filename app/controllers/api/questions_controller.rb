@@ -3,27 +3,42 @@ module Api
   class BaseController < ApplicationController; end
   class QuestionsController < BaseController
     before_action :doorkeeper_authorize!
-    before_action :check_admin_role, only: [:update] # Added before_action for update method
+    before_action :check_admin_role, only: [:update]
     before_action :check_contributor_role, only: [:create]
 
     def create
-      ActiveRecord::Base.transaction do
-        question_validator = QuestionValidator.new(question_params[:question_text])
-        tag_validator = TagValidator.new(question_params[:tags])
-        answer_validator = AnswerValidator.new(answer_params[:answer_text])
+      question_text = question_params[:question_text]
+      answer_text = answer_params[:answer_text]
+      tags_array = question_params[:tags]
 
-        if question_validator.valid? && tag_validator.valid? && answer_validator.valid?
+      # Validate presence of question_text and answer_text using custom validators
+      question_validator = QuestionValidator.new(question_text)
+      tag_validator = TagValidator.new(tags_array)
+      answer_validator = AnswerValidator.new(answer_text)
+
+      if question_validator.valid? && tag_validator.valid? && answer_validator.valid?
+        ActiveRecord::Base.transaction do
           # Ensure all tags exist or are created
-          tags = question_params[:tags].map { |tag_name| Tag.find_or_create_by!(name: tag_name) }
+          tags = tags_array.map { |tag_name| Tag.find_or_create_by!(name: tag_name) }
 
-          question = Question.create!(question_text: question_params[:question_text], user_id: current_resource_owner.id)
+          question = Question.create!(question_text: question_text, user_id: current_resource_owner.id)
           question.tags = tags
-          answer = Answer.create!(answer_text: answer_params[:answer_text], question_id: question.id)
+          answer = Answer.create!(answer_text: answer_text, question_id: question.id)
 
-          render json: { status: 201, question: question.as_json, answer: answer.as_json }, status: :created
-        else
-          render json: { success: false, errors: question_validator.errors.full_messages + tag_validator.errors.full_messages + answer_validator.errors.full_messages }, status: :unprocessable_entity
+          render json: {
+            status: 201,
+            question: question.as_json(only: [:id, :question_text, :created_at]),
+            answer: answer.as_json(only: [:id, :answer_text, :question_id, :created_at]),
+            tags: tags.map { |tag| { id: tag.id, question_id: question.id, tag: tag.name } }
+          }, status: :created
         end
+      else
+        render json: {
+          success: false,
+          errors: question_validator.errors.full_messages +
+                   tag_validator.errors.full_messages +
+                   answer_validator.errors.full_messages
+        }, status: :unprocessable_entity
       end
     rescue ActiveRecord::RecordInvalid => e
       render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
@@ -88,10 +103,14 @@ module Api
 
     def check_contributor_role
       doorkeeper_authorize!
-      user = User.find_by(id: params[:contributor_id])
+      user = current_resource_owner
       unless user && user.role == 'Contributor'
         render json: { error: 'Invalid contributor ID or insufficient permissions.' }, status: :unauthorized
       end
+    end
+
+    def current_resource_owner
+      User.find(doorkeeper_token.resource_owner_id) if doorkeeper_token
     end
   end
 end
