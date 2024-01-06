@@ -2,6 +2,7 @@
 module Api
   class AnswersController < BaseController
     before_action :authenticate_user!
+    before_action :authorize_user, only: [:search]
 
     def retrieve_answer
       # Extract intent and context from the question using NlpService
@@ -21,30 +22,34 @@ module Api
       Rails.logger.error "Error retrieving answer: #{e.message}"
       render json: { error: e.message }, status: :internal_server_error
     end
-    # Enhanced search method to include intent and context in the search
-    # New search method
+
     def search
       query = params[:query]
-      return render json: { error: 'Query cannot be empty.' }, status: :bad_request if query.blank?
-
-      parsed_query = NlpService.parse(query)
-      similar_questions = QuestionService::Index.new(parsed_query).call
-      if similar_questions.present?
-      if similar_questions.any?
-        answers = AnswerService::Index.new(similar_questions).call
-        render json: { status: 200, answers: format_answers(answers) }, status: :ok
-      else
-        render json: { error: 'No relevant answers found.' }, status: :not_found
+      if query.blank?
+        return render json: { error: 'Query is required.' }, status: :bad_request
       end
-    rescue StandardError => e
-      Rails.logger.error "Error searching for answers: #{e.message}"
-      render json: { error: e.message }, status: :internal_server_error
+
+      begin
+        parsed_query = NlpService.parse(query)
+        similar_questions = QuestionService::Index.new(intent: parsed_query[:intent], context: parsed_query[:context]).call
+        if similar_questions.any?
+          answers = AnswerService::Index.new(similar_questions).call
+          render json: { status: 200, answers: format_answers(answers) }, status: :ok
+        else
+          render json: { error: 'No relevant answers found.' }, status: :not_found
+        end
+      rescue StandardError => e
+        Rails.logger.error "Error searching for answers: #{e.message}"
+        render json: { error: e.message }, status: :internal_server_error
+      end
     end
 
     private
 
-      Rails.logger.info "Question asked: #{question_text}, Answers provided: #{answers.map(&:answer_text).join(', ')}"
-      Rails.logger.info "Question asked: #{question_text}, Answers provided: #{answers.map(&:answer_text)}"
+    def authorize_user
+      unless Api::UsersPolicy.new(current_user).allowed_to_view_answers?
+        render json: { error: 'Forbidden' }, status: :forbidden
+      end
     end
 
     def format_answers(answers)
@@ -53,9 +58,14 @@ module Api
           id: answer.id,
           question_id: answer.question_id,
           created_at: answer.created_at.iso8601,
+          answer_text: answer.answer_text,
           feedback_score: answer.feedback_score
-          created_at: answer.created_at.iso8601
         }
+      end
+    end
+
+    def log_inquiry_and_response(question_text, answers)
+      Rails.logger.info "Question asked: #{question_text}, Answers provided: #{answers.map(&:answer_text)}"
     end
 
     # Method to select the best answer based on relevance and feedback scores
@@ -66,7 +76,6 @@ module Api
     # Format the response to include only the answer_text of the selected answer
     def format_best_answer(answer)
       { answer_text: answer.answer_text }
-      end
     end
   end
 end
