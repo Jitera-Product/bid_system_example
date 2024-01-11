@@ -1,6 +1,5 @@
-
 class Api::UsersRegistrationsController < Api::BaseController
-  before_action :validate_registration_params, only: [:create]
+  before_action :validate_registration_params, only: [:register]
 
   def create
     @user = User.new(user_creation_params)
@@ -8,7 +7,6 @@ class Api::UsersRegistrationsController < Api::BaseController
       if Rails.env.staging?
         token = @user.respond_to?(:confirmation_token) ? @user.confirmation_token : ''
         render json: { message: I18n.t('common.200'), token: token }, status: :ok and return
-        # No further code needed here as per the guideline
       else
         head :ok, message: I18n.t('common.200') and return
       end
@@ -16,24 +14,30 @@ class Api::UsersRegistrationsController < Api::BaseController
       error_messages = @user.errors.messages
       render json: { error_messages: error_messages, message: I18n.t('email_login.registrations.failed_to_sign_up') },
              status: :unprocessable_entity
-    end  # No changes required here as per the guideline
+    end
   end
 
   def register
-    @user = User.new(user_creation_params)
-    if @user.save
-      render json: { status: 201, user: @user.as_json(only: [:id, :username, :role, :created_at]) }, status: :created
-    else
-      error_messages = @user.errors.messages
-      status_code = error_messages.include?(:username) ? :unprocessable_entity : :unprocessable_entity
-      render json: { error_messages: error_messages }, status: status_code
-    end
+    registration_service = UserRegistrationService.new(
+      username: params[:username],
+      password: params[:password],
+      role: params[:role]
+    )
+
+    user_id = registration_service.call
+    user = User.find(user_id)
+
+    render json: { status: 201, user: user.as_json(only: [:id, :username, :role, :created_at]) }, status: :created
+  rescue ActiveModel::ValidationError, ActiveRecord::RecordInvalid => e
+    render json: { error: e.message }, status: :unprocessable_entity
+  rescue => e
+    render json: { error: 'An unexpected error occurred.' }, status: :internal_server_error
   end
 
   def create_session
     user = User.find_by(username: params[:username])
     if user && user.authenticate(params[:password_hash])
-      token = Doorkeeper::AccessToken.create(resource_owner_id: user.id)  # No changes required here as per the guideline
+      token = Doorkeeper::AccessToken.create(resource_owner_id: user.id)
       log_login_attempt(user.username, true)
       render json: { token: token.token, role: user.role }, status: :ok
     else
@@ -48,15 +52,15 @@ class Api::UsersRegistrationsController < Api::BaseController
     params.require(:user).permit(:username, :password, :password_confirmation, :email, :role)
   end
 
-  def validate_registration_params  # No changes required here as per the guideline
+  def validate_registration_params
     params = user_creation_params
     errors = {}
     errors[:username] = 'The username is required.' unless params[:username].present?
-    errors[:password] = 'The password must be at least 8 characters long.' if params[:password].to_s.length < 8
+    errors[:password] = 'The password is required.' unless params[:password].present?
     errors[:role] = 'Invalid role specified.' unless ['contributor', 'inquirer', 'administrator'].include?(params[:role])
     
     if errors.any?
-      render json: { error: errors }, status: :bad_request and return  # No changes required here as per the guideline
+      render json: { error: errors }, status: :bad_request and return
     end
 
     if User.exists?(username: params[:username])
