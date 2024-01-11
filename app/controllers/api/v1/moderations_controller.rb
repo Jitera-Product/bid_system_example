@@ -1,5 +1,6 @@
 class Api::V1::ModerationsController < ApplicationController
   before_action :authenticate_user!
+  before_action :verify_admin_role, only: [:moderate_content]
   before_action :verify_admin_role, only: [:update, :index]
 
   # GET /api/v1/moderation/content
@@ -72,3 +73,46 @@ class Api::V1::ModerationsController < ApplicationController
     # Verify if the current user is an admin, raise Exceptions::AuthorizationError if not
   end
 end
+
+  # POST /api/v1/moderate_content
+  def moderate_content
+    content_id = params.require(:content_id)
+    action = params.require(:action)
+
+    case action
+    when 'approve'
+      approve_content(content_id)
+    when 'reject'
+      reject_content(content_id)
+    when 'edit'
+      edit_content(content_id, params.require(:new_content))
+    else
+      render json: { error: 'Invalid action' }, status: :bad_request
+    end
+  end
+
+  private
+
+  def approve_content(content_id)
+    content = find_content(content_id)
+    content.update!(status: 'approved', updated_at: Time.current)
+    render json: { message: 'Content approved successfully' }, status: :ok
+  end
+
+  def reject_content(content_id)
+    content = find_content(content_id)
+    content.update!(status: 'rejected', updated_at: Time.current)
+    # Consider soft-delete logic here if necessary
+    render json: { message: 'Content rejected successfully' }, status: :ok
+  end
+
+  def edit_content(content_id, new_content)
+    content = find_content(content_id)
+    content.update!(content: new_content, updated_at: Time.current)
+    render json: { message: 'Content updated successfully' }, status: :ok
+  end
+
+  def find_content(content_id)
+    # Assuming Content is a model that includes questions, answers, etc.
+    Content.find(content_id)
+  end

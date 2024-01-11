@@ -26,6 +26,7 @@ class ContentModerationService
   def moderate_content
     authenticate_admin
     content = find_content
+    validate_input
 
     case @action
     when 'approve'
@@ -34,6 +35,7 @@ class ContentModerationService
     when 'reject'
       # Assuming there is a status field to update instead of destroying the record
       content.update(status: 'rejected', rejection_reason: @edited_content)
+      content.touch # This will update the `updated_at` timestamp
       log_moderation('rejected')
     when 'edit'
       raise 'Edited content cannot be blank' if @edited_content.blank?
@@ -43,7 +45,7 @@ class ContentModerationService
       raise 'Invalid action'
     end
 
-    { moderation_status: @action }
+    { message: "Content has been #{@action}", moderation_status: content.status }
   end
 
   private

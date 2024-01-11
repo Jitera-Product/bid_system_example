@@ -1,6 +1,7 @@
 
 class Api::V1::ContentsController < ApplicationController
   include OauthTokensConcern
+  before_action :authenticate_user!, only: [:moderate_content]
   before_action :authenticate_admin, only: [:moderate]
 
   # PUT /api/v1/moderation/{type}/{id}
@@ -62,4 +63,44 @@ class Api::V1::ContentsController < ApplicationController
   end
 
   # Other controller actions...
+
+  # POST /api/v1/moderate_content
+  def moderate_content
+    content_id = content_params[:content_id]
+    action = content_params[:action]
+
+    case action
+    when 'approve'
+      approve_content(content_id)
+    when 'reject'
+      reject_content(content_id)
+    when 'edit'
+      edit_content(content_id, content_params[:new_content])
+    else
+      render json: { error: "Invalid action." }, status: :bad_request
+    end
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: "Content not found." }, status: :not_found
+  rescue StandardError => e
+    render json: { error: e.message }, status: :unprocessable_entity
+  end
+
+  private
+
+  def content_params
+    params.require(:moderation).permit(:content_id, :action, :new_content)
+  end
+
+  def approve_content(content_id)
+    # Implementation for approving content
+  end
+
+  def reject_content(content_id)
+    # Implementation for rejecting content
+  end
+
+  def edit_content(content_id, new_content)
+    # Implementation for editing content
+  end
+end
 end
