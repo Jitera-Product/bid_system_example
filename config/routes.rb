@@ -1,4 +1,3 @@
-require 'sidekiq/web'
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
@@ -82,6 +81,9 @@ Rails.application.routes.draw do
 
     resources :users, only: %i[index create show update] do
     end
+
+    # New route for content moderation
+    put '/moderation/:type/:id', to: 'moderations#update', constraints: { type: /question|answer/, id: /\d+/ }
   end
 
   get '/health' => 'pages#health_check'
