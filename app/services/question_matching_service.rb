@@ -1,12 +1,22 @@
+
 # frozen_string_literal: true
+
+class QueryLoggerService
+  def self.log_query(query, answers)
+    # Logic to log the query and answers
+  end
+end
 
 class QuestionMatchingService
   def match_question(query)
     terms = NlpParserService.new.parse(query)
     matching_questions = Question.search_by_terms(terms)
-    selected_answer = AnswerSelectionService.new.select_best_answer(matching_questions)
+    answers = AnswerSelectionService.new.select_best_answers(matching_questions)
 
-    { answer_content: selected_answer.content, answer_id: selected_answer.id }
+    QueryLoggerService.log_query(query, answers)
+    answers.map do |answer|
+      { answer_content: answer.content, answer_id: answer.id }
+    end
   end
 end
 
@@ -19,7 +29,8 @@ end
 
 # Additional code for AnswerSelectionService
 class AnswerSelectionService
-  def select_best_answer(questions)
-    # Logic to select the best answer based on relevance and feedback data
+  def select_best_answers(questions)
+    # Logic to select the best answers based on relevance and feedback data
+    # Implement ranking mechanism here
   end
 end
