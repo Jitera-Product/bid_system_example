@@ -1,6 +1,5 @@
-
 class Api::V1::AnswersController < ApplicationController
-  before_action :authenticate_user!, only: [:retrieve_answer, :search, :update]
+  before_action :authenticate_user!, only: [:retrieve_answer, :search, :provide_feedback, :update]
   before_action :validate_update_params, only: [:update]
 
   # GET /api/v1/answers/retrieve
@@ -47,6 +46,24 @@ class Api::V1::AnswersController < ApplicationController
     end
   end
 
+  # POST /api/v1/answers/feedback
+  def provide_feedback
+    authenticate_user!
+    authorize_user_as_inquirer!
+
+    feedback_params = params.require(:feedback).permit(:answer_id, :user_id, :content, :usefulness)
+    validate_feedback_input!(feedback_params)
+
+    feedback = Feedback.create!(feedback_params)
+    update_answer_effectiveness_score(feedback)
+
+    render json: { feedback_id: feedback.id }, status: :created
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { error: e.message }, status: :unprocessable_entity
+  rescue => e
+    render json: { error: e.message }, status: :internal_server_error
+  end
+
   # PUT /api/v1/answers/:id
   def update
     answer = Answer.find(params[:answer_id])
@@ -62,11 +79,28 @@ class Api::V1::AnswersController < ApplicationController
 
   private
 
+  def authorize_user_as_inquirer!
+    raise Exceptions::AuthorizationError unless current_user.role == 'Inquirer'
+  end
+
+  def validate_feedback_input!(params)
+    raise ArgumentError, 'Missing parameters' unless params[:answer_id] && params[:user_id] && !params[:usefulness].nil?
+    raise ActiveRecord::RecordNotFound, 'Answer not found' unless Answer.exists?(params[:answer_id])
+  end
+
+  def update_answer_effectiveness_score(feedback)
+    # Implement logic to update the answer's effectiveness score based on the feedback
+  end
+
   def validate_update_params
     raise ArgumentError, 'Answer ID and content are required.' if params[:answer_id].blank? || params[:content].blank?
   end
 
   def authenticate_user!
     # Authentication logic here, raise Exceptions::AuthenticationError if failed
+  end
+
+  def user_signed_in?
+    # Logic to check if user is signed in
   end
 end
