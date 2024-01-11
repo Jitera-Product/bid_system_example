@@ -1,5 +1,7 @@
+
 class Api::V1::AnswersController < ApplicationController
-  before_action :authenticate_user!, only: [:retrieve_answer, :search, :provide_feedback, :update]
+  before_action :authenticate_user!, only: [:retrieve_answer, :search, :provide_feedback, :update, :retrieve_answers]
+  before_action :validate_retrieve_answers_params, only: [:retrieve_answers]
   before_action :validate_update_params, only: [:update]
 
   # GET /api/v1/answers/retrieve
@@ -77,7 +79,22 @@ class Api::V1::AnswersController < ApplicationController
     render json: { error: e.message }, status: :bad_request
   end
 
+  # GET /api/v1/answers/retrieve/:question_id
+  def retrieve_answers
+    question = Question.find_by(id: params[:question_id])
+    if question
+      answers = AnswerRetrievalService.process(question)
+      render json: answers, status: :ok
+    else
+      render json: { error: 'Question not found' }, status: :not_found
+    end
+  end
+
   private
+
+  def validate_retrieve_answers_params
+    raise ArgumentError, 'Question ID is missing or invalid' if params[:question_id].blank? || !(params[:question_id] =~ /\A\d+\z/)
+  end
 
   def authorize_user_as_inquirer!
     raise Exceptions::AuthorizationError unless current_user.role == 'Inquirer'
