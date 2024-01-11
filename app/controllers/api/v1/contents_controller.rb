@@ -1,16 +1,17 @@
+
 class Api::V1::ContentsController < ApplicationController
   include OauthTokensConcern
   before_action :authenticate_admin, only: [:moderate]
 
-  # PUT /api/moderation/{type}/{id}
+  # PUT /api/v1/moderation/{type}/{id}
   def moderate
     content_type = params[:type]
     content_id = params[:id].to_i
     status = params[:status]
 
     # Perform validations
-    unless %w[question answer].include?(content_type)
-      return render json: { error: "Type must be either 'question' or 'answer'." }, status: :bad_request
+    unless %w[question answer feedback].include?(content_type)
+      return render json: { error: "Type must be either 'question', 'answer', or 'feedback'." }, status: :bad_request
     end
 
     unless content_id.is_a?(Integer)
@@ -21,7 +22,7 @@ class Api::V1::ContentsController < ApplicationController
       return render json: { error: "Status must be 'approved', 'rejected', or 'pending'." }, status: :bad_request
     end
 
-    # Authenticate and authorize admin
+    # Authenticate admin
     authenticate_admin
 
     # Moderate content based on type
@@ -32,13 +33,16 @@ class Api::V1::ContentsController < ApplicationController
     when 'answer'
       # Call moderation service for answers
       ContentModerationService.new(content_id, 'Answer', status, current_admin.id).moderate_content
+    when 'feedback'
+      # Call moderation service for feedbacks
+      ContentModerationService.new(content_id, 'Feedback', status, current_admin.id).moderate_content
     end
 
     # Log the moderation action
     log_moderation_action
 
     # Return success response
-    render json: { message: "Content has been successfully moderated." }, status: :ok
+    render json: { moderation_status: status }, status: :ok
   rescue Exceptions::UnauthorizedAccess, Exceptions::RecordNotFound, Exceptions::InvalidParameters => e
     render json: { error: e.message }, status: :unprocessable_entity
   end

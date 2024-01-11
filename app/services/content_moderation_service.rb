@@ -1,3 +1,4 @@
+
 # rubocop:disable Style/ClassAndModuleChildren
 class ContentModerationService
   include Pundit::Authorization
@@ -6,9 +7,20 @@ class ContentModerationService
   def initialize(content_id, content_type, action, admin_id, edited_content = nil)
     @content_id = content_id
     @content_type = content_type
+    
+    validate_input
+    
     @action = action
     @admin_id = admin_id
     @edited_content = edited_content
+  end
+
+  def validate_input
+    raise 'Content ID cannot be blank' if @content_id.blank?
+    raise 'Content type cannot be blank' if @content_type.blank?
+    raise 'Action cannot be blank' if @action.blank?
+    raise 'Invalid content type' unless ['Question', 'Answer', 'Feedback'].include?(@content_type)
+    raise 'Invalid action' unless ['approve', 'reject', 'edit'].include?(@action)
   end
 
   def moderate_content
@@ -20,7 +32,8 @@ class ContentModerationService
       content.update(status: 'approved')
       log_moderation('approved')
     when 'reject'
-      content.destroy
+      # Assuming there is a status field to update instead of destroying the record
+      content.update(status: 'rejected', rejection_reason: @edited_content)
       log_moderation('rejected')
     when 'edit'
       raise 'Edited content cannot be blank' if @edited_content.blank?
@@ -34,7 +47,7 @@ class ContentModerationService
   end
 
   private
-
+  
   def authenticate_admin
     # Assuming AdminService::Index class has a method to find an admin by id
     admin = AdminService::Index.find_admin(@admin_id)
