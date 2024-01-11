@@ -1,5 +1,5 @@
 class Api::QuestionsController < Api::BaseController
-  before_action :authenticate_user!
+  before_action :authenticate_user!, only: [:create]
   before_action :check_contributor_role, only: [:create]
 
   def create
@@ -7,7 +7,7 @@ class Api::QuestionsController < Api::BaseController
     question_service = QuestionSubmissionService.new(question_params, current_user)
     if question_service.submit
       question = question_service.question
-      render json: { status: 201, question: question.as_json.merge(contributor_id: current_user.id, created_at: question.created_at) }, status: :created
+      render json: { question_id: question.id }, status: :created
     else
       render json: { errors: question_service.errors }, status: :unprocessable_entity
     end
@@ -15,7 +15,7 @@ class Api::QuestionsController < Api::BaseController
 
   private
 
-  def question_params
+  def question_params # Sanitize input parameters to prevent SQL injection
     params.require(:question).permit(:title, :content, :category, tags: [])
   end
 
@@ -23,7 +23,7 @@ class Api::QuestionsController < Api::BaseController
     unless current_user.has_role?(:contributor)
       render json: { error: 'Forbidden' }, status: :forbidden
     end
-  end
+  end # End of check_contributor_role method
 
   def validate_question_params
     errors = {}
@@ -31,6 +31,6 @@ class Api::QuestionsController < Api::BaseController
     errors[:content] = "The content is required." if params[:question][:content].blank?
     errors[:category] = "The category is required." if params[:question][:category].blank?
     errors[:tags] = "Tags must be an array." unless params[:question][:tags].is_a?(Array)
-    render json: { errors: errors }, status: :unprocessable_entity if errors.any?
+    render json: { errors: errors }, status: :unprocessable_entity if errors.any? # Render error response if validation fails
   end
 end
