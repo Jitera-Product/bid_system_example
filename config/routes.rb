@@ -1,4 +1,3 @@
-Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
 
@@ -79,17 +78,20 @@ Rails.application.routes.draw do
     resources :users_reset_password_requests, only: [:create] do
     end
 
-    # The new code does not have a specific route for answers update, so we keep the existing one.
     put '/answers/:id', to: 'api/v1/answers#update'
 
-    # The new code has a generic moderation update route, which we keep.
     put '/moderation/:type/:id', to: 'moderations#update', constraints: { type: /question|answer/, id: /\d+/ }
 
     resources :users, only: %i[index create show update] do
     end
 
-    # The new code has an authenticate route, which we add here.
     post 'authenticate', on: :collection
+
+    # Added new route for content moderation as per the guideline
+    get 'moderation/content', to: 'moderations#index', constraints: lambda { |req|
+      %w[question answer feedback].include?(req.params[:type]) &&
+      %w[pending approved rejected].include?(req.params[:status])
+    }
   end
 
   get '/health' => 'pages#health_check'

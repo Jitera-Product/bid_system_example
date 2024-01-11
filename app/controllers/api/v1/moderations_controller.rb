@@ -1,6 +1,18 @@
 class Api::V1::ModerationsController < ApplicationController
   before_action :authenticate_user!
-  before_action :verify_admin_role, only: [:update]
+  before_action :verify_admin_role, only: [:update, :index]
+
+  # GET /api/v1/moderation/content
+  def index
+    validate_moderation_params
+
+    content_moderation_service = ContentModerationService.new(params[:type], params[:status])
+    content = content_moderation_service.fetch_content_for_moderation
+
+    render json: { status: 200, content: content }, status: :ok
+  rescue ArgumentError => e
+    render json: { error: e.message }, status: :bad_request
+  end
 
   # PUT /api/v1/moderate/:type/:id
   def update
@@ -41,6 +53,16 @@ class Api::V1::ModerationsController < ApplicationController
   end
 
   private
+
+  def validate_moderation_params
+    unless ['question', 'answer', 'feedback'].include?(params[:type])
+      raise ArgumentError, "Type must be one of 'question', 'answer', or 'feedback'."
+    end
+
+    unless ['pending', 'approved', 'rejected'].include?(params[:status])
+      raise ArgumentError, "Status must be one of 'pending', 'approved', or 'rejected'."
+    end
+  end
 
   def authenticate_user!
     # Authentication logic here, raise Exceptions::AuthenticationError if failed
