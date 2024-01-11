@@ -1,6 +1,5 @@
 class Api::FeedbacksController < Api::BaseController
   before_action :doorkeeper_authorize!, only: [:create]
-  before_action :doorkeeper_authorize!, only: [:create_feedback]
   before_action :authenticate_inquirer, only: [:create]
 
   def create
@@ -8,7 +7,7 @@ class Api::FeedbacksController < Api::BaseController
 
     feedback_service = FeedbackService.new
     feedback = feedback_service.create_feedback(
-      comment: feedback_params[:comment],
+      content: feedback_params[:content], # Changed from :comment to :content to match the requirement
       usefulness: feedback_params[:usefulness],
       inquirer_id: current_resource_owner.id,
       answer_id: feedback_params[:answer_id]
@@ -33,45 +32,14 @@ class Api::FeedbacksController < Api::BaseController
   end
 
   def validate_feedback_params
-    required_params = params.require(:feedback).permit(:comment, :usefulness, :answer_id)
-    raise ArgumentError, "The comment is required." if required_params[:comment].blank?
+    required_params = params.require(:feedback).permit(:content, :usefulness, :answer_id)
+    raise ArgumentError, "Feedback content is required." if required_params[:content].blank?
     raise ArgumentError, "Usefulness must be true or false." unless [true, false].include?(required_params[:usefulness])
     raise ArgumentError, "Answer ID must be a number." unless required_params[:answer_id].is_a?(Numeric)
     required_params
   end
 
   def feedback_params
-    params.require(:feedback).permit(:comment, :usefulness, :answer_id)
-  end
-end
-
-  def create_feedback
-    feedback_params = params.require(:feedback).permit(:answer_id, :user_id, :usefulness)
-    answer = Answer.find(feedback_params[:answer_id])
-    feedback = Feedback.new(
-      content: feedback_params[:content],
-      usefulness: feedback_params[:usefulness],
-      answer_id: feedback_params[:answer_id],
-      user_id: feedback_params[:user_id]
-    )
-
-    if feedback.save
-      FeedbackService::UpdateAnswerEffectiveness.call(feedback)
-      render json: { status: 'success', feedback_id: feedback.id }, status: :created
-    else
-      render json: { errors: feedback.errors.full_messages }, status: :unprocessable_entity
-    end
-  rescue ActiveRecord::RecordNotFound => e
-    render json: { error: "Answer not found with id: #{feedback_params[:answer_id]}" }, status: :not_found
-  rescue ActiveRecord::RecordInvalid => e
-    render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
-  rescue ArgumentError => e
-    render json: { error: e.message }, status: :bad_request
-  end
-
-  private
-
-  def feedback_params
-    params.require(:feedback).permit(:content, :usefulness, :answer_id, :user_id)
+    params.require(:feedback).permit(:content, :usefulness, :answer_id)
   end
 end
