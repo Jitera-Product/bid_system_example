@@ -5,10 +5,13 @@ class Api::QuestionsController < Api::BaseController
 
   def create
     validate_question_params
-    question_service = QuestionSubmissionService.new(question_params, current_user)
+    return if performed?
+
+    question_service = QuestionSubmissionService.new(question_params.except(:tags), current_user)
     if question_service.submit
       question = question_service.question
-      render json: { status: 201, question: question.as_json.merge(contributor_id: current_user.id, created_at: question.created_at) }, status: :created
+      handle_tags(question, question_params[:tags]) if question_params[:tags].present?
+      render json: { status: 201, question: question.as_json(include: { tags: { only: [:id, :name] } }).merge(contributor_id: current_user.id, created_at: question.created_at) }, status: :created
     else
       render json: { errors: question_service.errors }, status: :unprocessable_entity
     end
@@ -22,9 +25,9 @@ class Api::QuestionsController < Api::BaseController
     validate_question_params
     return if performed?
 
-    if question.update(question_update_params)
-      update_tags(question) if params[:question][:tags].present?
-      render json: { status: 200, question: question.as_json.merge(updated_at: question.updated_at, user_id: question.user_id, tags: question.tags.map { |tag| { id: tag.id, name: tag.name } }) }, status: :ok
+    if question.update(question_update_params.except(:tags))
+      update_tags(question) if question_update_params[:tags].present?
+      render json: { status: 200, question: question.as_json(include: { tags: { only: [:id, :name] } }).merge(updated_at: question.updated_at, user_id: question.user_id) }, status: :ok
     else
       render json: { errors: question.errors.full_messages }, status: :unprocessable_entity
     end
@@ -65,6 +68,13 @@ class Api::QuestionsController < Api::BaseController
       end
     end
     render json: { errors: errors }, status: :unprocessable_entity if errors.any?
+  end
+
+  def handle_tags(question, tag_ids)
+    return unless tag_ids.is_a?(Array) && tag_ids.all? { |id| id.is_a?(Integer) }
+
+    tags = Tag.where(id: tag_ids)
+    question.tags = tags
   end
 
   def update_tags(question)

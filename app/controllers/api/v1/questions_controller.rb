@@ -6,25 +6,28 @@ class Api::V1::QuestionsController < Api::BaseController
 
   def create
     ActiveRecord::Base.transaction do
-      question = Question.new(question_params)
+      question = Question.new(question_params.except(:tags))
       question.user = current_user
+      question.category = Category.find_or_create_by(name: params[:question][:category])
       if question.save
-        process_tags(question, params[:tags])
+        process_tags(question, params[:question][:tags] || params[:tags])
         render json: { status: 201, question: question.as_json(include: [:category, :tags], methods: :user_id) }, status: :created
       else
         render json: { errors: question.errors.full_messages }, status: :unprocessable_entity
       end
     end
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { errors: [e.message] }, status: :unprocessable_entity
   end
 
   def update
     question = Question.find_by(id: params[:id])
-    return render json: { error: 'This question is not found.' }, status: :not_found unless question
+    return render json: { error: 'Question not found.' }, status: :not_found unless question
 
     ActiveRecord::Base.transaction do
-      if question.update(question_params)
-        process_tags(question, params[:tags]) if params[:tags].present?
-        render json: { status: 200, question: question.as_json(include: [:category, :tags], methods: :user_id) }, status: :ok
+      if question.update(question_params.except(:tags))
+        process_tags(question, params[:question][:tags] || params[:tags]) if params[:question].try(:[], :tags).present? || params[:tags].present?
+        render json: { status: 200, message: 'Question updated successfully.', question: question.as_json(include: [:category, :tags], methods: :user_id) }, status: :ok
       else
         render json: { errors: question.errors.full_messages }, status: :unprocessable_entity
       end
@@ -38,17 +41,16 @@ class Api::V1::QuestionsController < Api::BaseController
   private
 
   def question_params
-    params.require(:question).permit(:title, :content, :category_id, tags: [])
+    params.require(:question).permit(:title, :content, :category, tags: []).tap do |whitelisted|
+      whitelisted[:category_id] = params[:question][:category_id] if params[:question][:category_id].present?
+    end
   end
 
   def process_tags(question, tag_ids)
     return unless tag_ids.is_a?(Array)
 
-    question.tags.clear
-    tag_ids.uniq.each do |tag_id|
-      tag = Tag.find_by(id: tag_id)
-      question.tags << tag if tag
-    end
+    tags = tag_ids.map { |tag_id| Tag.find_by(id: tag_id) }.compact
+    question.tags = tags
   end
 
   def check_contributor_role
@@ -68,8 +70,12 @@ class Api::V1::QuestionsController < Api::BaseController
     errors = []
     errors << "The title is required." if params[:question][:title].blank?
     errors << "The content is required." if params[:question][:content].blank?
-    errors << "The category is required." if params[:question][:category_id].blank?
-    errors << "Tags must be an array of tag IDs." unless params[:tags].nil? || (params[:tags].is_a?(Array) && params[:tags].all? { |t| t.is_a?(Integer) })
+    if params[:action] == 'create'
+      errors << "The category is required." if params[:question][:category].blank?
+    else
+      errors << "The category is required." if params[:question][:category_id].blank? && params[:question][:category].blank?
+    end
+    errors << "Tags must be an array of tag IDs." unless (params[:question][:tags] || params[:tags]).nil? || ((params[:question][:tags] || params[:tags]).is_a?(Array) && (params[:question][:tags] || params[:tags]).all? { |t| t.is_a?(Integer) })
     errors << "The question ID is required." if params[:action] == 'update' && params[:id].blank?
     errors << "Wrong format." if params[:action] == 'update' && params[:id].present? && !params[:id].match?(/\A\d+\z/)
     if errors.any?

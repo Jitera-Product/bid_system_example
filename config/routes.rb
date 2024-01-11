@@ -1,6 +1,5 @@
 use_doorkeeper do
   controllers tokens: 'tokens'
-
   skip_controllers :authorizations, :applications, :authorized_applications
 end
 
@@ -8,6 +7,7 @@ devise_for :users
 devise_for :admins
 mount Rswag::Ui::Engine => '/api-docs'
 mount Rswag::Api::Engine => '/api-docs'
+
 namespace :api do
   namespace :v1 do
     resources :answers, only: [] do
@@ -15,6 +15,8 @@ namespace :api do
         get 'search', to: 'answers#search'
       end
     end
+    # Added new route for submitting questions
+    post '/questions', to: 'questions#create'
   end
 
   resources :shippings, only: %i[index show update] do
@@ -95,6 +97,7 @@ namespace :api do
 
   post 'authenticate', on: :collection
 
+  # Added new route for content moderation as per the guideline
   get 'moderation/content', to: 'moderations#index', constraints: lambda { |req|
     %w[question answer feedback].include?(req.params[:type]) &&
     %w[pending approved rejected].include?(req.params[:status])
