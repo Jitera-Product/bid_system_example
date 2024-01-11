@@ -7,14 +7,15 @@ class Api::FeedbacksController < Api::BaseController
 
     feedback_service = FeedbackService.new
     feedback = feedback_service.create_feedback(
-      content: feedback_params[:content], # Changed from :comment to :content to match the requirement
+      content: feedback_params[:content],
       usefulness: feedback_params[:usefulness],
       inquirer_id: current_resource_owner.id,
-      answer_id: feedback_params[:answer_id]
+      question_id: feedback_params[:question_id]
     )
 
     if feedback.persisted?
-      render json: { status: 201, feedback: feedback.as_json }, status: :created
+      AiLearningModelUpdater.update_with_feedback(feedback)
+      render json: { status: 201, message: 'Feedback has been recorded.', feedback: feedback.as_json }, status: :created
     else
       render json: { errors: feedback.errors.full_messages }, status: :unprocessable_entity
     end
@@ -29,17 +30,17 @@ class Api::FeedbacksController < Api::BaseController
   def authenticate_inquirer
     # Assuming there's a method to authenticate inquirer similar to user authentication
     # This method should set a current_resource_owner if inquirer is authenticated
+    # This method should be implemented to authenticate inquirer
   end
 
   def validate_feedback_params
-    required_params = params.require(:feedback).permit(:content, :usefulness, :answer_id)
-    raise ArgumentError, "Feedback content is required." if required_params[:content].blank?
-    raise ArgumentError, "Usefulness must be true or false." unless [true, false].include?(required_params[:usefulness])
-    raise ArgumentError, "Answer ID must be a number." unless required_params[:answer_id].is_a?(Numeric)
-    required_params
+    required_params = feedback_params
+    raise ArgumentError, "The content is required." if required_params[:content].blank?
+    raise ArgumentError, "Invalid value for usefulness." unless ['helpful', 'not_helpful'].include?(required_params[:usefulness])
+    raise ArgumentError, "Wrong format." unless required_params[:question_id].is_a?(Numeric)
   end
 
   def feedback_params
-    params.require(:feedback).permit(:content, :usefulness, :answer_id)
+    params.require(:feedback).permit(:content, :usefulness, :question_id)
   end
 end
