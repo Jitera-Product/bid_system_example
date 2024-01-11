@@ -64,6 +64,7 @@ Rails.application.routes.draw do
     resources :admins_reset_password_requests, only: [:create] do
     end
 
+    put '/answers/:id', to: 'api/v1/answers#update'
     resources :users_verify_confirmation_token, only: [:create] do
     end
 

@@ -1,5 +1,7 @@
+
 class Api::V1::AnswersController < ApplicationController
-  before_action :authenticate_user!, only: [:retrieve_answer, :search]
+  before_action :authenticate_user!, only: [:retrieve_answer, :search, :update]
+  before_action :validate_update_params, only: [:update]
 
   # GET /api/v1/answers/retrieve
   def retrieve_answer
@@ -45,7 +47,24 @@ class Api::V1::AnswersController < ApplicationController
     end
   end
 
+  # PUT /api/v1/answers/:id
+  def update
+    answer = Answer.find(params[:answer_id])
+    raise ActiveRecord::RecordNotFound unless answer && answer.user_id == current_user.id
+
+    answer.update!(content: params[:content])
+    render json: { answer_id: answer.id }, status: :ok
+  rescue ActiveRecord::RecordNotFound => e
+    render json: { error: 'Answer not found or not owned by user' }, status: :not_found
+  rescue ArgumentError => e
+    render json: { error: e.message }, status: :bad_request
+  end
+
   private
+
+  def validate_update_params
+    raise ArgumentError, 'Answer ID and content are required.' if params[:answer_id].blank? || params[:content].blank?
+  end
 
   def authenticate_user!
     # Authentication logic here, raise Exceptions::AuthenticationError if failed
