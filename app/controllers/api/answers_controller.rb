@@ -7,14 +7,27 @@ class Api::AnswersController < Api::BaseController
   # PATCH/PUT /api/answers/:id
   def update
     begin
-      @answer.update!(answer_params)
-      render json: { answer_id: @answer.id }, status: :ok
+      # Validate the "id" parameter to ensure it is a number.
+      return render json: { error: "Wrong format." }, status: :bad_request unless params[:id].to_s.match?(/\A[0-9]+\z/)
+      
+      # Validate the "content" parameter to ensure it is not blank and does not exceed 10000 characters.
+      content = answer_params[:content]
+      return render json: { error: "The content is required." }, status: :bad_request if content.blank?
+      return render json: { error: "You cannot input more than 10000 characters." }, status: :bad_request if content.length > 10000
+
+      # Ensure the current user is the owner of the answer or an administrator
+      return render json: { error: "You are not authorized to perform this action." }, status: :forbidden unless @answer.user_id == current_user.id || current_user.admin?
+
+      @answer.update!(content: content)
+      render json: { status: 200, answer: @answer.as_json(only: [:id, :content, :question_id, :updated_at]) }, status: :ok
     rescue ActiveRecord::RecordInvalid => e
       logger.error "Update failed: #{e.message}"
       render json: { error: e.message }, status: :unprocessable_entity
     rescue Pundit::NotAuthorizedError => e
       logger.error "Authorization failed: #{e.message}"
       render json: { error: "You are not authorized to perform this action." }, status: :forbidden
+    rescue ActiveRecord::RecordNotFound
+      render json: { error: "This answer is not found." }, status: :not_found
     end
   end
 
@@ -49,7 +62,7 @@ class Api::AnswersController < Api::BaseController
     @answer = Answer.find(params[:id])
     authorize @answer, :update?
   rescue ActiveRecord::RecordNotFound
-    render json: { error: "Answer not found." }, status: :not_found
+    render json: { error: "This answer is not found." }, status: :not_found
   end
 
   def answer_params
