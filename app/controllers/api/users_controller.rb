@@ -1,5 +1,7 @@
+
 class Api::UsersController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update update_profile]
+  before_action :doorkeeper_authorize!, except: %i[register]
 
   def index
     @users = UserService::Index.new(params.permit!, current_resource_owner).execute
@@ -71,19 +73,42 @@ class Api::UsersController < Api::BaseController
   rescue StandardError => e
     render json: { error: e.message }, status: :bad_request
   end
-end
 
-private
+  def register
+    registration_params = params.require(:user).permit(:username, :password_hash, :role)
+    user_service = UserService::Register.new(registration_params)
 
-def authenticate_user!
-  oauth_tokens_concern.authenticate_user!(params[:user_id])
-end
+    if user_service.username_exists?
+      render json: { error: 'Username already exists.' }, status: :unprocessable_entity
+      return
+    end
 
-def user_update_service
-  UserUpdateService.new(params[:user_id], update_params)
-end
+    user = user_service.create_user
 
-def handle_update
-  authenticate_user!
-  user_update_service.execute
+    if user.persisted?
+      Devise.mailer.confirmation_instructions(user, user.confirmation_token).deliver_later
+      render json: { user_id: user.id }, status: :created
+    else
+      render json: { error: user.errors.full_messages }, status: :unprocessable_entity
+    end
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { error: e.message }, status: :unprocessable_entity
+  rescue StandardError => e
+    render json: { error: e.message }, status: :internal_server_error
+  end
+
+  private
+
+  def authenticate_user!
+    oauth_tokens_concern.authenticate_user!(params[:user_id])
+  end
+
+  def user_update_service
+    UserUpdateService.new(params[:user_id], update_params)
+  end
+
+  def handle_update
+    authenticate_user!
+    user_update_service.execute
+  end
 end

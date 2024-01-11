@@ -1,6 +1,9 @@
+
 class Api::UsersRegistrationsController < Api::BaseController
+  before_action :validate_registration_params, only: [:create]
+
   def create
-    @user = User.new(create_params)
+    @user = User.new(registration_params)
     if @user.save
       if Rails.env.staging?
         # to show token in staging
@@ -16,7 +19,23 @@ class Api::UsersRegistrationsController < Api::BaseController
     end
   end
 
-  def create_params
-    params.require(:user).permit(:password, :password_confirmation, :email)
+  private
+
+  def registration_params
+    params.require(:user).permit(:username, :password_hash, :role)
+  end
+
+  def validate_registration_params
+    unless registration_params[:username].present? && registration_params[:password_hash].present?
+      render json: { error: 'Username and password hash are required.' }, status: :bad_request and return
+    end
+
+    unless User.roles.include?(registration_params[:role])
+      render json: { error: 'Invalid role.' }, status: :bad_request and return
+    end
+
+    if User.find_by(username: registration_params[:username])
+      render json: { error: 'Username already taken.' }, status: :unprocessable_entity and return
+    end
   end
 end
