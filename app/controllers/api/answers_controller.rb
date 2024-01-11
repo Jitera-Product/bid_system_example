@@ -21,16 +21,26 @@ class Api::AnswersController < Api::BaseController
   # GET /api/answers/search
   def search
     query = params[:query]
-    if query.present?
-      search_service = AnswerSearchService.new
-      results = search_service.perform_search(query)
-      render json: { answers: results }, status: :ok
+    if query.blank?
+      render json: { error: 'The query is required.' }, status: :bad_request
     else
-      render json: { error: 'Query parameter is missing or empty.' }, status: :bad_request
+      begin
+        search_service = AnswerSearchService.new
+        results = search_service.perform_search(query)
+        answers = results.map do |answer|
+          {
+            id: answer.id,
+            content: answer.content,
+            question_id: answer.question_id,
+            created_at: answer.created_at
+          }
+        end
+        render json: { status: 200, answers: answers }, status: :ok
+      rescue StandardError => e
+        logger.error "Search failed: #{e.message}"
+        render json: { error: 'An error occurred while searching for answers.' }, status: :internal_server_error
+      end
     end
-  rescue StandardError => e
-    logger.error "Search failed: #{e.message}"
-    render json: { error: 'An error occurred while searching for answers.' }, status: :internal_server_error
   end
 
   private
