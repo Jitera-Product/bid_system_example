@@ -1,9 +1,8 @@
-
 class Api::UsersRegistrationsController < Api::BaseController
   before_action :validate_registration_params, only: [:create]
 
   def create
-    @user = User.new(registration_params)
+    @user = User.new(user_creation_params)
     if @user.save
       if Rails.env.staging?
         # to show token in staging
@@ -19,23 +18,43 @@ class Api::UsersRegistrationsController < Api::BaseController
     end
   end
 
+  def create_session
+    user = User.find_by(username: params[:username])
+    if user && user.authenticate(params[:password_hash])
+      token = Doorkeeper::AccessToken.create(resource_owner_id: user.id)
+      log_login_attempt(user.username, true)
+      render json: { token: token.token, role: user.role }, status: :ok
+    else
+      log_login_attempt(params[:username], false)
+      render json: { error: 'Invalid username or password' }, status: :unauthorized
+    end
+  end
+
   private
 
-  def registration_params
-    params.require(:user).permit(:username, :password_hash, :role)
+  def user_creation_params
+    # Merged the new create_params with the existing registration_params
+    params.require(:user).permit(:username, :password, :password_confirmation, :email, :role)
   end
 
   def validate_registration_params
-    unless registration_params[:username].present? && registration_params[:password_hash].present?
-      render json: { error: 'Username and password hash are required.' }, status: :bad_request and return
+    # Updated to check for presence of password and email instead of password_hash
+    unless user_creation_params[:username].present? && user_creation_params[:password].present? && user_creation_params[:email].present?
+      render json: { error: 'Username, password, and email are required.' }, status: :bad_request and return
     end
 
-    unless User.roles.include?(registration_params[:role])
+    # Check if the role is included in the User roles, if role is provided
+    if user_creation_params[:role].present? && !User.roles.include?(user_creation_params[:role])
       render json: { error: 'Invalid role.' }, status: :bad_request and return
     end
 
-    if User.find_by(username: registration_params[:username])
+    if User.find_by(username: user_creation_params[:username])
       render json: { error: 'Username already taken.' }, status: :unprocessable_entity and return
     end
+  end
+
+  def log_login_attempt(username, success)
+    status = success ? 'successful' : 'failed'
+    Rails.logger.info "Login attempt for #{username} was #{status} at #{Time.current}"
   end
 end

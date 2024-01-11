@@ -1,7 +1,6 @@
-
 class Api::UsersController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update update_profile]
-  before_action :doorkeeper_authorize!, except: %i[register]
+  skip_before_action :doorkeeper_authorize!, only: [:authenticate, :register]
 
   def index
     @users = UserService::Index.new(params.permit!, current_resource_owner).execute
@@ -74,6 +73,18 @@ class Api::UsersController < Api::BaseController
     render json: { error: e.message }, status: :bad_request
   end
 
+  def authenticate
+    user = User.find_by(username: authentication_params[:username])
+    if user&.authenticate(authentication_params[:password_hash])
+      token = Doorkeeper::AccessToken.create!(resource_owner_id: user.id)
+      log_login_attempt(user, true)
+      render json: { session_token: token.token, role: user.role }, status: :ok
+    else
+      log_login_attempt(user, false)
+      render json: { error: 'Invalid credentials' }, status: :unauthorized
+    end
+  end
+
   def register
     registration_params = params.require(:user).permit(:username, :password_hash, :role)
     user_service = UserService::Register.new(registration_params)
@@ -110,5 +121,13 @@ class Api::UsersController < Api::BaseController
   def handle_update
     authenticate_user!
     user_update_service.execute
+  end
+
+  def authentication_params
+    params.require(:authentication).permit(:username, :password_hash)
+  end
+
+  def log_login_attempt(user, success)
+    # Implement logging logic here
   end
 end

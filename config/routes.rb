@@ -64,7 +64,6 @@ Rails.application.routes.draw do
     resources :admins_reset_password_requests, only: [:create] do
     end
 
-    put '/answers/:id', to: 'api/v1/answers#update'
     resources :users_verify_confirmation_token, only: [:create] do
     end
 
@@ -80,11 +79,17 @@ Rails.application.routes.draw do
     resources :users_reset_password_requests, only: [:create] do
     end
 
+    # The new code does not have a specific route for answers update, so we keep the existing one.
+    put '/answers/:id', to: 'api/v1/answers#update'
+
+    # The new code has a generic moderation update route, which we keep.
+    put '/moderation/:type/:id', to: 'moderations#update', constraints: { type: /question|answer/, id: /\d+/ }
+
     resources :users, only: %i[index create show update] do
     end
 
-    # New route for content moderation
-    put '/moderation/:type/:id', to: 'moderations#update', constraints: { type: /question|answer/, id: /\d+/ }
+    # The new code has an authenticate route, which we add here.
+    post 'authenticate', on: :collection
   end
 
   get '/health' => 'pages#health_check'
