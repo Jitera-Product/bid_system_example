@@ -24,7 +24,7 @@ class Api::QuestionsController < Api::BaseController
 
     if question.update(question_update_params)
       update_tags(question) if params[:question][:tags].present?
-      render json: { status: 200, question: question.as_json.merge(updated_at: question.updated_at, user_id: question.user_id) }, status: :ok
+      render json: { status: 200, question: question.as_json.merge(updated_at: question.updated_at, user_id: question.user_id, tags: question.tags.map { |tag| { id: tag.id, name: tag.name } }) }, status: :ok
     else
       render json: { errors: question.errors.full_messages }, status: :unprocessable_entity
     end
@@ -59,26 +59,30 @@ class Api::QuestionsController < Api::BaseController
     errors[:title] = "You cannot input more than 200 characters." if params[:question][:title].to_s.length > 200
     errors[:content] = "The content is required." if params[:question][:content].blank?
     errors[:category] = "The category is required." if params[:question][:category].blank?
-    errors[:tags] = "Tags must be an array." unless params[:question][:tags].is_a?(Array)
+    if params[:question][:tags].present?
+      unless params[:question][:tags].is_a?(Array) && params[:question][:tags].all? { |t| t.is_a?(Integer) }
+        errors[:tags] = "Tags must be an array of tag IDs."
+      end
+    end
     render json: { errors: errors }, status: :unprocessable_entity if errors.any?
   end
 
   def update_tags(question)
-    existing_tags = question.tags.pluck(:name)
-    new_tags = params[:question][:tags].reject(&:blank?)
-    removed_tags = existing_tags - new_tags
-    added_tags = new_tags - existing_tags
+    existing_tag_ids = question.tags.pluck(:id)
+    new_tag_ids = params[:question][:tags].reject(&:blank?).map(&:to_i)
+    removed_tag_ids = existing_tag_ids - new_tag_ids
+    added_tag_ids = new_tag_ids - existing_tag_ids
 
     # Remove the tags that are no longer associated with the question
-    removed_tags.each do |tag_name|
-      tag = Tag.find_by(name: tag_name)
+    removed_tag_ids.each do |tag_id|
+      tag = Tag.find_by(id: tag_id)
       question.tags.delete(tag) if tag
     end
 
     # Add new tags to the question
-    added_tags.each do |tag_name|
-      tag = Tag.find_or_create_by(name: tag_name)
-      question.tags << tag unless question.tags.include?(tag)
+    added_tag_ids.each do |tag_id|
+      tag = Tag.find_or_create_by(id: tag_id)
+      question.tags << tag if tag && !question.tags.include?(tag)
     end
   end
 end
