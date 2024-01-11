@@ -5,6 +5,29 @@ class Api::UsersController < Api::BaseController
 
   # ... existing code for other actions ...
 
+  # POST /api/users/authenticate
+  def authenticate
+    username = params[:username]
+    password = params[:password]
+
+    return render json: { error: "The username is required." }, status: :bad_request if username.blank?
+    return render json: { error: "The password is required." }, status: :bad_request if password.blank?
+
+    user = User.find_by(username: username)
+    if user&.authenticate(password)
+      token = Doorkeeper::AccessToken.create!(resource_owner_id: user.id)
+      log_login_attempt(user, true)
+      render json: { status: 200, token: token.token }, status: :ok
+    else
+      log_login_attempt(user, false)
+      render json: { error: 'Invalid credentials' }, status: :unauthorized
+    end
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: "User not found." }, status: :not_found
+  rescue StandardError => e
+    render json: { error: e.message }, status: :internal_server_error
+  end
+
   def update_profile
     user_id = params[:id].to_i
     validate_profile_update_params
@@ -43,6 +66,11 @@ class Api::UsersController < Api::BaseController
     raise StandardError.new("Wrong format.") unless params[:id].to_s =~ /^\d+$/
     raise StandardError.new("The username is required.") if params[:username].blank?
     raise StandardError.new("The password is required.") if params[:password].blank?
+  end
+
+  def log_login_attempt(user, success)
+    # Implement logging logic here
+    # This is a placeholder for the actual logging implementation
   end
 
   # ... rest of the private methods ...

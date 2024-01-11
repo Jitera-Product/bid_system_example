@@ -1,8 +1,8 @@
-
 # frozen_string_literal: true
 
 class Api::UsersSessionsController < ApplicationController
   before_action :validate_login_params, except: [:authenticate]
+  before_action :validate_auth_params, only: [:authenticate]
   rescue_from Exceptions::AuthenticationError, with: :handle_authentication_error
 
   def create
@@ -18,34 +18,28 @@ class Api::UsersSessionsController < ApplicationController
 
   # POST /api/users/authenticate
   def authenticate
-    username = params[:username]
-    password = params[:password]
-    log_login_attempt(username, password)
-
-    # Validation
-    return render json: { error: "The username is required." }, status: :bad_request if username.blank?
-    return render json: { error: "The password is required." }, status: :bad_request if password.blank?
-
-    user = User.authenticate?(username, password)
+    user = AuthenticationService.authenticate(params[:username], params[:password])
     if user
-      token = Doorkeeper::AccessToken.create!(resource_owner_id: user.id)
-      render json: {
-        status: 200,
-        access_token: token.token,
-        role: user.role,
-        id: user.id,
-        username: user.username,
-        role: user.role
-      }, status: :ok
+      token = AuthenticationService.generate_token(user)
+      render json: { status: 200, token: token }, status: :ok
     else
-      render json: { error: 'Invalid credentials' }, status: :unauthorized
+      render json: { error: 'The username or password is incorrect.' }, status: :unauthorized
     end
+  rescue StandardError => e
+    render json: { error: e.message }, status: :internal_server_error
   end
 
   private
 
   def validate_login_params
     render json: { error: 'Username and password are required' }, status: :bad_request unless params[:username].present? && params[:password_hash].present?
+  end
+
+  def validate_auth_params
+    errors = []
+    errors << "The username is required." if params[:username].blank?
+    errors << "The password is required." if params[:password].blank?
+    render json: { errors: errors }, status: :bad_request if errors.any?
   end
 
   def log_login_attempt(username, password)
@@ -57,7 +51,8 @@ class Api::UsersSessionsController < ApplicationController
     end
   end
 
-  def find_user_by_username(username)
+  def find_user_by_username(username = nil)
+    username ||= params[:username]
     User.find_by(username: username)
   end
 
