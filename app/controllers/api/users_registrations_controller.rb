@@ -1,11 +1,10 @@
 class Api::UsersRegistrationsController < Api::BaseController
-  before_action :validate_registration_params, only: [:create]
+  before_action :validate_registration_params, only: [:create, :register]
 
   def create
     @user = User.new(user_creation_params)
     if @user.save
       if Rails.env.staging?
-        # to show token in staging
         token = @user.respond_to?(:confirmation_token) ? @user.confirmation_token : ''
         render json: { message: I18n.t('common.200'), token: token }, status: :ok and return
       else
@@ -15,6 +14,17 @@ class Api::UsersRegistrationsController < Api::BaseController
       error_messages = @user.errors.messages
       render json: { error_messages: error_messages, message: I18n.t('email_login.registrations.failed_to_sign_up') },
              status: :unprocessable_entity
+    end
+  end
+
+  def register
+    @user = User.new(user_creation_params)
+    if @user.save
+      render json: { status: 201, user: @user.as_json(only: [:id, :username, :role, :created_at]) }, status: :created
+    else
+      error_messages = @user.errors.messages
+      status_code = error_messages.include?(:username) ? :bad_request : :unprocessable_entity
+      render json: { error_messages: error_messages }, status: status_code
     end
   end
 
@@ -33,22 +43,21 @@ class Api::UsersRegistrationsController < Api::BaseController
   private
 
   def user_creation_params
-    # Merged the new create_params with the existing registration_params
     params.require(:user).permit(:username, :password, :password_confirmation, :email, :role)
   end
 
   def validate_registration_params
-    # Updated to check for presence of password and email instead of password_hash
-    unless user_creation_params[:username].present? && user_creation_params[:password].present? && user_creation_params[:email].present?
-      render json: { error: 'Username, password, and email are required.' }, status: :bad_request and return
+    params = user_creation_params
+    errors = {}
+    errors[:username] = 'The username is required.' unless params[:username].present?
+    errors[:password] = 'The password must be at least 8 characters long.' if params[:password].to_s.length < 8
+    errors[:role] = 'Invalid role specified.' unless ['contributor', 'inquirer', 'administrator'].include?(params[:role])
+    
+    if errors.any?
+      render json: { error: errors }, status: :bad_request and return
     end
 
-    # Check if the role is included in the User roles, if role is provided
-    if user_creation_params[:role].present? && !User.roles.include?(user_creation_params[:role])
-      render json: { error: 'Invalid role.' }, status: :bad_request and return
-    end
-
-    if User.find_by(username: user_creation_params[:username])
+    if User.exists?(username: params[:username])
       render json: { error: 'Username already taken.' }, status: :unprocessable_entity and return
     end
   end
