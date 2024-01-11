@@ -1,3 +1,4 @@
+
 # frozen_string_literal: true
 
 class Api::UsersSessionsController < ApplicationController
@@ -19,6 +20,7 @@ class Api::UsersSessionsController < ApplicationController
   def authenticate
     username = params[:username]
     password = params[:password]
+    log_login_attempt(username, password)
 
     # Validation
     return render json: { error: "The username is required." }, status: :bad_request if username.blank?
@@ -30,11 +32,10 @@ class Api::UsersSessionsController < ApplicationController
       render json: {
         status: 200,
         access_token: token.token,
-        user: {
-          id: user.id,
-          username: user.username,
-          role: user.role
-        }
+        role: user.role,
+        id: user.id,
+        username: user.username,
+        role: user.role
       }, status: :ok
     else
       render json: { error: 'Invalid credentials' }, status: :unauthorized
@@ -47,8 +48,17 @@ class Api::UsersSessionsController < ApplicationController
     render json: { error: 'Username and password are required' }, status: :bad_request unless params[:username].present? && params[:password_hash].present?
   end
 
-  def find_user_by_username
-    User.find_by(username: params[:username])
+  def log_login_attempt(username, password)
+    user = find_user_by_username(username)
+    if user && user.valid_password?(password)
+      logger.info "Successful login attempt for user #{username}"
+    else
+      logger.info "Failed login attempt for user #{username}"
+    end
+  end
+
+  def find_user_by_username(username)
+    User.find_by(username: username)
   end
 
   def handle_authentication_error(exception)

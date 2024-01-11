@@ -1,5 +1,6 @@
+
 class Api::UsersPasswordsController < Api::BaseController
-  before_action :authenticate_params, only: [:authenticate]
+  before_action :validate_authenticate_params, only: [:authenticate]
 
   def create
     if current_resource_owner.valid_password?(params.dig(:old_password))
@@ -25,7 +26,7 @@ class Api::UsersPasswordsController < Api::BaseController
       render json: error_response(nil, 'Invalid username or password'), status: :unauthorized
     end
   end
-
+  
   private
 
   def log_login_attempt(user, success)
@@ -33,6 +34,12 @@ class Api::UsersPasswordsController < Api::BaseController
   end
 
   def authenticate_params
+    params.require(:username)
+    params.require(:password_hash)
     params.permit(:username, :password_hash)
+  end
+
+  def validate_authenticate_params
+    authenticate_params
   end
 end
