@@ -17,6 +17,7 @@ namespace :api do
     end
     # Added new route for submitting questions
     post '/questions', to: 'questions#create'
+    put '/answers/:id', to: 'answers#update'
   end
 
   resources :shippings, only: %i[index show update] do
@@ -88,20 +89,22 @@ namespace :api do
   resources :users_reset_password_requests, only: [:create] do
   end
 
-  put '/answers/:id', to: 'api/v1/answers#update'
-
-  put '/moderation/:type/:id', to: 'moderations#update', constraints: { type: /question|answer/, id: /\d+/ }
-
   resources :users, only: %i[index create show update] do
   end
 
   post 'authenticate', on: :collection
+
+  # Existing route for PUT request for content moderation
+  put '/moderation/:type/:id', to: 'moderations#update', constraints: { type: /question|answer/, id: /\d+/ }
 
   # Added new route for content moderation as per the guideline
   get 'moderation/content', to: 'moderations#index', constraints: lambda { |req|
     %w[question answer feedback].include?(req.params[:type]) &&
     %w[pending approved rejected].include?(req.params[:status])
   }
+
+  # New route for PUT request for content moderation
+  put '/moderate/:type/:id', to: 'api/moderations#update', constraints: { type: /question|answer|feedback/, id: /\d+/ }
 end
 
 get '/health' => 'pages#health_check'

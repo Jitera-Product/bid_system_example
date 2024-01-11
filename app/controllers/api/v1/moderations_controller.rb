@@ -1,7 +1,6 @@
 class Api::V1::ModerationsController < ApplicationController
   before_action :authenticate_user!
-  before_action :verify_admin_role, only: [:moderate_content]
-  before_action :verify_admin_role, only: [:update, :index]
+  before_action :verify_admin_role, only: [:update, :index, :moderate_content]
 
   # GET /api/v1/moderation/content
   def index
@@ -24,17 +23,17 @@ class Api::V1::ModerationsController < ApplicationController
 
       # Validate content type
       unless %w[question answer].include?(content_type.downcase)
-        render json: { error: "Type must be either 'question' or 'answer'." }, status: :bad_request and return
+        render json: { error: "Invalid type specified." }, status: :bad_request and return
       end
 
       # Validate content ID
       unless content_id.to_s.match?(/\A\d+\z/)
-        render json: { error: 'ID must be a number.' }, status: :bad_request and return
+        render json: { error: 'Wrong format.' }, status: :bad_request and return
       end
 
       # Validate new status
       unless %w[approved rejected pending].include?(new_status.downcase)
-        render json: { error: "Status must be 'approved', 'rejected', or 'pending'." }, status: :bad_request and return
+        render json: { error: "Invalid status value." }, status: :bad_request and return
       end
 
       case content_type.downcase
@@ -45,34 +44,15 @@ class Api::V1::ModerationsController < ApplicationController
       end
 
       content.update!(status: new_status)
-      render json: { message: 'Content has been successfully moderated.' }, status: :ok
+      render json: { status: 200, message: 'The content has been successfully moderated.' }, status: :ok
     rescue ActiveRecord::RecordNotFound => e
       render json: { error: 'Content not found' }, status: :not_found
     rescue ActiveRecord::RecordInvalid => e
       render json: { error: e.message }, status: :unprocessable_entity
+    rescue StandardError => e
+      render json: { error: e.message }, status: :internal_server_error
     end
   end
-
-  private
-
-  def validate_moderation_params
-    unless ['question', 'answer', 'feedback'].include?(params[:type])
-      raise ArgumentError, "Type must be one of 'question', 'answer', or 'feedback'."
-    end
-
-    unless ['pending', 'approved', 'rejected'].include?(params[:status])
-      raise ArgumentError, "Status must be one of 'pending', 'approved', or 'rejected'."
-    end
-  end
-
-  def authenticate_user!
-    # Authentication logic here, raise Exceptions::AuthenticationError if failed
-  end
-
-  def verify_admin_role
-    # Verify if the current user is an admin, raise Exceptions::AuthorizationError if not
-  end
-end
 
   # POST /api/v1/moderate_content
   def moderate_content
@@ -116,3 +96,22 @@ end
     # Assuming Content is a model that includes questions, answers, etc.
     Content.find(content_id)
   end
+
+  def validate_moderation_params
+    unless ['question', 'answer', 'feedback'].include?(params[:type])
+      raise ArgumentError, "Type must be one of 'question', 'answer', or 'feedback'."
+    end
+
+    unless ['pending', 'approved', 'rejected'].include?(params[:status])
+      raise ArgumentError, "Status must be one of 'pending', 'approved', or 'rejected'."
+    end
+  end
+
+  def authenticate_user!
+    # Authentication logic here, raise Exceptions::AuthenticationError if failed
+  end
+
+  def verify_admin_role
+    # Verify if the current user is an admin, raise Exceptions::AuthorizationError if not
+  end
+end
