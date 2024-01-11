@@ -74,15 +74,27 @@ class Api::UsersController < Api::BaseController
   end
 
   def authenticate
-    user = User.find_by(username: authentication_params[:username])
-    if user&.authenticate(authentication_params[:password_hash])
+    username = params[:username]
+    password = params[:password]
+
+    return render json: { error: "The username is required." }, status: :bad_request if username.blank?
+    return render json: { error: "The password is required." }, status: :bad_request if password.blank?
+
+    password_hash = UserService.hash_password(password)
+
+    user = User.find_by(username: username)
+    if user&.authenticate(password_hash)
       token = Doorkeeper::AccessToken.create!(resource_owner_id: user.id)
       log_login_attempt(user, true)
-      render json: { session_token: token.token, role: user.role }, status: :ok
+      render json: { status: 200, access_token: token.token, user: { id: user.id, username: user.username, role: user.role } }, status: :ok
     else
       log_login_attempt(user, false)
       render json: { error: 'Invalid credentials' }, status: :unauthorized
     end
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: "User not found." }, status: :not_found
+  rescue StandardError => e
+    render json: { error: e.message }, status: :internal_server_error
   end
 
   def register

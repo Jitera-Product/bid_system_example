@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 class Api::UsersSessionsController < ApplicationController
-  before_action :validate_login_params
+  before_action :validate_login_params, except: [:authenticate]
+  rescue_from Exceptions::AuthenticationError, with: :handle_authentication_error
 
   def create
     user = find_user_by_username
@@ -14,6 +15,32 @@ class Api::UsersSessionsController < ApplicationController
     end
   end
 
+  # POST /api/users/authenticate
+  def authenticate
+    username = params[:username]
+    password = params[:password]
+
+    # Validation
+    return render json: { error: "The username is required." }, status: :bad_request if username.blank?
+    return render json: { error: "The password is required." }, status: :bad_request if password.blank?
+
+    user = User.authenticate?(username, password)
+    if user
+      token = Doorkeeper::AccessToken.create!(resource_owner_id: user.id)
+      render json: {
+        status: 200,
+        access_token: token.token,
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role
+        }
+      }, status: :ok
+    else
+      render json: { error: 'Invalid credentials' }, status: :unauthorized
+    end
+  end
+
   private
 
   def validate_login_params
@@ -22,5 +49,9 @@ class Api::UsersSessionsController < ApplicationController
 
   def find_user_by_username
     User.find_by(username: params[:username])
+  end
+
+  def handle_authentication_error(exception)
+    render json: { error: exception.message }, status: :unprocessable_entity
   end
 end
