@@ -87,6 +87,9 @@ Rails.application.routes.draw do
     # New route added from the new code
     post 'questions/create', to: 'questions#create'
 
+    # Updated route to match the requirement
+    get '/answers', to: 'answers#index', as: 'get_answers'
+
     resources :questions, only: [:update]
     resources :users, only: %i[index create show update] do
     end
