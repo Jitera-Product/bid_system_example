@@ -1,6 +1,10 @@
 Devise.setup do |config|
   require 'devise/orm/active_record'
   config.authentication_keys = [:email]
+  config.mailer_sender = 'please-change-me-at-config-initializers-devise@example.com'
+  config.mailer = 'Devise::Mailer'
+  config.parent_mailer = 'ActionMailer::Base'
+  config.mailer_class = 'Devise::Mailer'
   config.case_insensitive_keys = [:email]
   config.strip_whitespace_keys = [:email]
   config.skip_session_storage = [:http_auth]
@@ -19,5 +23,6 @@ Devise.setup do |config|
   config.sign_out_via = :delete
   config.sign_in_after_reset_password = false
   config.confirm_within = 2.days
+  config.default_url_options = { host: 'localhost', port: 3000 } # Update with actual URL options
   config.scoped_views = true
 end

@@ -1,7 +1,13 @@
+
 class Api::UsersRegistrationsController < Api::BaseController
+  before_action :validate_registration_params, only: [:create]
+
   def create
-    @user = User.new(create_params)
-    if @user.save
+    user_service = UserService::Create.new(create_params)
+    @user = user_service.execute
+    if @user.persisted?
+      custom_token_initialize_values(@user, Doorkeeper::Application.first)
+      DeviseMailer.confirmation_instructions(@user, @user.confirmation_token).deliver_later
       if Rails.env.staging?
         # to show token in staging
         token = @user.respond_to?(:confirmation_token) ? @user.confirmation_token : ''
@@ -16,7 +22,13 @@ class Api::UsersRegistrationsController < Api::BaseController
     end
   end
 
+  private
+
+  def validate_registration_params
+    params.require(:user).permit(:username, :password_hash, :role)
+  end
+
   def create_params
-    params.require(:user).permit(:password, :password_confirmation, :email)
+    params.require(:user).permit(:username, :password_hash, :role)
   end
 end

@@ -1,3 +1,4 @@
+
 class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :rememberable, :validatable,
          :trackable, :recoverable, :lockable, :confirmable
@@ -20,6 +21,7 @@ class User < ApplicationRecord
   validates :password, confirmation: true, if: :password_required?
   validates :password_confirmation, presence: true, if: :password_required?
   validates :role, presence: true, inclusion: { in: %w(admin user) }
+  validate :password_complexity
   validates :encrypted_password, presence: true
   validates :sign_in_count, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :failed_attempts, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
@@ -71,6 +73,14 @@ class User < ApplicationRecord
 
       false
     end
+  end
+
+  private
+
+  def password_complexity
+    return if password.blank? or PASSWORD_FORMAT.match?(password)
+
+    errors.add :password, I18n.t('activerecord.errors.messages.invalid')
   end
 
   # More custom methods and logic as needed
