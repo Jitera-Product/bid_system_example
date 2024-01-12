@@ -59,12 +59,10 @@ Rails.application.routes.draw do
     resources :users_reset_password_requests, only: [:create]
 
     namespace :v1 do
-      post '/questions', to: 'questions#create'
+      resources :questions, only: [:create], constraints: lambda { |request| request.env['warden'].authenticate? && request.env['warden'].user.role == 'contributor' }
       resources :feedbacks, only: [:create]
       get '/answers/search', to: 'answers#search'
       put '/users/:id/role', to: 'users#update_user_role'
-      # Additional route from the existing code
-      resources :questions, only: [:create], as: 'create_questions'
     end
 
     resources :users, only: %i[index create show update]
