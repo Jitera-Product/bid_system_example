@@ -1,8 +1,8 @@
 require 'sidekiq/web'
+
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
-
     skip_controllers :authorizations, :applications, :authorized_applications
   end
 
@@ -10,6 +10,7 @@ Rails.application.routes.draw do
   devise_for :admins
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
+  
   namespace :api do
     resources :shippings, only: %i[index show update] do
     end
@@ -82,6 +83,10 @@ Rails.application.routes.draw do
 
     post '/login', to: 'users#login'
     resources :users, only: %i[index create show update] do
+    end
+
+    namespace :v1 do
+      post '/feedbacks', to: 'feedbacks#create', as: 'feedbacks_create', defaults: { format: :json }
     end
   end
 

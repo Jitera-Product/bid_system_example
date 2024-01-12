@@ -1,3 +1,4 @@
+
 class Api::UsersPolicy < ApplicationPolicy
   def update?
     (user.is_a?(User) && record.id == user&.id)
@@ -11,14 +12,18 @@ class Api::UsersPolicy < ApplicationPolicy
     (user.is_a?(User) && record.id == user&.id)
   end
 
+  def submit_feedback?(user, answer)
+    return false unless user.is_a?(User)
+    # Assuming that any authenticated user can submit feedback for any answer
+    true
+  end
+
   class Scope < Scope
     def resolve
       if user.is_a?(User)
         scope.all.where('users.id = ?', user&.id)
-
       else
         scope.none
-
       end
     end
   end
