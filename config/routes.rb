@@ -38,6 +38,7 @@ Rails.application.routes.draw do
     put '/users/:id/role', to: 'users#update_role'
     resources :users, only: %i[index create show update]
     post '/feedbacks', to: 'feedbacks#create' # This line was added from the existing code
+    get '/answers/retrieve', to: 'answers#retrieve' # This line was added from the new code
   end
 
   get '/health' => 'pages#health_check'
