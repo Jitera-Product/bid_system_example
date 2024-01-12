@@ -84,16 +84,18 @@ Rails.application.routes.draw do
     post '/login', to: 'users#login'
     post 'questions/create', to: 'questions#create'
 
-    resources :questions, only: [] do
-      member do
-        put :update, to: 'questions#update' # Updated to match the requirement
-      end
-    end
+    resources :questions, only: [:update]
 
     resources :users, only: %i[index create show update] do
     end
 
     delete 'logout/:user_id', to: 'sessions#logout', as: 'logout'
+
+    # New route added from the new code
+    get '/answers', to: 'answers#index', as: 'get_answers'
+
+    # Corrected route to match the requirement
+    post '/feedback', to: 'feedbacks#create', as: 'create_feedback'
   end
 
   get '/health' => 'pages#health_check'
