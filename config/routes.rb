@@ -84,9 +84,10 @@ Rails.application.routes.draw do
     get '/questions/answer', to: 'questions#show'
     post '/login', to: 'users#login'
 
-    # Added from new code
-    put '/answers/:id', to: 'answers#update'
+    # New route added from the new code
+    post 'questions/create', to: 'questions#create'
 
+    resources :questions, only: [:update]
     resources :users, only: %i[index create show update] do
     end
   end
