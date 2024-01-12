@@ -24,6 +24,14 @@ class User < ApplicationRecord
   # end for validations
 
   def generate_reset_password_token
+
+  end
+
+  def self.valid_role?(role_name)
+    valid_roles = ['Administrator', 'Moderator', 'User']
+    valid_roles.include?(role_name)
+  end
+
     raw, enc = Devise.token_generator.generate(self.class, :reset_password_token)
     self.reset_password_token   = enc
     self.reset_password_sent_at = Time.now.utc

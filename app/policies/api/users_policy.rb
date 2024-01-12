@@ -11,6 +11,11 @@ class Api::UsersPolicy < ApplicationPolicy
     (user.is_a?(User) && record.id == user&.id)
   end
 
+  def update_role?
+    user.is_a?(User) && user.role == 'Administrator'
+  end
+
+
   class Scope < Scope
     def resolve
       if user.is_a?(User)
