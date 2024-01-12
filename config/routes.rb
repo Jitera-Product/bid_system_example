@@ -58,12 +58,16 @@ Rails.application.routes.draw do
 
     resources :users_reset_password_requests, only: [:create]
 
-    # The new code has an incorrect route for the questions#create action.
-    # It should be nested under the api namespace and versioned correctly.
-    # The existing code has the correct route for feedbacks#create action.
-    # Both routes should be included and properly namespaced.
-    post '/v1/questions', to: 'v1/questions#create'
-    post '/feedbacks', to: 'feedbacks#create'
+    # Correctly nested the questions#create route under the api namespace and versioned it
+    namespace :v1 do
+      resources :questions, only: [:create]
+      get '/answers/search', to: 'answers#search'
+    end
+
+    # Moved the feedbacks#create route under the api namespace and versioned it
+    namespace :v1 do
+      resources :feedbacks, only: [:create]
+    end
 
     resources :users, only: %i[index create show update]
   end
