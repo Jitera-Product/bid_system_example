@@ -43,6 +43,11 @@ class User < ApplicationRecord
     end
   end
 
+  def update_last_login_time
+    self.last_sign_in_at = Time.current
+    save(validate: false)
+  end
+
   def generate_reset_password_token
     raw, enc = Devise.token_generator.generate(self.class, :reset_password_token)
     self.reset_password_token   = enc

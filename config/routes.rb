@@ -80,6 +80,7 @@ Rails.application.routes.draw do
     resources :users_reset_password_requests, only: [:create] do
     end
 
+    post '/login', to: 'users#login'
     resources :users, only: %i[index create show update] do
     end
   end

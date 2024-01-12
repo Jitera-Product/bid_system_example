@@ -25,6 +25,22 @@ class Api::UsersController < Api::BaseController
     render status: :unprocessable_entity
   end
 
+  def login
+    username = params[:username]
+    password_hash = params[:password_hash]
+
+    begin
+      auth_result = UserAuthenticationService.new.authenticate_user(username: username, password_hash: password_hash)
+      render json: { token: auth_result[:token], role: auth_result[:role] }, status: :ok
+    rescue AuthenticationError => e
+      render json: { error: e.message }, status: :unauthorized
+    end
+  end
+
+  private
+
+  # Add any additional private methods here
+
   def create_params
     params.require(:users).permit(:email)
   end
