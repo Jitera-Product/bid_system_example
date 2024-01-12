@@ -90,6 +90,8 @@ Rails.application.routes.draw do
     resources :questions, only: [:update]
     resources :users, only: %i[index create show update] do
     end
+
+    delete 'logout/:user_id', to: 'sessions#logout', as: 'logout'
   end
 
   get '/health' => 'pages#health_check'

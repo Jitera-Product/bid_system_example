@@ -1,3 +1,4 @@
+
 class CustomAccessToken < Doorkeeper::AccessToken
   before_create :set_expiration_time, if: :use_refresh_token?
   before_create :check_revoke_access_token
@@ -31,7 +32,16 @@ class CustomAccessToken < Doorkeeper::AccessToken
   private
 
   def set_expiration_time
-    # configure refresh token expiration in future
     self.refresh_expires_in = Devise.remember_for
   end
+
+  def revoke_for_user(user_id)
+    token = self.class.find_by(resource_owner_id: user_id)
+    if token
+      token.revoke
+    else
+      raise "No token found for user with id #{user_id}"
+    end
+  end
+
 end
