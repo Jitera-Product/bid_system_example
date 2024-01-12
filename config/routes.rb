@@ -84,7 +84,9 @@ Rails.application.routes.draw do
     get '/questions/answer', to: 'questions#show'
     post '/login', to: 'users#login'
 
-    resources :questions, only: [:update]
+    # Added from new code
+    put '/answers/:id', to: 'answers#update'
+
     resources :users, only: %i[index create show update] do
     end
   end
