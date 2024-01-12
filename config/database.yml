@@ -1,3 +1,4 @@
+
 # PostgreSQL. Versions 9.3 and up are supported.
 #
 # Install the pg driver:
@@ -21,8 +22,9 @@ default: &default
   # https://guides.rubyonrails.org/configuring.html#database-pooling
   host: <%= ENV.fetch("BID_SYSTEM_DATABASE_HOST") { "localhost" } %>
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  username: postgres
-  port: 5432
+  username: <%= ENV.fetch("BID_SYSTEM_USERNAME") { "postgres" } %>
+  password: <%= ENV.fetch("BID_SYSTEM_PASSWORD") { "postgres" } %>
+  port: <%= ENV.fetch("BID_SYSTEM_DATABASE_PORT") { 5432 } %>
 
 development:
   <<: *default
