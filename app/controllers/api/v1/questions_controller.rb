@@ -11,8 +11,8 @@ class Api::V1::QuestionsController < ApplicationController
   def create
     authorize :question, :create?
     service = QuestionSubmissionService.new(question_params, current_resource_owner.id)
-    question = service.call
-    render json: { status: 201, question: question }, status: :created
+    question_id = service.call
+    render json: { question_id: question_id }, status: :created
   rescue Pundit::NotAuthorizedError
     render json: { error: 'User is not authorized to create questions.' }, status: :forbidden
   rescue ActiveRecord::RecordInvalid => e
@@ -20,7 +20,7 @@ class Api::V1::QuestionsController < ApplicationController
   end
 
   def update
-    if @question.update_question(question_params)
+    if @question.update_question(question_params.merge(user_id: current_user.id))
       render json: { message: 'Question updated successfully', question: @question }, status: :ok
     else
       render json: { errors: @question.errors.full_messages }, status: :unprocessable_entity
@@ -28,7 +28,7 @@ class Api::V1::QuestionsController < ApplicationController
   end
 
   private
-  
+
   def set_question
     @question = QuestionRetrievalService.get_question(params[:id])
     render json: { error: 'Question not found' }, status: :not_found unless @question
@@ -41,16 +41,20 @@ class Api::V1::QuestionsController < ApplicationController
   def validate_question_params
     validator = QuestionValidator.new(params)
     if validator.valid?
-      validate_tags if params[:tags]
+      validate_question_details
     else
       render json: { errors: validator.errors }, status: :bad_request
     end
   end
 
-  def validate_tags
-    unless params[:tags].is_a?(Array) && params[:tags].all? { |tag| tag.is_a?(Integer) }
-      render json: { errors: 'Tags must be an array of tag IDs.' }, status: :bad_request
-    end
+  def validate_question_details
+    errors = []
+    errors << 'Wrong format.' unless params[:id].to_s.match?(/\A\d+\z/)
+    errors << 'You cannot input more than 200 characters.' if question_params[:title].length > 200
+    errors << 'The content is required.' if question_params[:content].blank?
+    errors << 'The category is required.' if question_params[:category].blank?
+    errors << 'Tags must be an array of tag IDs.' unless question_params[:tags].is_a?(Array) && question_params[:tags].all? { |t| t.is_a?(Integer) }
+    render json: { errors: errors }, status: :bad_request if errors.any?
   end
 
   def question_params

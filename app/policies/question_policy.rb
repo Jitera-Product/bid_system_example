@@ -1,9 +1,11 @@
-
 class QuestionPolicy < ApplicationPolicy
   def edit?(user, question)
-    return true if user.admin? || question.user_id == user.id
+    return false unless user
+    user_role = user.role.to_s.downcase
 
-    false
+    return true if user_role == 'contributor' && question.user_id == user.id
+
+    super
   end
 
   # Other policy methods...
