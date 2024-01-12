@@ -1,7 +1,10 @@
-
 class Api::AdminsPolicy < ApplicationPolicy
   def update?
     (user.is_a?(Admin) && record.id == user&.id)
+  end
+
+  def moderate?
+    user.is_a?(Admin) && user.role == 'Administrator'
   end
 
   def show?

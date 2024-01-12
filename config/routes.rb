@@ -59,7 +59,6 @@ Rails.application.routes.draw do
     resources :users_reset_password_requests, only: [:create]
 
     namespace :v1 do
-      # Merged the new and existing routes, ensuring that all specified actions are included
       resources :questions, only: [:create] do
         member do
           put :update
@@ -68,15 +67,8 @@ Rails.application.routes.draw do
       resources :feedbacks, only: [:create]
       get '/answers/search', to: 'answers#search'
       put '/users/:id/role', to: 'users#update_user_role'
-      post '/questions', to: 'questions#create' # This line is redundant due to the resources above and can be removed
-      post '/feedbacks', to: 'feedbacks#create' # This line is redundant due to the resources above and can be removed
-      resources :users, only: %i[index create show update]
+      put '/moderate/:type/:id', to: 'moderation#update_status'
     end
-
-    # The feedbacks#create route is defined twice, once inside the v1 namespace and once outside.
-    # Since it's not clear which is correct without additional context, I'm leaving both routes.
-    # If one is incorrect, it should be removed based on the application's requirements.
-    post '/feedbacks', to: 'feedbacks#create'
 
     resources :users, only: %i[index create show update]
   end
