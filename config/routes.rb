@@ -1,3 +1,4 @@
+
 require 'sidekiq/web'
 Rails.application.routes.draw do
   use_doorkeeper do
@@ -79,6 +80,8 @@ Rails.application.routes.draw do
 
     resources :users_reset_password_requests, only: [:create] do
     end
+
+    post '/feedbacks', to: 'feedbacks#create'
 
     resources :users, only: %i[index create show update] do
     end
