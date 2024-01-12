@@ -1,4 +1,6 @@
 class AnswerService
+  # existing methods...
+
   def retrieve_answer(query)
     questions = QuestionQuery.search_by_terms(query)
     answers = questions.map do |question|
@@ -13,7 +15,14 @@ class AnswerService
 
     relevant_answer&.content
   end
+
+  def update(answer, content)
+    begin
+      answer.content = content
+      answer.save!
+      answer
+    rescue => e
+      raise e
+    end
+  end
 end
-
-# Note: This is a simple example and should be expanded upon based on project requirements.
-

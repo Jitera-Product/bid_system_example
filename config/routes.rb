@@ -86,6 +86,9 @@ Rails.application.routes.draw do
 
     resources :users, only: %i[index create show update] do
     end
+
+    # Added from new code
+    put '/answers/:id', to: 'answers#update'
   end
 
   get '/health' => 'pages#health_check'
