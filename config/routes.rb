@@ -58,15 +58,14 @@ Rails.application.routes.draw do
 
     resources :users_reset_password_requests, only: [:create]
 
-    # Correctly nested the questions#create route under the api namespace and versioned it
+    # Correctly nested and versioned route for questions#create action
     namespace :v1 do
       resources :questions, only: [:create]
-      get '/answers/search', to: 'answers#search'
-    end
-
-    # Moved the feedbacks#create route under the api namespace and versioned it
-    namespace :v1 do
       resources :feedbacks, only: [:create]
+      # Additional route from the existing code
+      get '/answers/search', to: 'answers#search'
+      # Correctly nested and versioned route for users#update_user_role action
+      put '/users/:id/role', to: 'users#update_user_role'
     end
 
     resources :users, only: %i[index create show update]
