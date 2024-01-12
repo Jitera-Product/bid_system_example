@@ -1,3 +1,4 @@
+
 # typed: true
 # frozen_string_literal: true
 
@@ -22,5 +23,11 @@ class ApplicationPolicy
     private
 
     attr_reader :user, :scope
+  end
+
+  private
+
+  def contributor?
+    user.role == 'Contributor'
   end
 end

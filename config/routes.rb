@@ -10,35 +10,62 @@ Rails.application.routes.draw do
   devise_for :admins
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
-  
+
   namespace :api do
     resources :shippings, only: %i[index show update]
+
     resources :listing_bid_items, only: %i[index create show destroy]
+
     resources :listings, only: %i[index create show update]
+
     resources :product_categories, only: %i[index create show update]
+
     resources :categories, only: %i[index create show update]
+
     resources :deposits, only: %i[index create show]
+
     resources :wallets, only: [:show]
+
     resources :payment_methods, only: %i[index create show]
+
     resources :withdrawals, only: %i[index create show]
+
     resources :admins, only: %i[index create show update]
+
     resources :products, only: %i[index create show update]
+
     resources :bids, only: %i[index create show update]
+
     resources :bid_items, only: %i[index create show update]
+
     resources :admins_verify_confirmation_token, only: [:create]
+
     resources :admins_passwords, only: [:create]
+
     resources :admins_registrations, only: [:create]
+
     resources :admins_verify_reset_password_requests, only: [:create]
+
     resources :admins_reset_password_requests, only: [:create]
+
     resources :users_verify_confirmation_token, only: [:create]
+
     resources :users_passwords, only: [:create]
+
     resources :users_registrations, only: [:create]
+
     resources :users_verify_reset_password_requests, only: [:create]
+
     resources :users_reset_password_requests, only: [:create]
-    put '/users/:id/role', to: 'users#update_role'
+
+    # The new code has an incorrect route for the questions#create action.
+    # It should be nested under the api namespace and versioned correctly.
+    # The existing code has the correct route for feedbacks#create action.
+    # Both routes should be included and properly namespaced.
+    post '/v1/questions', to: 'v1/questions#create'
+    post '/feedbacks', to: 'feedbacks#create'
+
     resources :users, only: %i[index create show update]
-    post '/feedbacks', to: 'feedbacks#create' # This line was added from the existing code
-    get '/answers/retrieve', to: 'answers#retrieve' # This line was added from the new code
   end
 
   get '/health' => 'pages#health_check'
