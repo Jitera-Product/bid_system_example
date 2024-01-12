@@ -10,7 +10,6 @@ Rails.application.routes.draw do
   devise_for :admins
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
-  
   namespace :api do
     resources :shippings, only: %i[index show update] do
     end
@@ -81,12 +80,11 @@ Rails.application.routes.draw do
     resources :users_reset_password_requests, only: [:create] do
     end
 
+    # Merged the new route with the existing one
+    get '/questions/answer', to: 'questions#show'
     post '/login', to: 'users#login'
-    resources :users, only: %i[index create show update] do
-    end
 
-    namespace :v1 do
-      post '/feedbacks', to: 'feedbacks#create', as: 'feedbacks_create', defaults: { format: :json }
+    resources :users, only: %i[index create show update] do
     end
   end
 
