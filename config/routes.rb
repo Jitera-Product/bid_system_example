@@ -84,11 +84,9 @@ Rails.application.routes.draw do
     get '/questions/answer', to: 'questions#show'
     post '/login', to: 'users#login'
 
+    resources :questions, only: [:update]
     resources :users, only: %i[index create show update] do
     end
-
-    # Added from new code
-    put '/answers/:id', to: 'answers#update'
   end
 
   get '/health' => 'pages#health_check'
