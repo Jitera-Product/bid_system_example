@@ -81,6 +81,7 @@ Rails.application.routes.draw do
     end
 
     post 'admins/moderate_content', to: 'admins#moderate_content'
+    post 'feedback', to: 'feedback#create' # Added route for feedback creation
 
     # Resolving conflict for user role update route
     # We keep both the put and patch routes for backward compatibility
