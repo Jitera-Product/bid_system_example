@@ -1,3 +1,4 @@
+
 class Api::UsersPolicy < ApplicationPolicy
   def update?
     (user.is_a?(User) && record.id == user&.id)
@@ -15,11 +16,13 @@ class Api::UsersPolicy < ApplicationPolicy
     def resolve
       if user.is_a?(User)
         scope.all.where('users.id = ?', user&.id)
-
       else
         scope.none
-
       end
     end
+  end
+
+  def admin?(user)
+    user.role == 'admin'
   end
 end

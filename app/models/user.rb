@@ -17,6 +17,7 @@ class User < ApplicationRecord
   validates :username, presence: true, uniqueness: true
   validates :role, presence: true
 
+  enum role: { admin: 0, user: 1, guest: 2 }
   # Password complexity requirement
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
   validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }

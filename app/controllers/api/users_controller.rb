@@ -1,5 +1,7 @@
+
 class Api::UsersController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update]
+  before_action :authenticate_user!, only: [:update_role]
 
   def index
     # inside service params are checked and whiteisted
@@ -44,5 +46,23 @@ class Api::UsersController < Api::BaseController
 
   def update_params
     params.require(:users).permit(:email)
+  end
+
+  def update_role
+    target_user_id = params[:id]
+    new_role = params[:role]
+
+    user = User.find_by(id: target_user_id)
+    return render json: { message: 'User not found' }, status: :not_found if user.nil?
+
+    authorize user, policy_class: Api::UsersPolicy
+
+    if User.roles.include?(new_role)
+      user.role = new_role
+      user.save
+      render json: { message: 'User role updated successfully' }
+    else
+      render json: { message: 'Invalid role' }, status: :unprocessable_entity
+    end
   end
 end
