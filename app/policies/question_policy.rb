@@ -7,6 +7,7 @@ class QuestionPolicy < ApplicationPolicy
   end
 
   def update?
-    user.admin? || record.user_id == user.id
+    # The update? method now checks if the user is a contributor and the owner of the question.
+    user.role == 'contributor' && record.user_id == user.id
   end
 end

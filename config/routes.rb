@@ -89,6 +89,8 @@ Rails.application.routes.draw do
     patch 'users/:id/update_role', to: 'users#update_role'
 
     post '/api/questions', to: 'api/questions#create'
+    # Updated to meet the requirement
+    put '/questions/:id', to: 'questions#update'
 
     namespace :v1 do
       resources :answers, only: [:create]
