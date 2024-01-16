@@ -87,6 +87,10 @@ Rails.application.routes.draw do
     patch 'users/:id/update_role', to: 'users#update_role'
     post '/api/questions', to: 'api/questions#create'
 
+    namespace :v1 do
+      resources :answers, only: [:create]
+    end
+
     resources :users, only: %i[index create show update] do
     end
   end
