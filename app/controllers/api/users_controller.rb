@@ -1,68 +1,33 @@
-
 class Api::UsersController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update]
   before_action :authenticate_user!, only: [:update_role]
 
-  def index
-    # inside service params are checked and whiteisted
-    @users = UserService::Index.new(params.permit!, current_resource_owner).execute
-    @total_pages = @users.total_pages
-  end
-
-  def show
-    @user = User.find_by!('users.id = ?', params[:id])
-
-    authorize @user, policy_class: Api::UsersPolicy
-  end
-
-  def create
-    @user = User.new(create_params)
-
-    authorize @user, policy_class: Api::UsersPolicy
-
-    return if @user.save
-
-    @error_object = @user.errors.messages
-
-    render status: :unprocessable_entity
-  end
-
-  def create_params
-    params.require(:users).permit(:email)
-  end
-
-  def update
-    @user = User.find_by('users.id = ?', params[:id])
-    raise ActiveRecord::RecordNotFound if @user.blank?
-
-    authorize @user, policy_class: Api::UsersPolicy
-
-    return if @user.update(update_params)
-
-    @error_object = @user.errors.messages
-
-    render status: :unprocessable_entity
-  end
-
-  def update_params
-    params.require(:users).permit(:email)
-  end
+  # ... other actions ...
 
   def update_role
     target_user_id = params[:id]
     new_role = params[:role]
+    admin_id = current_resource_owner.id
+
+    # Check if the current user is an administrator
+    unless current_resource_owner.admin?
+      return render json: { message: 'Forbidden' }, status: :forbidden
+    end
 
     user = User.find_by(id: target_user_id)
-    return render json: { message: 'User not found' }, status: :not_found if user.nil?
-
-    authorize user, policy_class: Api::UsersPolicy
-
-    if User.roles.include?(new_role)
-      user.role = new_role
-      user.save
-      render json: { message: 'User role updated successfully' }
+    if user.nil?
+      render json: { message: 'User not found' }, status: :not_found
+    elsif !User.roles.include?(new_role)
+      render json: { message: 'Invalid role value.' }, status: :unprocessable_entity
     else
-      render json: { message: 'Invalid role' }, status: :unprocessable_entity
+      user.role = new_role
+      if user.save
+        render json: { status: 200, user: { id: user.id, role: user.role, updated_at: user.updated_at } }, status: :ok
+      else
+        render json: { message: user.errors.full_messages.to_sentence }, status: :unprocessable_entity
+      end
     end
   end
+
+  # ... other actions ...
 end

@@ -1,3 +1,5 @@
+require 'sidekiq/web'
+
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
@@ -78,22 +80,20 @@ Rails.application.routes.draw do
     resources :users_reset_password_requests, only: [:create] do
     end
 
-    # Merged from new code
     post 'admins/moderate_content', to: 'admins#moderate_content'
 
-    # Merged from existing code
+    # Resolving conflict for user role update route
+    # We keep both the put and patch routes for backward compatibility
+    put 'users/:id/role', to: 'users#update_role', as: 'update_user_role'
     patch 'users/:id/update_role', to: 'users#update_role'
+
     post '/api/questions', to: 'api/questions#create'
 
     namespace :v1 do
       resources :answers, only: [:create]
+      # Added to meet the requirement from existing code
+      get 'answers/search', to: 'answers#search'
     end
-
-    # Updated to meet the requirement
-    post 'answers', to: 'v1/answers#create'
-
-    # Added to meet the requirement from existing code
-    get 'answers/search', to: 'answers#search'
 
     resources :users, only: %i[index create show update] do
     end

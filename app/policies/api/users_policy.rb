@@ -28,4 +28,9 @@ class Api::UsersPolicy < ApplicationPolicy
   def admin?(user)
     user.role == 'admin'
   end
+
+  # Updated method to check if the user can update roles
+  def update_role?
+    admin?(user)
+  end
 end
