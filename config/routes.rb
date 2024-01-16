@@ -94,8 +94,8 @@ Rails.application.routes.draw do
 
     namespace :v1 do
       resources :answers, only: [:create]
-      # Added to meet the requirement from existing code
-      get 'answers/search', to: 'answers#search'
+      put 'answers/:id', to: 'answers#update' # Updated to meet the requirement
+      get 'answers/search', to: 'answers#search' # Added to meet the requirement from existing code
     end
 
     resources :users, only: %i[index create show update] do

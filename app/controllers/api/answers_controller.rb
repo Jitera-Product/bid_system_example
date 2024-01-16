@@ -6,6 +6,8 @@ module Api
     include AuthenticationConcern
 
     before_action :authenticate_user!, only: [:create, :update, :search]
+    before_action :set_answer, only: [:update]
+    before_action :validate_answer_owner, only: [:update]
 
     def create
       content = params[:content]
@@ -33,18 +35,17 @@ module Api
     end
 
     def update
-      answer = Answer.find(params[:answer_id])
-      authorize answer, :update?
-
-      if AnswerService::Update.new(answer, params[:content]).call
-        render json: { message: 'Answer has been updated successfully.' }, status: :ok
+      if @answer.update(content: params[:content])
+        render json: { status: 200, answer: @answer.as_json(only: [:id, :content, :question_id]).merge(updated_at: @answer.updated_at.iso8601) }, status: :ok
       else
-        render json: { message: 'Unable to update the answer.' }, status: :unprocessable_entity
+        render json: { error: 'Unable to update the answer.' }, status: :unprocessable_entity
       end
     rescue ActiveRecord::RecordNotFound
-      render json: { message: 'Answer not found.' }, status: :not_found
+      render json: { error: 'Answer not found.' }, status: :not_found
     rescue Pundit::NotAuthorizedError
-      render json: { message: 'You are not authorized to update this answer.' }, status: :forbidden
+      render json: { error: 'You are not authorized to update this answer.' }, status: :forbidden
+    rescue ArgumentError
+      render json: { error: 'Wrong format.' }, status: :unprocessable_entity
     rescue StandardError => e
       render json: error_response(nil, e), status: :internal_server_error
     end
@@ -62,6 +63,20 @@ module Api
       rescue StandardError => e
         render json: error_response(nil, e), status: :internal_server_error
       end
+    end
+
+    private
+
+    def set_answer
+      @answer = Answer.find(params[:id])
+    rescue ActiveRecord::RecordNotFound
+      render json: { error: 'Answer not found.' }, status: :not_found
+    rescue ArgumentError
+      render json: { error: 'Wrong format.' }, status: :unprocessable_entity
+    end
+
+    def validate_answer_owner
+      render json: { error: 'You can only edit your own answers.' }, status: :unauthorized unless @answer.user_id == current_user.id
     end
 
     # Other controller actions...
