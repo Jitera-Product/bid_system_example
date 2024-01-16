@@ -1,3 +1,4 @@
+
 class Admin < ApplicationRecord
   devise :database_authenticatable, :registerable, :rememberable, :validatable,
          :trackable, :recoverable, :lockable, :confirmable
@@ -35,6 +36,17 @@ class Admin < ApplicationRecord
     self.reset_password_sent_at = Time.now.utc
     save(validate: false)
     raw
+  end
+
+  # Log moderation action
+  def log_moderation_action(content, action, admin)
+    # Assuming there is a model called ModerationLog with fields for content, action, and admin
+    # This is a placeholder for the actual implementation
+    ModerationLog.create!(
+      content: content,
+      action: action,
+      admin: admin
+    )
   end
 
   class << self

@@ -9,3 +9,8 @@ en:
     '201': created
     '200': success
     '302': deleted
+  moderation:
+    content_approved: "Content has been approved."
+    content_rejected: "Content has been rejected."
+    content_not_found: "Content not found."
+    not_authorized: "Not authorized to perform this action."

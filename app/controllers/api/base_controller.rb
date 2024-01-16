@@ -1,6 +1,7 @@
 # typed: ignore
 module Api
   class BaseController < ActionController::API
+    before_action :doorkeeper_authorize!, only: [:moderate_content]
     include OauthTokensConcern
     include ActionController::Cookies
     include Pundit::Authorization
@@ -24,6 +25,45 @@ module Api
     end
 
     private
+    
+    def moderate_content
+      # Authenticate the user using the `admin?` method from `AdminsPolicy`.
+      admin = current_resource_owner
+      raise Pundit::NotAuthorizedError unless AdminsPolicy.new(admin, nil).admin?
+
+      # Validate the input to ensure that `content_id` corresponds to an existing question or answer based on `content_type`.
+      content_id = params.require(:content_id)
+      content_type = params.require(:content_type)
+      action = params.require(:action)
+
+      content = content_type == 'question' ? Question.find(content_id) : Answer.find(content_id)
+
+      # Depending on the `action` parameter, update the status of the content in the database to reflect its approval or rejection.
+      content.update_moderation_status(action)
+
+      # Log the moderation action taken by the admin using the `Rails.logger` or a custom logger for auditing purposes.
+      Rails.logger.info("Admin ##{admin.id} has #{action}ed content ##{content_id} of type #{content_type}")
+
+      # Return a confirmation message indicating the content has been moderated.
+      render json: { message: "Content has been #{action}d." }, status: :ok
+    rescue ActiveRecord::RecordNotFound
+      render json: { message: 'Content not found' }, status: :not_found
+    rescue Pundit::NotAuthorizedError
+      render json: { message: 'Not authorized to perform this action' }, status: :unauthorized
+    rescue ArgumentError => e
+      render json: { message: e.message }, status: :unprocessable_entity
+    end
+
+    def provide_feedback
+      answer_id = params[:answer_id]
+      user_id = params[:user_id]
+      comment = params[:comment]
+      usefulness = params[:usefulness]
+
+      message = FeedbackService.create_feedback(answer_id, user_id, comment, usefulness)
+
+      render json: { message: message }, status: :ok
+    end
 
     def base_render_record_not_found(_exception)
       render json: { message: I18n.t('common.404') }, status: :not_found
@@ -44,18 +84,6 @@ module Api
     def base_render_record_not_unique
       render json: { message: I18n.t('common.errors.record_not_uniq_error') }, status: :forbidden
     end
-
-    def provide_feedback
-      answer_id = params[:answer_id]
-      user_id = params[:user_id]
-      comment = params[:comment]
-      usefulness = params[:usefulness]
-
-      message = FeedbackService.create_feedback(answer_id, user_id, comment, usefulness)
-
-      render json: { message: message }, status: :ok
-    end
-
 
     def custom_token_initialize_values(resource, client)
       token = CustomAccessToken.create(

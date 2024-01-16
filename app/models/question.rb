@@ -9,8 +9,15 @@ class Question < ApplicationRecord
   validates :user_id, presence: true
 
   # Custom methods
-  # Define any custom methods that the model might require here
-  
+  def update_moderation_status(action)
+    case action
+    when 'approve'
+      update!(status: 'approved')
+    when 'reject'
+      update!(status: 'rejected')
+    end
+  end
+
   # Class method to find matching questions based on parsed content
   def self.find_matching_questions(parsed_content)
     keywords = parsed_content.split # Assuming parsed_content is a space-separated string of keywords
@@ -18,4 +25,5 @@ class Question < ApplicationRecord
     questions
   end
 
+  # Define any custom methods that the model might require here
 end
