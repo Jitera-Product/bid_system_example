@@ -1,4 +1,3 @@
-require 'sidekiq/web'
 
 Rails.application.routes.draw do
   use_doorkeeper do
@@ -90,6 +89,9 @@ Rails.application.routes.draw do
     namespace :v1 do
       resources :answers, only: [:create]
     end
+
+    # Added to meet the requirement
+    get 'answers/search', to: 'answers#search'
 
     resources :users, only: %i[index create show update] do
     end
