@@ -80,7 +80,7 @@ Rails.application.routes.draw do
     resources :users_reset_password_requests, only: [:create] do
     end
 
-    patch 'answers/:answer_id', to: 'answers#update', as: 'update_answer'
+    post '/api/questions', to: 'api/questions#create'
     resources :users, only: %i[index create show update] do
     end
   end
