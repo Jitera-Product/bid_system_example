@@ -1,4 +1,3 @@
-
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
@@ -90,7 +89,10 @@ Rails.application.routes.draw do
       resources :answers, only: [:create]
     end
 
-    # Added to meet the requirement
+    # Updated to meet the requirement
+    post 'answers', to: 'v1/answers#create'
+
+    # Added to meet the requirement from existing code
     get 'answers/search', to: 'answers#search'
 
     resources :users, only: %i[index create show update] do

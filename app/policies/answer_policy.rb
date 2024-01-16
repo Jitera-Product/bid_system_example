@@ -7,7 +7,7 @@ class AnswerPolicy < ApplicationPolicy
   end
 
   def create?
-    user.role == 'contributor'
+    user.role == 'contributor' || user.contributor?
   end
 
   def update?
