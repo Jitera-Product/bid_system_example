@@ -45,6 +45,18 @@ module Api
       render json: { message: I18n.t('common.errors.record_not_uniq_error') }, status: :forbidden
     end
 
+    def provide_feedback
+      answer_id = params[:answer_id]
+      user_id = params[:user_id]
+      comment = params[:comment]
+      usefulness = params[:usefulness]
+
+      message = FeedbackService.create_feedback(answer_id, user_id, comment, usefulness)
+
+      render json: { message: message }, status: :ok
+    end
+
+
     def custom_token_initialize_values(resource, client)
       token = CustomAccessToken.create(
         application_id: client.id,

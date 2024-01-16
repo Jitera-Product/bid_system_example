@@ -1,4 +1,3 @@
-
 class Api::UsersPolicy < ApplicationPolicy
   def update?
     (user.is_a?(User) && record.id == user&.id)
@@ -20,6 +19,10 @@ class Api::UsersPolicy < ApplicationPolicy
         scope.none
       end
     end
+  end
+
+  def check_inquirer_role(user)
+    user.role == 'inquirer'
   end
 
   def admin?(user)

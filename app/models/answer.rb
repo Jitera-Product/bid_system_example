@@ -5,10 +5,12 @@ class Answer < ApplicationRecord
   validates :content, presence: true
   validates :question_id, presence: true
 
-  # Add any custom methods below if required
+  has_many :feedbacks, dependent: :destroy
 
   # Retrieve associated answers for a given question
-  def retrieve_associated_answers(question)
+  def self.retrieve_associated_answers(question)
     question.answers
   end
+
+  # Add any custom methods below if required
 end

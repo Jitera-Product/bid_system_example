@@ -80,8 +80,11 @@ Rails.application.routes.draw do
     resources :users_reset_password_requests, only: [:create] do
     end
 
+    # Merged new code and existing code
     patch 'users/:id/update_role', to: 'users#update_role'
+    post 'provide_feedback', to: 'base#provide_feedback'
     post '/api/questions', to: 'api/questions#create'
+
     resources :users, only: %i[index create show update] do
     end
   end
