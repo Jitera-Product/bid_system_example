@@ -1,3 +1,4 @@
+
 ---
 en:
   common:
@@ -9,3 +10,5 @@ en:
     '201': created
     '200': success
     '302': deleted
+  answers:
+    update_success: "Your answer has been successfully updated."
