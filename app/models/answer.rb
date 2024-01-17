@@ -3,7 +3,7 @@ class Answer < ApplicationRecord
   belongs_to :user
   belongs_to :question
 
-  validates :content, presence: true
+  validates :content, presence: { message: "Answer content cannot be empty." }
   validates :question_id, presence: true
   validate :question_must_exist
 
@@ -20,7 +20,7 @@ class Answer < ApplicationRecord
   private
 
   def question_must_exist
-    Question.exists?(self.question_id)
+    errors.add(:question_id, "Question not found.") unless Question.exists?(self.question_id)
   end
 
   # Add any additional methods below this line

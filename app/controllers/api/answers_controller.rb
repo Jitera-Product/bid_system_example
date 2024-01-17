@@ -6,25 +6,34 @@ module Api
     before_action :authenticate_inquirer!, only: [:search]
     before_action :set_answer, only: [:update]
     before_action :authorize_answer, only: [:update]
+    include Api::AnswersPolicy
 
     def create
-      if validate_answer_submission(params[:content], params[:question_id])
-        answer = Answer.new(answer_params.merge(user_id: current_user.id))
+      # Validate if the question exists
+      unless Question.exists?(params[:question_id])
+        return render json: { errors: "Question not found." }, status: :bad_request
+      end
 
-        if answer.save
-          render json: { answer_id: answer.id }, status: :created
-        else
-          render json: { errors: answer.errors.full_messages }, status: :unprocessable_entity
-        end
+      # Validate if the content is not blank
+      if params[:content].blank?
+        return render json: { errors: "Answer content cannot be empty." }, status: :bad_request
+      end
+
+      answer = Answer.new(answer_params.merge(user_id: current_user.id))
+
+      if answer.save
+        render json: { status: 201, answer: answer.as_json }, status: :created
+      else
+        render json: { errors: answer.errors.full_messages }, status: :unprocessable_entity
       end
     end
 
     def update
-      authorize(@answer, :update?) # Added from new code to use Pundit for authorization
+      authorize(@answer, :update?)
 
       raise ActiveRecord::RecordInvalid.new(@answer) if params[:content].blank?
 
-      updated_answer = AnswerService::Update.call(@answer, params[:content]) # Updated to use AnswerService::Update
+      updated_answer = AnswerService::Update.call(@answer, params[:content])
 
       if updated_answer
         render json: { message: I18n.t('answers.update_success') }, status: :ok
@@ -32,9 +41,9 @@ module Api
         render json: { message: I18n.t('common.422') }, status: :unprocessable_entity
       end
     rescue ActiveRecord::RecordInvalid => e
-      base_render_unprocessable_entity(e) # Updated to use base_render_unprocessable_entity from new code
+      base_render_unprocessable_entity(e)
     rescue Pundit::NotAuthorizedError => e
-      base_render_unauthorized_error(e) # Updated to use base_render_unauthorized_error from new code
+      base_render_unauthorized_error(e)
     end
 
     def search
@@ -70,9 +79,20 @@ module Api
       params.require(:answer).permit(:content, :question_id)
     end
 
+    # Assuming this method exists to validate the answer submission
+    # The actual implementation should be provided here
     def validate_answer_submission(content, question_id)
-      # Assuming this method exists to validate the answer submission
-      # The actual implementation should be provided here
+      # Validate if the question exists
+      unless Question.exists?(question_id)
+        return false, { errors: "Question not found." }
+      end
+
+      # Validate if the content is not blank
+      if content.blank?
+        return false, { errors: "Answer content cannot be empty." }
+      end
+
+      true, {}
     end
 
     # Additional methods from new code for error handling

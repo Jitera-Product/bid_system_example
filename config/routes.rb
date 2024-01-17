@@ -51,6 +51,7 @@ Rails.application.routes.draw do
       get '/answers/search', to: 'answers#search'
       put '/questions/:id', to: 'questions#update', as: 'edit_question'
       put '/answers/:id', to: 'answers#update', as: 'edit_answer'
+      post '/answers', to: 'answers#create', constraints: lambda { |request| request.env['warden'].authenticate? && request.env['warden'].user.role == 'contributor' }
       # End of merged code
 
       resources :users_verify_confirmation_token, only: [:create]
