@@ -1,4 +1,3 @@
-require 'sidekiq/web'
 
 Rails.application.routes.draw do
   use_doorkeeper do
@@ -49,6 +48,9 @@ Rails.application.routes.draw do
     resources :admins_reset_password_requests, only: [:create]
 
     namespace :v1 do
+      # Updated code to match the requirement
+      put '/answers/:id', to: 'answers#update', as: 'edit_answer'
+
       resources :users_verify_confirmation_token, only: [:create]
 
       resources :users_passwords, only: [:create]
@@ -67,11 +69,10 @@ Rails.application.routes.draw do
       end
     end
 
-    # New code added here
+    # Existing new code
     post '/submit_answer', to: 'users#submit_answer'
     post '/questions', to: 'questions#create'
     post 'retrieve_answer', to: 'base#retrieve_answer'
-    # End of new code
   end
 
   get '/health' => 'pages#health_check'
