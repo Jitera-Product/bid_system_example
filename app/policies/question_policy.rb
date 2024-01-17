@@ -11,6 +11,10 @@ class QuestionPolicy < ApplicationPolicy
     user.admin? || record.user_id == user.id
   end
 
+  def moderate?
+    user.admin?
+  end
+
   # Other policy methods below
   # Ensure to include all other methods that were part of the existing code
   # to maintain functionality.

@@ -14,6 +14,10 @@ class AnswerPolicy < ApplicationPolicy
     user.role == 'inquirer'
   end
 
+  def moderate?
+    user.admin?
+  end
+
   private
 
   attr_reader :answer
