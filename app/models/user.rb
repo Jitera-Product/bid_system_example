@@ -1,28 +1,29 @@
 class User < ApplicationRecord
-  # Include default devise modules. Others available are:
-  # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
-  devise :database_authenticatable, :registerable,
-         :recoverable, :rememberable, :validatable,
-         :confirmable, :lockable, :timeoutable, :trackable
+  devise :database_authenticatable, :registerable, :rememberable, :validatable,
+         :trackable, :recoverable, :lockable, :confirmable
 
-  # Associations
   has_one :payment_method, dependent: :destroy
   has_one :wallet, dependent: :destroy
-  has_many :questions, dependent: :destroy, foreign_key: :user_id
-  has_many :bid_items, dependent: :destroy, foreign_key: :user_id
-  has_many :bids, dependent: :destroy, foreign_key: :user_id
-  has_many :deposits, dependent: :destroy, foreign_key: :user_id
-  has_many :products, dependent: :destroy, foreign_key: :user_id
 
-  # Validations
+  has_many :products, dependent: :destroy
+  has_many :bid_items, dependent: :destroy
+  has_many :bids, dependent: :destroy
+  has_many :deposits, dependent: :destroy
+
+  # validations
+  enum role: { member: 0, admin: 1, super_admin: 2 }
+
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
   validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
-  validates :email, presence: true, uniqueness: true, length: { in: 0..255 }, format: { with: URI::MailTo::EMAIL_REGEXP }
-  validates :encrypted_password, presence: true
-  validates :username, presence: true, uniqueness: true
-  validates :role, presence: true
 
-  # Methods
+  validates :email, presence: true, uniqueness: true
+
+  validates :email, length: { in: 0..255 }, if: :email?
+
+  validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }
+
+  # end for validations
+
   def generate_reset_password_token
     raw, enc = Devise.token_generator.generate(self.class, :reset_password_token)
     self.reset_password_token   = enc
@@ -47,6 +48,4 @@ class User < ApplicationRecord
       false
     end
   end
-
-  # Define any methods specific to the User model here
 end

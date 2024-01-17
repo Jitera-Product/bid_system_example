@@ -2,6 +2,7 @@
 en:
   common:
     '404': not found
+    role_update_success: 'User role has been successfully updated.'
     '403': forbidden
     '401': unauthorized
     '500': internal server error
@@ -9,8 +10,5 @@ en:
     '201': created
     '200': success
     '302': deleted
-  errors:
-    content_approved: 'Content has been approved.'
-    content_rejected: 'Content has been rejected.'
   answers:
     update_success: "Your answer has been successfully updated."

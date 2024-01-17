@@ -3,6 +3,10 @@ class Api::UsersPolicy < ApplicationPolicy
     (user.is_a?(User) && record.id == user&.id)
   end
 
+  def update_role?
+    user.role == 'admin'
+  end
+
   def show?
     (user.is_a?(User) && record.id == user&.id)
   end

@@ -1,8 +1,8 @@
 require 'sidekiq/web'
+
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
-
     skip_controllers :authorizations, :applications, :authorized_applications
   end
 
@@ -10,6 +10,7 @@ Rails.application.routes.draw do
   devise_for :admins
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
+
   namespace :api do
     resources :shippings, only: %i[index show update] do
     end
@@ -41,6 +42,8 @@ Rails.application.routes.draw do
     resources :admins, only: %i[index create show update] do
     end
 
+    post 'admins/:admin_id/update_user_role', to: 'admins#update_user_role', as: 'update_user_role'
+
     resources :products, only: %i[index create show update] do
     end
 
@@ -66,27 +69,27 @@ Rails.application.routes.draw do
     end
 
     namespace :v1 do
-    resources :users_verify_confirmation_token, only: [:create] do
-    end
-
-    resources :users_passwords, only: [:create] do
-    end
-
-    resources :users_registrations, only: [:create] do
-    end
-
-    resources :users_verify_reset_password_requests, only: [:create] do
-    end
-
-    resources :users_reset_password_requests, only: [:create] do
-    end
-
-    resources :users, only: %i[index create show update] do
-      member do
-        put :update
-        patch :update
+      resources :users_verify_confirmation_token, only: [:create] do
       end
-    end
+
+      resources :users_passwords, only: [:create] do
+      end
+
+      resources :users_registrations, only: [:create] do
+      end
+
+      resources :users_verify_reset_password_requests, only: [:create] do
+      end
+
+      resources :users_reset_password_requests, only: [:create] do
+      end
+
+      resources :users, only: %i[index create show update] do
+        member do
+          put :update
+          patch :update
+        end
+      end
     end
   end
 
