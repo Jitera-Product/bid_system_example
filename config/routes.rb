@@ -47,9 +47,8 @@ Rails.application.routes.draw do
     resources :admins_reset_password_requests, only: [:create]
 
     namespace :v1 do
-      post '/feedback', to: 'feedbacks#create' # This line is added to meet the requirement
-
       # Merged code from new and existing code
+      get '/answers/search', to: 'answers#search'
       put '/questions/:id', to: 'questions#update', as: 'edit_question'
       put '/answers/:id', to: 'answers#update', as: 'edit_answer'
       # End of merged code
@@ -67,7 +66,6 @@ Rails.application.routes.draw do
       resources :users, only: %i[index create show update] do
         member do
           put :update
-          put :update_role
           patch :update
         end
       end
@@ -77,7 +75,6 @@ Rails.application.routes.draw do
     post '/submit_answer', to: 'users#submit_answer'
     post '/questions', to: 'questions#create'
     post '/retrieve_answer', to: 'base#retrieve_answer' # Fixed the missing '/' before 'retrieve_answer'
-    put '/users/:id/role', to: 'users#update_role' # Added to meet the requirement
     # End of merged new code
   end
 

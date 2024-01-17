@@ -6,6 +6,10 @@ class AnswerPolicy < ApplicationPolicy
     user.admin? || answer.user_id == user.id
   end
 
+  def search?
+    user.role == 'inquirer'
+  end
+
   private
 
   attr_reader :answer
