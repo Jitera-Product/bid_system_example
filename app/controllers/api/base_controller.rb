@@ -76,5 +76,14 @@ module Api
     def current_resource_owner
       return super if defined?(super)
     end
+
+    def authenticate_contributor!
+      authenticate_user!
+      unless current_user&.contributor?
+        render json: { message: 'You are not authorized to perform this action.' }, status: :forbidden
+      end
+    end
+
+    # Other private methods...
   end
 end

@@ -1,35 +1,40 @@
 class User < ApplicationRecord
-  devise :database_authenticatable, :registerable, :rememberable, :validatable,
-         :trackable, :recoverable, :lockable, :confirmable
+  # Include default devise modules. Others available are:
+  # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
+  devise :database_authenticatable, :registerable,
+         :recoverable, :rememberable, :validatable,
+         :confirmable, :lockable, :timeoutable, :trackable
 
+  # Associations
   has_one :payment_method, dependent: :destroy
   has_one :wallet, dependent: :destroy
+  has_many :questions, dependent: :destroy, foreign_key: :user_id
+  has_many :bid_items, dependent: :destroy, foreign_key: :user_id
+  has_many :bids, dependent: :destroy, foreign_key: :user_id
+  has_many :deposits, dependent: :destroy, foreign_key: :user_id
+  has_many :products, dependent: :destroy, foreign_key: :user_id
 
-  has_many :products, dependent: :destroy
-  has_many :bid_items, dependent: :destroy
-  has_many :bids, dependent: :destroy
-  has_many :deposits, dependent: :destroy
-
-  # validations
-  enum role: { member: 0, admin: 1, super_admin: 2 }
+  # Validations
+  enum role: { member: 0, admin: 1, super_admin: 2, contributor: 3 } # Added contributor role from new code and kept existing roles
 
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
   validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
+  validates :email, presence: true, uniqueness: true, length: { in: 0..255 }, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :encrypted_password, presence: true, if: :encrypted_password? # Added conditional check for encrypted_password presence
+  validates :username, presence: true, uniqueness: true, if: :username? # Added conditional check for username presence and uniqueness
 
-  validates :email, presence: true, uniqueness: true
-
-  validates :email, length: { in: 0..255 }, if: :email?
-
-  validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }
-
-  # end for validations
-
+  # Methods
   def generate_reset_password_token
     raw, enc = Devise.token_generator.generate(self.class, :reset_password_token)
     self.reset_password_token   = enc
     self.reset_password_sent_at = Time.now.utc
     save(validate: false)
     raw
+  end
+
+  # Check if the user has a contributor role
+  def contributor?
+    role == 'contributor'
   end
 
   class << self
@@ -48,4 +53,6 @@ class User < ApplicationRecord
       false
     end
   end
+
+  # Define any methods specific to the User model here
 end

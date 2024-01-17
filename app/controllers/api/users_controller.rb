@@ -1,5 +1,7 @@
+
 class Api::UsersController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update]
+  before_action :authenticate_contributor!, only: [:submit_answer]
 
   def index
     # inside service params are checked and whiteisted
@@ -44,5 +46,25 @@ class Api::UsersController < Api::BaseController
 
   def update_params
     params.require(:users).permit(:email)
+  end
+
+  def submit_answer
+    unless validate_answer_submission(params[:content], params[:question_id])
+      return
+    end
+
+    answer = Answer.new(content: params[:content], question_id: params[:question_id], user_id: current_user.id)
+
+    if answer.save
+      render json: { answer_id: answer.id }, status: :created
+    else
+      render json: { errors: answer.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
+  private
+
+  def validate_answer_submission(content, question_id)
+    content.present? && Question.exists?(question_id)
   end
 end
