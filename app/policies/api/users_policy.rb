@@ -15,14 +15,16 @@ class Api::UsersPolicy < ApplicationPolicy
     (user.is_a?(User) && record.id == user&.id)
   end
 
+  def inquirer_role?
+    user.has_role?(:inquirer)
+  end
+
   class Scope < Scope
     def resolve
       if user.is_a?(User)
         scope.all.where('users.id = ?', user&.id)
-
       else
         scope.none
-
       end
     end
   end

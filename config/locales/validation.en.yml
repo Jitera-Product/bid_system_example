@@ -1,3 +1,4 @@
+
 ---
 en:
   activerecord:
@@ -25,3 +26,7 @@ en:
         invalid: is invalid
         date_type: must be a valid date
         datetime_type: must be a valid date and time
+        feedback:
+          invalid_usefulness: 'Usefulness value is not valid'
+          answer_id:
+            not_exist: 'Answer does not exist'

@@ -91,6 +91,9 @@ Rails.application.routes.draw do
         end
       end
     end
+
+    # New code added here
+    post '/feedbacks', to: 'api/v1/feedbacks#create'
   end
 
   get '/health' => 'pages#health_check'

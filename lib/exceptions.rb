@@ -6,4 +6,6 @@ module Exceptions
       super("Content with ID #{content_id} not found")
     end
   end
+  class InvalidAnswerIdError < StandardError; end
+  class InvalidUsefulnessValueError < StandardError; end
 end

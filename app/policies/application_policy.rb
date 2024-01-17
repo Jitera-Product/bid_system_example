@@ -10,6 +10,10 @@ class ApplicationPolicy
   end
 
   class Scope
+    def inquirer?
+      user.role == 'inquirer'
+    end
+
     def initialize(user, scope)
       @user = user
       @scope = scope
