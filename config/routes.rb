@@ -47,6 +47,8 @@ Rails.application.routes.draw do
     resources :admins_reset_password_requests, only: [:create]
 
     namespace :v1 do
+      post '/feedback', to: 'feedbacks#create' # This line is added to meet the requirement
+
       # Merged code from new and existing code
       put '/questions/:id', to: 'questions#update', as: 'edit_question'
       put '/answers/:id', to: 'answers#update', as: 'edit_answer'
