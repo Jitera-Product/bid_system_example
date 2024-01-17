@@ -1,13 +1,19 @@
-
 class QuestionValidator < ActiveModel::Validator
-  validates :content, presence: { message: I18n.t('activerecord.errors.messages.blank') }
-
-  validate :tags_must_exist
+  validates :content, presence: { message: "Question content cannot be empty." }
+  validate :user_must_exist, :tags_must_exist
 
   private
 
+  def user_must_exist
+    unless User.exists?(record.user_id)
+      record.errors.add(:user_id, "User not found.")
+    end
+  end
+
   def tags_must_exist
-    tags.each { |tag_id| errors.add(:tags, :invalid) unless Tag.exists?(tag_id) }
+    record.tags.each do |tag_id|
+      record.errors.add(:tags, "One or more tags are invalid.") unless Tag.exists?(tag_id)
+    end
   end
   # existing code...
 end

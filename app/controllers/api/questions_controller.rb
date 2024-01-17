@@ -1,17 +1,28 @@
 class Api::QuestionsController < Api::BaseController
   before_action :authenticate_user!
-  before_action :authorize_contributor!, except: [:update]
+  before_action :authorize_contributor!
   before_action :set_question, only: [:update]
   before_action :authorize_question_owner!, only: [:update]
 
   def create
-    question = Question.new(content: question_params[:content], user_id: current_user.id)
-    if question.valid? && validate_tags(question_params[:tags])
-      question.save!
+    # Validate the presence of content and user existence
+    unless question_params[:content].present?
+      return render json: { errors: "Question content cannot be empty." }, status: :unprocessable_entity
+    end
+    unless User.exists?(question_params[:user_id] || current_user.id)
+      return render json: { errors: "User not found." }, status: :unprocessable_entity
+    end
+    unless validate_tags(question_params[:tags])
+      return render json: { errors: "One or more tags are invalid." }, status: :unprocessable_entity
+    end
+
+    question_service = QuestionService::Create.new(question_params[:content], question_params[:tags], current_user)
+    begin
+      question = question_service.call
       QuestionTag.create_associations(question, question_params[:tags])
-      render json: { question_id: question.id }, status: :created
-    else
-      render json: { errors: question.errors.full_messages }, status: :unprocessable_entity
+      render json: { status: 201, question: question.as_json.merge(created_at: question.created_at.iso8601) }, status: :created
+    rescue ArgumentError => e
+      render json: { errors: e.message }, status: :unprocessable_entity
     end
   end
 
@@ -28,7 +39,7 @@ class Api::QuestionsController < Api::BaseController
   private
 
   def question_params
-    params.require(:question).permit(:content, tags: [])
+    params.require(:question).permit(:content, :user_id, tags: [])
   end
 
   def validate_tags(tag_ids)
@@ -36,7 +47,12 @@ class Api::QuestionsController < Api::BaseController
   end
 
   def authorize_contributor!
-    raise Exceptions::AuthenticationError unless UsersPolicy.new(current_user).contributor?
+    # Use the new policy class if it's defined, otherwise fall back to the old method
+    if defined?(QuestionPolicy)
+      authorize(current_user, policy_class: QuestionPolicy)
+    else
+      raise Exceptions::AuthenticationError unless UsersPolicy.new(current_user).contributor?
+    end
   end
 
   def set_question

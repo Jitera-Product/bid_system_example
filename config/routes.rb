@@ -74,7 +74,7 @@ Rails.application.routes.draw do
     # Merged new code from both versions
     post '/submit_answer', to: 'users#submit_answer'
     post '/questions', to: 'questions#create'
-    post '/retrieve_answer', to: 'base#retrieve_answer' # Fixed the missing '/' before 'retrieve_answer'
+    post '/retrieve_answer', to: 'base#retrieve_answer'
     # End of merged new code
   end
 
