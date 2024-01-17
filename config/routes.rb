@@ -67,6 +67,7 @@ Rails.application.routes.draw do
       resources :users, only: %i[index create show update] do
         member do
           put :update
+          put :update_role
           patch :update
         end
       end
@@ -76,6 +77,7 @@ Rails.application.routes.draw do
     post '/submit_answer', to: 'users#submit_answer'
     post '/questions', to: 'questions#create'
     post '/retrieve_answer', to: 'base#retrieve_answer' # Fixed the missing '/' before 'retrieve_answer'
+    put '/users/:id/role', to: 'users#update_role' # Added to meet the requirement
     # End of merged new code
   end
 
