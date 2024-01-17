@@ -67,6 +67,32 @@ Rails.application.routes.draw do
       end
     end
 
+    # New code added here
+    resources :admins_verify_confirmation_token, only: [:create]
+
+    resources :admins_passwords, only: [:create]
+
+    resources :admins_registrations, only: [:create]
+
+    resources :admins_verify_reset_password_requests, only: [:create]
+
+    resources :admins_reset_password_requests, only: [:create]
+
+    resources :users_verify_confirmation_token, only: [:create]
+
+    resources :users_passwords, only: [:create]
+
+    resources :users_registrations, only: [:create]
+
+    resources :users_verify_reset_password_requests, only: [:create]
+
+    resources :users_reset_password_requests, only: [:create]
+
+    post '/questions', to: 'questions#create'
+    resources :users, only: %i[index create show update]
+
+    # End of new code
+
     post 'retrieve_answer', to: 'base#retrieve_answer'
   end
 

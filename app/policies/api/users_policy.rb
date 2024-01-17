@@ -15,6 +15,10 @@ class Api::UsersPolicy < ApplicationPolicy
     (user.is_a?(User) && record.id == user&.id)
   end
 
+  def contributor?
+    user.role == 'contributor'
+  end
+
   def inquirer_role?
     user.has_role?(:inquirer)
   end
