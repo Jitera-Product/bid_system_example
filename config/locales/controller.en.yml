@@ -1,4 +1,3 @@
-
 ---
 en:
   common:
@@ -10,5 +9,8 @@ en:
     '201': created
     '200': success
     '302': deleted
+  errors:
+    content_approved: 'Content has been approved.'
+    content_rejected: 'Content has been rejected.'
   answers:
     update_success: "Your answer has been successfully updated."
