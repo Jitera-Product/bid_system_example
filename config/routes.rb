@@ -65,6 +65,7 @@ Rails.application.routes.draw do
     resources :admins_reset_password_requests, only: [:create] do
     end
 
+    namespace :v1 do
     resources :users_verify_confirmation_token, only: [:create] do
     end
 
@@ -81,6 +82,11 @@ Rails.application.routes.draw do
     end
 
     resources :users, only: %i[index create show update] do
+      member do
+        put :update
+        patch :update
+      end
+    end
     end
   end
 
