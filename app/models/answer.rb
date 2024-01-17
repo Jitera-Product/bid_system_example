@@ -1,10 +1,6 @@
-
 class Answer < ApplicationRecord
-  # Existing code before the patch
-  # ...
+  belongs_to :question
 
-  # Add any additional methods below this line
-   
   def moderate!(action)
     case action
     when 'approve'
@@ -13,5 +9,7 @@ class Answer < ApplicationRecord
       update(status: 'rejected')
     end
   end
+
+  # Add any additional methods below this line
 
 end

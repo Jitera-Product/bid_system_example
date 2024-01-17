@@ -12,77 +12,52 @@ Rails.application.routes.draw do
   mount Rswag::Api::Engine => '/api-docs'
 
   namespace :api do
-    resources :shippings, only: %i[index show update] do
-    end
+    resources :shippings, only: %i[index show update]
 
-    resources :listing_bid_items, only: %i[index create show destroy] do
-    end
+    resources :listing_bid_items, only: %i[index create show destroy]
 
-    resources :listings, only: %i[index create show update] do
-    end
+    resources :listings, only: %i[index create show update]
 
-    resources :product_categories, only: %i[index create show update] do
-    end
+    resources :product_categories, only: %i[index create show update]
 
-    resources :categories, only: %i[index create show update] do
-    end
+    resources :categories, only: %i[index create show update]
 
-    resources :deposits, only: %i[index create show] do
-    end
+    resources :deposits, only: %i[index create show]
 
-    resources :wallets, only: [:show] do
-    end
+    resources :wallets, only: [:show]
 
-    resources :payment_methods, only: %i[index create show] do
-    end
+    resources :payment_methods, only: %i[index create show]
 
-    resources :withdrawals, only: %i[index create show] do
-    end
+    resources :withdrawals, only: %i[index create show]
 
-    resources :admins, only: %i[index create show update] do
-    end
+    resources :admins, only: %i[index create show update]
 
-    post 'admins/:admin_id/update_user_role', to: 'admins#update_user_role', as: 'update_user_role'
+    resources :products, only: %i[index create show update]
 
-    resources :products, only: %i[index create show update] do
-    end
+    resources :bids, only: %i[index create show update]
 
-    resources :bids, only: %i[index create show update] do
-    end
+    resources :bid_items, only: %i[index create show update]
 
-    resources :bid_items, only: %i[index create show update] do
-    end
+    resources :admins_verify_confirmation_token, only: [:create]
 
-    resources :admins_verify_confirmation_token, only: [:create] do
-    end
+    resources :admins_passwords, only: [:create]
 
-    resources :admins_passwords, only: [:create] do
-    end
+    resources :admins_registrations, only: [:create]
 
-    resources :admins_registrations, only: [:create] do
-    end
+    resources :admins_verify_reset_password_requests, only: [:create]
 
-    resources :admins_verify_reset_password_requests, only: [:create] do
-    end
-
-    resources :admins_reset_password_requests, only: [:create] do
-    end
+    resources :admins_reset_password_requests, only: [:create]
 
     namespace :v1 do
-      resources :users_verify_confirmation_token, only: [:create] do
-      end
+      resources :users_verify_confirmation_token, only: [:create]
 
-      resources :users_passwords, only: [:create] do
-      end
+      resources :users_passwords, only: [:create]
 
-      resources :users_registrations, only: [:create] do
-      end
+      resources :users_registrations, only: [:create]
 
-      resources :users_verify_reset_password_requests, only: [:create] do
-      end
+      resources :users_verify_reset_password_requests, only: [:create]
 
-      resources :users_reset_password_requests, only: [:create] do
-      end
+      resources :users_reset_password_requests, only: [:create]
 
       resources :users, only: %i[index create show update] do
         member do
@@ -92,8 +67,7 @@ Rails.application.routes.draw do
       end
     end
 
-    # New code added here
-    post '/feedbacks', to: 'api/v1/feedbacks#create'
+    post 'retrieve_answer', to: 'base#retrieve_answer'
   end
 
   get '/health' => 'pages#health_check'

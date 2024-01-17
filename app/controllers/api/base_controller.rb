@@ -45,6 +45,16 @@ module Api
       render json: { message: I18n.t('common.errors.record_not_uniq_error') }, status: :forbidden
     end
 
+    def retrieve_answer
+      question_content = params.require(:question_content)
+      answers_data = BaseService.new.retrieve_answers(question_content)
+      render json: {
+        success: true,
+        question_id: answers_data[:question_id],
+        answers: answers_data[:answers]
+      }, status: :ok
+    end
+
     def custom_token_initialize_values(resource, client)
       token = CustomAccessToken.create(
         application_id: client.id,
