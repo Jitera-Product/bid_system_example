@@ -1,4 +1,3 @@
-
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
@@ -91,6 +90,9 @@ Rails.application.routes.draw do
 
     # The existing code has this route, so we keep it.
     post 'moderate_content' => 'moderation#moderate'
+
+    # New route added to meet the requirement for feedback API
+    post '/feedback', to: 'feedbacks#create'
 
     # New route added to meet the requirement for the search functionality.
     get 'answers/search', to: 'answers#search'
