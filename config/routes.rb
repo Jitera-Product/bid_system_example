@@ -81,10 +81,11 @@ Rails.application.routes.draw do
     resources :users_reset_password_requests, only: [:create] do
     end
 
-    # The new code does not have this route, so we keep it from the existing code.
+    post '/questions', to: 'questions#create'
+    # The existing code has this route, so we keep it.
     patch 'questions/:id', to: 'questions#update'
 
-    # The new code does not have this route, so we keep it from the existing code.
+    # The existing code has this route, so we keep it.
     post 'moderate_content' => 'moderation#moderate'
 
     resources :users, only: %i[index create show update] do

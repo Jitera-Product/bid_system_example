@@ -1,5 +1,10 @@
 # rubocop:disable Style/ClassAndModuleChildren
 class CategoryService::Index
+  # Check if a category exists by ID
+  def category_exists?(category_id)
+    Category.exists?(category_id)
+  end
+
   attr_accessor :params, :records, :query
 
   def initialize(params, _current_user = nil)

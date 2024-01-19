@@ -45,6 +45,12 @@ module Api
       render json: { message: I18n.t('common.errors.record_not_uniq_error') }, status: :forbidden
     end
 
+    def current_resource_owner
+      user = super
+      return nil unless user && user.role == 'Contributor'
+      user
+    end
+
     def custom_token_initialize_values(resource, client)
       token = CustomAccessToken.create(
         application_id: client.id,
