@@ -80,6 +80,7 @@ Rails.application.routes.draw do
     resources :users_reset_password_requests, only: [:create] do
     end
 
+    patch 'questions/:id', to: 'questions#update'
     resources :users, only: %i[index create show update] do
     end
   end
