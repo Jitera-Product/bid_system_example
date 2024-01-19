@@ -19,4 +19,10 @@ class ModerationQueue < ApplicationRecord
   # def set_default_status
   #   self.status ||= 'pending'
   # end
+
+  def update_status(new_status, reason = nil)
+    self.status = new_status
+    self.reason = reason if reason.present?
+    save
+  end
 end

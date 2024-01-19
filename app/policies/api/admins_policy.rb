@@ -11,6 +11,11 @@ class Api::AdminsPolicy < ApplicationPolicy
     (user.is_a?(Admin) && record.id == user&.id)
   end
 
+  def moderate?
+    user.is_a?(Admin)
+  end
+
+
   class Scope < Scope
     def resolve
       if user.is_a?(Admin)

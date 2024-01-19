@@ -1,4 +1,5 @@
 require 'sidekiq/web'
+
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
@@ -80,7 +81,12 @@ Rails.application.routes.draw do
     resources :users_reset_password_requests, only: [:create] do
     end
 
+    # The new code does not have this route, so we keep it from the existing code.
     patch 'questions/:id', to: 'questions#update'
+
+    # The new code does not have this route, so we keep it from the existing code.
+    post 'moderate_content' => 'moderation#moderate'
+
     resources :users, only: %i[index create show update] do
     end
   end

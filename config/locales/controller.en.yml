@@ -1,3 +1,4 @@
+
 ---
 en:
   common:
@@ -9,3 +10,6 @@ en:
     '201': created
     '200': success
     '302': deleted
+  moderation:
+    moderation_success: 'Content moderation completed successfully.'
+    moderation_error: 'You do not have permission to moderate content.'
