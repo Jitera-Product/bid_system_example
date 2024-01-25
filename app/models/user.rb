@@ -1,3 +1,4 @@
+
 class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :rememberable, :validatable,
          :trackable, :recoverable, :lockable, :confirmable
@@ -8,6 +9,7 @@ class User < ApplicationRecord
   has_many :products, dependent: :destroy
   has_many :bid_items, dependent: :destroy
   has_many :bids, dependent: :destroy
+  has_many :messages, foreign_key: 'user_id', dependent: :destroy
   has_many :deposits, dependent: :destroy
 
   # validations
