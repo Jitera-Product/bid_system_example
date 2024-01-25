@@ -1,3 +1,4 @@
+
 require 'sidekiq/web'
 Rails.application.routes.draw do
   use_doorkeeper do
@@ -59,11 +60,7 @@ Rails.application.routes.draw do
     resources :admins_registrations, only: [:create] do
     end
 
-    resources :admins_verify_reset_password_requests, only: [:create] do
-    end
-
-    resources :admins_reset_password_requests, only: [:create] do
-    end
+    post 'chat_channels', to: 'chat_channels#create'
 
     resources :users_verify_confirmation_token, only: [:create] do
     end
