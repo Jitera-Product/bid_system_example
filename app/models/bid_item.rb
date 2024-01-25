@@ -2,10 +2,13 @@ class BidItem < ApplicationRecord
   has_many :item_bids,
            class_name: 'Bid',
            foreign_key: :item_id, dependent: :destroy
-  has_many :listing_bid_items, dependent: :destroy
+  has_many :listing_bid_items, foreign_key: :bid_item_id, dependent: :destroy
+  has_many :chat_channels, foreign_key: :bid_item_id, dependent: :destroy
 
   belongs_to :user
   belongs_to :product
+  belongs_to :product, foreign_key: :product_id
+  belongs_to :user, foreign_key: :user_id
 
   enum status: %w[draft ready done], _suffix: true
 
