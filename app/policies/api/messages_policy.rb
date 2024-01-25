@@ -9,8 +9,8 @@ module Api
     end
 
     def create?
-      # Assuming there's a method in user model that checks if a user can send messages
-      user.can_send_messages?
+      # Check if the user is a participant of the chat channel
+      record.users.include?(user) && user.can_send_messages?
     end
   end
 end
