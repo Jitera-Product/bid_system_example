@@ -51,7 +51,7 @@ Rails.application.routes.draw do
     resources :bid_items, only: %i[index create show update] do
     end
 
-    resources :chat_channels, only: %i[index show] do
+    resources :chat_channels, only: %i[create index show] do
       member do
         patch :disable
         get :messages, to: 'chat_channels#messages' # This line is from the existing code and should be kept
@@ -91,7 +91,6 @@ Rails.application.routes.draw do
     resources :users, only: %i[index create show update] do
     end
 
-    # The new code has a messages#create route, so we add it here
     post '/messages', to: 'messages#create'
   end
 
