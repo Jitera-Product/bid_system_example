@@ -51,6 +51,7 @@ Rails.application.routes.draw do
     end
 
     resources :chat_channels, only: [] do
+      resources :messages, only: [:index]
       member do
         put :disable
       end
