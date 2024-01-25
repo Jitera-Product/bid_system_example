@@ -55,6 +55,7 @@ Rails.application.routes.draw do
       member do
         patch :disable
         get :messages, to: 'chat_channels#messages' # This line is from the existing code and should be kept
+        put :disable # This line is from the new code and should be merged
       end
     end
 

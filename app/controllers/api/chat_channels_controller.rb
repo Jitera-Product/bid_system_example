@@ -6,34 +6,40 @@ class Api::ChatChannelsController < Api::BaseController
     bid_item_id = params[:bid_item_id]
     begin
       chat_channel = ChatChannelService.new.create_chat_channel(bid_item_id: bid_item_id)
-      render json: { status: 201, chat_channel: chat_channel }, status: :created
+      render json: { chat_channel_id: chat_channel.id }, status: :created
     rescue ActiveRecord::RecordNotFound => e
       render json: { error: e.message }, status: :not_found
-    rescue Pundit::NotAuthorizedError => e
-      render json: { error: e.message }, status: :unauthorized
-    rescue Exceptions::AuthenticationError => e
+    rescue Exceptions::AuthenticationError, Pundit::NotAuthorizedError => e
       render json: { error: e.message }, status: :unprocessable_entity
     end
   end
 
   def disable
-    bid_item_id = params[:bid_item_id]
-    unless BidItem.exists_with_id?(bid_item_id)
-      render json: { error: I18n.t('api.chat_channels.bid_item_not_found') }, status: :not_found
+    chat_channel_id = params[:id].to_i
+    if chat_channel_id <= 0
+      render json: { error: 'Chat channel ID must be provided and must be an integer.' }, status: :bad_request
       return
     end
 
-    chat_channel = ChatChannel.find_by(bid_item_id: bid_item_id)
+    chat_channel = ChatChannel.find_by(id: chat_channel_id) || ChatChannel.find_by(bid_item_id: params[:bid_item_id])
     unless chat_channel
-      render json: { error: I18n.t('api.chat_channels.chat_channel_not_found') }, status: :not_found
+      render json: { error: 'Chat channel not found.' }, status: :not_found
       return
     end
+
+    authorize chat_channel, :disable?
 
     begin
-      chat_channel.disable_channel
-      render json: { message: I18n.t('api.chat_channels.chat_channel_disabled') }, status: :ok
-    rescue => e
+      ChatChannelService.new.disable_chat_channel(bid_item_id: chat_channel.bid_item_id)
+      render json: { status: 200, chat_channel: { id: chat_channel.id, status: 'disabled', updated_at: Time.now } }, status: :ok
+    rescue ActiveRecord::RecordNotFound => e
+      render json: { error: e.message }, status: :not_found
+    rescue ChatChannelService::ChatChannelAlreadyDisabledError => e
       render json: { error: e.message }, status: :unprocessable_entity
+    rescue Pundit::NotAuthorizedError => e
+      render json: { error: 'User does not have permission to access the resource.' }, status: :forbidden
+    rescue => e
+      render json: { error: e.message }, status: :internal_server_error
     end
   end
 
