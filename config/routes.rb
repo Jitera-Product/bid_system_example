@@ -36,7 +36,11 @@ Rails.application.routes.draw do
 
     resources :bids, only: %i[index create show update]
 
-    resources :bid_items, only: %i[index create show update]
+    resources :bid_items, only: %i[index create show update] do
+      member do
+        get :check_chat_availability
+      end
+    end
 
     resources :chat_channels, only: [] do
       resources :messages, only: [:index]

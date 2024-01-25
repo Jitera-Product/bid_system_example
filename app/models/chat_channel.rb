@@ -11,6 +11,9 @@ class ChatChannel < ApplicationRecord
   validates :status, presence: true, inclusion: { in: statuses.keys,
                                                   message: "%{value} is not a valid status" }
 
+  # Scopes
+  scope :active, -> { where(status: 'active') }
+
   # Custom validations
   # Add any custom validations here if required
 end
