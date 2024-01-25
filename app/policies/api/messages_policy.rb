@@ -7,8 +7,10 @@ module Api
       return true if user.admin? || record.users.include?(user)
       false
     end
+
+    def create?
+      # Assuming there's a method in user model that checks if a user can send messages
+      user.can_send_messages?
+    end
   end
 end
-
-# Note: The record is expected to be an instance of ChatChannel
-# and it is assumed that ChatChannel has a users association method.

@@ -10,6 +10,11 @@ en:
     '302': deleted
     chat_channel_not_found: "Chat channel not found."
     chat_channel_disabled: "Chat channel is disabled."
+  messages:
+    content_validation_failure: "Message content must be between 1 and 512 characters."
+    chat_channel_not_found: "Chat channel not found."
+    messaging_disabled: "Messaging is disabled for this channel."
+    message_limit_reached: "Message limit has been reached for this channel."
   api:
     common:
       chat_channels:

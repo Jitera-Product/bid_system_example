@@ -1,9 +1,8 @@
-
 require 'sidekiq/web'
+
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
-
     skip_controllers :authorizations, :applications, :authorized_applications
   end
 
@@ -11,6 +10,7 @@ Rails.application.routes.draw do
   devise_for :admins
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
+  
   namespace :api do
     resources :shippings, only: %i[index show update] do
     end
@@ -51,6 +51,7 @@ Rails.application.routes.draw do
     resources :bid_items, only: %i[index create show update] do
     end
 
+    # The new code does not have chat_channels, so we keep it from the existing code
     resources :chat_channels, only: %i[index show] do
       member do
         patch :disable
@@ -89,6 +90,9 @@ Rails.application.routes.draw do
 
     resources :users, only: %i[index create show update] do
     end
+
+    # The new code has a messages#create route, so we add it here
+    post '/messages', to: 'messages#create'
   end
 
   get '/health' => 'pages#health_check'

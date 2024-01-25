@@ -7,6 +7,10 @@ class ChatChannel < ApplicationRecord
   # validations
   validates :status, presence: true
 
+  def active?
+    status == 'active'
+  end
+
   def disable_channel
     raise 'Channel is already disabled' if status == 'disabled'
 
