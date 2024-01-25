@@ -7,5 +7,7 @@ en:
     '500': internal server error
     '422': unprocessable
     '201': created
+    chat_channel_not_found: "Chat channel not found."
+    chat_channel_disabled: "Chat channel is disabled."
     '200': success
     '302': deleted
