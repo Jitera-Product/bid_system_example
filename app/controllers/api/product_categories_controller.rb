@@ -1,8 +1,7 @@
 class Api::ProductCategoriesController < Api::BaseController
-  before_action :doorkeeper_authorize!, only: %i[index create show update]
+  before_action :doorkeeper_authorize!, only: %i[index create show update search]
 
   def index
-    # inside service params are checked and whiteisted
     @product_categories = ProductCategoryService::Index.new(params.permit!, current_resource_owner).execute
     @total_pages = @product_categories.total_pages
   end
@@ -39,4 +38,16 @@ class Api::ProductCategoriesController < Api::BaseController
   def update_params
     params.require(:product_categories).permit(:category_id, :product_id)
   end
+
+  def search
+    service = ProductCategoryService::Index.new(params.permit!, current_resource_owner)
+    @product_categories = service.execute
+    @total_pages = @product_categories.total_pages
+    render json: { product_categories: @product_categories, total_pages: @total_pages }, status: :ok
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: I18n.t('common.404') }, status: :not_found
+  end
+
+  private
+  # ... rest of the private methods ...
 end
