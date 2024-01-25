@@ -26,6 +26,9 @@ class BidItem < ApplicationRecord
   # end for validations
 
   class << self
+    def exists_with_id?(bid_item_id)
+      exists?(id: bid_item_id)
+    end
   end
 
   def active_for_chat?
