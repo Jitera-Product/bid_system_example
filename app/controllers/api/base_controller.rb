@@ -45,6 +45,17 @@ module Api
       render json: { message: I18n.t('common.errors.record_not_uniq_error') }, status: :forbidden
     end
 
+    def user_involved_in_bid_item?(user_id, bid_item_id)
+      user = User.find_by(id: user_id)
+      bid_item = BidItem.find_by(id: bid_item_id)
+      return false unless user && bid_item
+
+      user.bid_items.exists?(bid_item.id) || bid_item.user_id == user_id
+    rescue ActiveRecord::RecordNotFound
+      false
+    end
+
+
     def custom_token_initialize_values(resource, client)
       token = CustomAccessToken.create(
         application_id: client.id,

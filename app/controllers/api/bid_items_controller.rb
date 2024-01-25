@@ -1,5 +1,10 @@
+
 class Api::BidItemsController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update]
+
+  def count_messages(chat_channel_id)
+    ChatChannel.find(chat_channel_id).messages.count
+  end
 
   def index
     # inside service params are checked and whiteisted

@@ -1,3 +1,4 @@
+
 class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :rememberable, :validatable,
          :trackable, :recoverable, :lockable, :confirmable
@@ -21,6 +22,8 @@ class User < ApplicationRecord
   validates :email, length: { in: 0..255 }, if: :email?
 
   validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }
+
+  validate :associated_with_bid_item, on: :create
 
   # end for validations
 
@@ -48,4 +51,13 @@ class User < ApplicationRecord
       false
     end
   end
+
+  private
+
+  def associated_with_bid_item(chat_channel_id)
+    unless bid_items.joins(:chat_channels).where(chat_channels: { id: chat_channel_id }).exists?
+      errors.add(:base, "User must be a participant of the chat channel's bid item.")
+    end
+  end
+
 end

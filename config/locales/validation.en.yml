@@ -9,6 +9,7 @@ en:
         too_short: is too short (minimum is %{count} characters)
         wrong_length: is the wrong length (should be %{count} characters)
         in: must be in %{count}
+        too_long: 'You cannot input more than 512 characters.'
         greater_than: must be greater than %{count}
         greater_than_or_equal_to: must be greater than or equal to %{count}
         less_than: must be less than %{count}
