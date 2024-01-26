@@ -5,9 +5,12 @@ class ChatSession < ApplicationRecord
   validates :is_active, inclusion: { in: [true, false] }
   validates :bid_item_id, presence: true
 
-  # Additional model methods, scopes, etc. can be added below
-
   validate :bid_item_not_done
+
+  # Returns the count of associated chat messages
+  def message_count
+    chat_messages.count
+  end
 
   private
 
@@ -15,4 +18,3 @@ class ChatSession < ApplicationRecord
     errors.add(:bid_item, "Chat cannot be initiated for completed bid items.") if bid_item.done?
   end
 end
-

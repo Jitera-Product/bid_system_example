@@ -1,3 +1,4 @@
+
 # typed: ignore
 module Api
   class BaseController < ActionController::API
@@ -24,6 +25,36 @@ module Api
     end
 
     private
+    
+    def send_chat_message(chat_session_id, message, sender_id)
+      chat_session = ChatSession.find_by(id: chat_session_id)
+      unless chat_session&.is_active
+        render json: { message: I18n.t('common.errors.chat_session_not_active') }, status: :unprocessable_entity
+        return
+      end
+
+      if message.length > 512
+        render json: { message: I18n.t('common.errors.message_too_long') }, status: :unprocessable_entity
+        return
+      end
+
+      if chat_session.chat_messages.count >= 30
+        render json: { message: I18n.t('common.errors.message_limit_exceeded') }, status: :unprocessable_entity
+        return
+      end
+
+      chat_message = chat_session.chat_messages.build(message: message, user_id: sender_id)
+
+      if chat_message.save
+        render 'api/chat_messages/create', locals: { chat_message: chat_message }, status: :created
+      else
+        render json: { message: chat_message.errors.full_messages.to_sentence }, status: :unprocessable_entity
+      end
+    rescue ActiveRecord::RecordNotFound
+      render json: { message: I18n.t('common.errors.chat_session_not_found') }, status: :not_found
+    rescue ActiveRecord::RecordInvalid
+      render json: { message: I18n.t('common.errors.sender_not_found') }, status: :unprocessable_entity
+    end
 
     def base_render_record_not_found(_exception)
       render json: { message: I18n.t('common.404') }, status: :not_found

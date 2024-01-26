@@ -1,11 +1,10 @@
-
 class ChatMessage < ApplicationRecord
   # Associations
   belongs_to :chat_session
-  belongs_to :user
 
   # Validations
+  validates_length_of :message, maximum: 512, too_long: I18n.t('activerecord.errors.messages.too_long', count: 512)
   validates :message, presence: true
   validates :chat_session_id, presence: true
-  validates :user_id, presence: true
 end
+
