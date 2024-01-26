@@ -1,4 +1,3 @@
-
 require 'sidekiq/web'
 Rails.application.routes.draw do
   use_doorkeeper do
@@ -49,6 +48,12 @@ Rails.application.routes.draw do
     end
 
     resources :bid_items, only: %i[index create show update] do
+    end
+
+    resources :bid_items do
+      member do
+        put :disable_chat_session
+      end
     end
 
     resources :admins_verify_confirmation_token, only: [:create] do
