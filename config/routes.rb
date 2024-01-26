@@ -1,8 +1,8 @@
 require 'sidekiq/web'
+
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
-
     skip_controllers :authorizations, :applications, :authorized_applications
   end
 
@@ -50,9 +50,12 @@ Rails.application.routes.draw do
     resources :bid_items, only: %i[index create show update] do
     end
 
+    # Merge the new code for bid_items with the existing code
     resources :bid_items do
       member do
         patch :close
+        resources :chat_sessions, only: [:create] do
+        end
       end
     end
 

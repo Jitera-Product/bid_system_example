@@ -1,3 +1,4 @@
+
 if @error_object.present?
 
   json.error_object @error_object
@@ -67,6 +68,16 @@ else
 
       json.bid_item_id listing_bid_item.bid_item_id
     end
+  
+    if @chat_session.present?
+      json.chat_session do
+        json.id @chat_session.id
+        json.created_at @chat_session.created_at
+        json.is_active @chat_session.is_active
+        json.bid_item_id @chat_session.bid_item_id
+      end
+    end
+
   end
 
 end

@@ -1,4 +1,6 @@
+
 # rubocop:disable Style/ClassAndModuleChildren
+require 'chat_session'
 class BidItemService::Index
   attr_accessor :params, :records, :query
 
@@ -92,5 +94,14 @@ class BidItemService::Index
     @records = BidItem.none if records.blank? || records.is_a?(Class)
     @records = records.page(params.dig(:pagination_page) || 1).per(params.dig(:pagination_limit) || 20)
   end
+
+  # Check if a chat session already exists for a given 'bid_item_id' and 'user_id'
+  def existing_chat_session(bid_item_id, user_id)
+    ChatSession.joins(:chat_messages)
+               .where(bid_item_id: bid_item_id)
+               .where(chat_messages: { user_id: user_id })
+               .first
+  end
+
 end
 # rubocop:enable Style/ClassAndModuleChildren

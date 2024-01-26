@@ -1,5 +1,6 @@
 class Api::BidItemsController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update]
+  before_action :validate_chat_session_creation, only: [:create_chat_session]
 
   def index
     # inside service params are checked and whiteisted
@@ -49,4 +50,38 @@ class Api::BidItemsController < Api::BaseController
   def update_params
     params.require(:bid_items).permit(:user_id, :product_id, :base_price, :status, :name, :expiration_time)
   end
+
+  def create_chat_session
+    bid_item = BidItem.find_by(id: chat_session_params[:bid_item_id])
+    unless bid_item
+      return render json: { error: I18n.t('bid_item.not_found') }, status: :not_found
+    end
+
+    if bid_item.status_done?
+      return render json: { error: I18n.t('bid_item.chat_not_initiated_for_completed_items') }, status: :unprocessable_entity
+    end
+
+    chat_session = ChatSession.find_or_initialize_by(bid_item_id: bid_item.id, user_id: current_resource_owner.id)
+    if chat_session.new_record?
+      chat_session.is_active = true
+      chat_session.save!
+      render json: { status: I18n.t('common.201'), chat_session: chat_session }, status: :created
+    else
+      render json: { error: I18n.t('bid_item.chat_session_already_exists') }, status: :unprocessable_entity
+    end
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { error: e.record.errors.full_messages.to_sentence }, status: :unprocessable_entity
+  end
+
+  private
+
+  def chat_session_params
+    params.permit(:bid_item_id)
+  end
+
+  def validate_chat_session_creation
+    render json: { error: I18n.t('common.401') }, status: :unauthorized unless current_resource_owner
+  end
+
+  # Add any additional error handling or private methods below
 end
