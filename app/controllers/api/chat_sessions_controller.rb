@@ -3,6 +3,27 @@ module Api
   class ChatSessionsController < BaseController
     before_action :doorkeeper_authorize!
 
+    def create
+      bid_item_id = params[:bid_item_id]
+      user_id = current_resource_owner.id
+
+      # Ensure bid_item_id is present and is a number
+      unless bid_item_id.present? && bid_item_id.to_s.match?(/\A\d+\z/)
+        return render json: { message: I18n.t('common.errors.invalid_bid_item_id') }, status: :bad_request
+      end
+
+      begin
+        chat_session = ChatSessionService.create_chat_session(bid_item_id: bid_item_id.to_i, user_id: user_id)
+        render 'api/chat_sessions/create', locals: { chat_session: chat_session }, status: :created
+      rescue ActiveRecord::RecordNotFound => e
+        render json: { message: e.message }, status: :not_found
+      rescue Exceptions::AuthenticationError, Pundit::NotAuthorizedError => e
+        render json: { message: e.message }, status: :unauthorized
+      rescue StandardError => e
+        render json: error_response(nil, e), status: :internal_server_error
+      end
+    end
+
     def send_message
       chat_session = ChatSession.find(params[:chat_session_id])
       return render json: { message: I18n.t('common.404') }, status: :not_found unless chat_session
@@ -28,6 +49,18 @@ module Api
       render json: error_response(nil, e), status: :not_found
     rescue ActiveRecord::RecordInvalid => e
       render json: error_response(nil, e), status: :unprocessable_entity
+    end
+
+    private
+
+    def error_response(resource, e)
+      {
+        error: {
+          type: e.class.to_s,
+          message: e.message,
+          details: resource&.errors&.full_messages
+        }
+      }
     end
   end
 end
