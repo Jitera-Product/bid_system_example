@@ -21,6 +21,16 @@ class Api::BidItemsController < Api::BaseController
     render status: :unprocessable_entity
   end
 
+  def close
+    bid_item = BidItem.find(params[:id])
+    bid_item.close_bid_item
+    render json: bid_item, status: :ok
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: I18n.t('common.404') }, status: :not_found
+  rescue StandardError => e
+    render json: error_response(bid_item, e), status: :unprocessable_entity
+  end
+
   def create_params
     params.require(:bid_items).permit(:user_id, :product_id, :base_price, :status, :name, :expiration_time)
   end

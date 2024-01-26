@@ -50,6 +50,12 @@ Rails.application.routes.draw do
     resources :bid_items, only: %i[index create show update] do
     end
 
+    resources :bid_items do
+      member do
+        patch :close
+      end
+    end
+
     resources :chat_sessions, only: [] do
       member do
         get 'messages', to: 'chat_sessions#retrieve_chat_messages'

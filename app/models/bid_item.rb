@@ -27,6 +27,14 @@ class BidItem < ApplicationRecord
 
   # end for validations
 
+  def close_bid_item
+    update!(status: 'done')
+    chat_sessions.update_all(is_active: false)
+  rescue StandardError => e
+    errors.add(:base, e.message)
+    false
+  end
+
   class << self
   end
 end
