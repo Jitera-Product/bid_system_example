@@ -2,6 +2,7 @@
 class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :rememberable, :validatable,
          :trackable, :recoverable, :lockable, :confirmable
+  attribute :name, :string
 
   has_one :payment_method, foreign_key: 'user_id', dependent: :destroy
   has_one :wallet, foreign_key: 'user_id', dependent: :destroy
@@ -13,6 +14,7 @@ class User < ApplicationRecord
   has_many :messages, foreign_key: 'message_id', dependent: :destroy
 
   # validations
+  validates :name, presence: true
 
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
   validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
