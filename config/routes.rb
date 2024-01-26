@@ -1,3 +1,4 @@
+
 require 'sidekiq/web'
 Rails.application.routes.draw do
   use_doorkeeper do
@@ -82,6 +83,10 @@ Rails.application.routes.draw do
 
     resources :users, only: %i[index create show update] do
     end
+
+    # Route for sending messages within a chat session
+    post '/messages', to: 'chat_sessions#send_message', as: 'send_message'
+
   end
 
   get '/health' => 'pages#health_check'
