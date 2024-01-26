@@ -22,6 +22,29 @@ class Api::BidItemsController < Api::BaseController
     render status: :unprocessable_entity
   end
 
+  def disable_chat_session
+    bid_item_id = params[:id]
+    bid_item = BidItem.find_by!(id: bid_item_id)
+
+    unless bid_item.status_done?
+      render json: { error: 'Chat session is already inactive.' }, status: :unprocessable_entity
+      return
+    end
+
+    chat_sessions = bid_item.chat_sessions.where(is_active: true)
+    chat_sessions.each do |chat_session|
+      chat_session.update!(is_active: false)
+    end
+
+    render json: {
+      status: 200,
+      message: I18n.t('chat_sessions_disabled_confirmation'),
+      chat_sessions: chat_sessions.as_json(only: [:id, :updated_at, :is_active, :bid_item_id])
+    }, status: :ok
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'Chat session not found.' }, status: :not_found
+  end
+
   def close
     bid_item = BidItem.find(params[:id])
     bid_item.close_bid_item

@@ -9,3 +9,4 @@ en:
     '201': created
     '200': success
     '302': deleted
+    chat_sessions_disabled_confirmation: "Chat sessions have been successfully disabled."

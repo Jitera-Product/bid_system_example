@@ -7,6 +7,11 @@ class ChatSession < ApplicationRecord
 
   validate :bid_item_not_done
 
+  # Scope to retrieve active chat sessions for a specific bid item
+  scope :active_for_bid_item, ->(bid_item_id) {
+    where(is_active: true, bid_item_id: bid_item_id)
+  }
+
   # Returns the count of associated chat messages
   def message_count
     chat_messages.count
