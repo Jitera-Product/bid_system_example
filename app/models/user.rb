@@ -1,15 +1,16 @@
+
 class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :rememberable, :validatable,
          :trackable, :recoverable, :lockable, :confirmable
 
-  has_one :payment_method, dependent: :destroy
-  has_one :wallet, dependent: :destroy
+  has_one :payment_method, foreign_key: 'user_id', dependent: :destroy
+  has_one :wallet, foreign_key: 'user_id', dependent: :destroy
 
-  has_many :products, dependent: :destroy
-  has_many :bid_items, dependent: :destroy
-  has_many :bids, dependent: :destroy
-  has_many :deposits, dependent: :destroy
-  has_many :messages, dependent: :destroy
+  has_many :products, foreign_key: 'user_id', dependent: :destroy
+  has_many :bid_items, foreign_key: 'user_id', dependent: :destroy
+  has_many :bids, foreign_key: 'user_id', dependent: :destroy
+  has_many :deposits, foreign_key: 'user_id', dependent: :destroy
+  has_many :messages, foreign_key: 'message_id', dependent: :destroy
 
   # validations
 
