@@ -25,3 +25,5 @@ en:
         invalid: is invalid
         date_type: must be a valid date
         datetime_type: must be a valid date and time
+        chat_session_id_not_an_integer: "Chat session ID must be an integer."
+        chat_message_too_long: "Chat message is too long (maximum is %{count} characters)."

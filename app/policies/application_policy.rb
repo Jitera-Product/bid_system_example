@@ -9,6 +9,11 @@ class ApplicationPolicy
     @record = record
   end
 
+  def retrieve_chat_messages?
+    return false unless record.is_a?(ChatSession)
+    record.users.include?(user)
+  end
+
   class Scope
     def initialize(user, scope)
       @user = user

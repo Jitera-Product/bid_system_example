@@ -1,4 +1,3 @@
-
 ---
 en:
   common:
@@ -12,6 +11,9 @@ en:
     '302': deleted
     bid_item_status_updated: "Bid item status has been successfully updated."
     chat_sessions_disabled_confirmation: "Chat sessions have been successfully disabled."
+    chat_session_id_invalid: "Chat session ID must be a valid number."
+    chat_session_not_found: "Chat session not found."
+    chat_session_unauthorized: "You do not have permission to access this chat session."
     chat_sessions:
       close:
         success: "The chat session was successfully closed."

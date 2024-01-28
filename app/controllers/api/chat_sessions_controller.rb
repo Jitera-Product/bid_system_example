@@ -33,10 +33,21 @@ class Api::ChatSessionsController < ApplicationController
   end
 
   def retrieve_chat_messages
-    chat_session = ChatSession.find_by(id: params[:id])
+    chat_session_id = params[:chat_session_id].to_i
 
-    if chat_session.nil? || !chat_session.is_active
+    if chat_session_id <= 0
+      render json: { error: I18n.t('chat_session_id_invalid') }, status: :unprocessable_entity
+      return
+    end
+
+    chat_session = ChatSession.find_by(id: chat_session_id)
+
+    if chat_session.nil?
+      render json: { error: I18n.t('chat_session_not_found') }, status: :not_found
+    elsif !chat_session.is_active
       render json: { error: I18n.t('common.404') }, status: :not_found
+    elsif !policy(chat_session).retrieve_chat_messages?
+      render json: { error: I18n.t('chat_session_unauthorized') }, status: :forbidden
     else
       chat_messages = chat_session.chat_messages.select(:id, :created_at, :message, :chat_session_id, :user_id)
       # Assuming pagination is implemented with Kaminari or similar gem
@@ -47,7 +58,7 @@ class Api::ChatSessionsController < ApplicationController
         chat_messages: chat_messages,
         total_messages: chat_messages.total_count,
         total_pages: chat_messages.total_pages
-      }
+      }, status: :ok
     end
   end
 
