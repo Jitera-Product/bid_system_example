@@ -30,7 +30,8 @@ class BidItem < ApplicationRecord
 
   def close_bid_item
     update!(status: 'done')
-    chat_sessions.update_all(is_active: false)
+    # Set is_active to false for each associated chat session
+    chat_sessions.update_all(is_active: false) if status == 'done'
   rescue StandardError => e
     errors.add(:base, e.message)
     false

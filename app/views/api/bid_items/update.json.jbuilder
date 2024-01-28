@@ -6,6 +6,7 @@ else
   json.updated_bid_item_status @bid_item.status
   json.bid_item do
     json.id @bid_item.id
+    json.status @bid_item.status
     json.created_at @bid_item.created_at
     json.updated_at @bid_item.updated_at
     json.base_price @bid_item.base_price

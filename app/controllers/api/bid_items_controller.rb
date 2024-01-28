@@ -81,16 +81,20 @@ class Api::BidItemsController < Api::BaseController
     new_status = params[:status]
 
     bid_item = BidItem.find_by!(id: bid_item_id)
-    unless BidItem.statuses.keys.include?(new_status)
+    unless BidItem.statuses.include?(new_status)
       render json: { error: I18n.t('common.422') }, status: :unprocessable_entity
       return
     end
 
     if bid_item.status != new_status
       bid_item.status = new_status
-      bid_item.close_bid_item if new_status == 'done'
-      bid_item.save!
-      render json: { message: I18n.t('controller.bid_item_status_updated'), bid_item: bid_item }, status: :ok
+      if new_status == 'done'
+        bid_item.close_bid_item
+        render json: { message: I18n.t('controller.bid_item_status_updated'), bid_item: bid_item }, status: :ok
+      else
+        bid_item.save!
+        render json: { message: I18n.t('controller.bid_item_status_updated'), bid_item: bid_item }, status: :ok
+      end
     else
       render json: { error: I18n.t('activerecord.errors.models.bid_item.attributes.status.not_changed') }, status: :unprocessable_entity
     end

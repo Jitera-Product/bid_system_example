@@ -1,3 +1,4 @@
+
 ---
 en:
   activerecord:
@@ -29,10 +30,14 @@ en:
         base_price: Base price
         status:
           pending: Pending
+          in_progress: In Progress
           active: Active
+          ended: Auction Ended
           sold: Sold
           cancelled: Cancelled
+          unsold: Unsold
         status: Status
+        auction_ended: Auction Ended
       user:
         id: ID
         updated_at: Updated at
