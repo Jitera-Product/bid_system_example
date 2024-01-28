@@ -1,3 +1,4 @@
+
 class BidItem < ApplicationRecord
   has_many :item_bids,
            class_name: 'Bid',
@@ -34,6 +35,8 @@ class BidItem < ApplicationRecord
     errors.add(:base, e.message)
     false
   end
+
+  # Additional methods or scopes can be added here
 
   class << self
   end

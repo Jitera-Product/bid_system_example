@@ -1,3 +1,4 @@
+
 class ChatSession < ApplicationRecord
   belongs_to :bid_item
   has_many :chat_messages
