@@ -37,6 +37,10 @@ class BidItem < ApplicationRecord
     false
   end
 
+  def status_done?
+    status == 'done'
+  end
+
   # Additional methods or scopes can be added here
 
   class << self

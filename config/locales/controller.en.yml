@@ -12,3 +12,9 @@ en:
     '302': deleted
     bid_item_status_updated: "Bid item status has been successfully updated."
     chat_sessions_disabled_confirmation: "Chat sessions have been successfully disabled."
+    chat_sessions:
+      close:
+        success: "The chat session was successfully closed."
+        error:
+          not_found: "Chat session not found."
+          not_active: "Chat session is already closed."

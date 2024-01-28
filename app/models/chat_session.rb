@@ -7,6 +7,7 @@ class ChatSession < ApplicationRecord
   validates :bid_item_id, presence: true
 
   validate :bid_item_not_done
+  validate :active_for_closing
 
   # Scope to retrieve active chat sessions for a specific bid item
   scope :active_for_bid_item, ->(bid_item_id) {
@@ -23,4 +24,11 @@ class ChatSession < ApplicationRecord
   def bid_item_not_done
     errors.add(:bid_item, "Chat cannot be initiated for completed bid items.") if bid_item.done?
   end
+
+  def active_for_closing
+    unless is_active
+      errors.add(:is_active, "Chat session cannot be closed because it is already inactive.")
+    end
+  end
+
 end
