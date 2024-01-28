@@ -80,26 +80,25 @@ class Api::BidItemsController < Api::BaseController
     bid_item_id = params[:id]
     new_status = params[:status]
 
-    bid_item = BidItem.find_by!(id: bid_item_id)
-    unless BidItem.statuses.include?(new_status)
-      render json: { error: I18n.t('common.422') }, status: :unprocessable_entity
+    unless BidItem.statuses.keys.include?(new_status)
+      render json: { error: I18n.t('controller.bid_item.invalid_status') }, status: :unprocessable_entity
       return
     end
 
-    if bid_item.status != new_status
-      bid_item.status = new_status
-      if new_status == 'done'
-        bid_item.close_bid_item
-        render json: { message: I18n.t('controller.bid_item_status_updated'), bid_item: bid_item }, status: :ok
-      else
-        bid_item.save!
-        render json: { message: I18n.t('controller.bid_item_status_updated'), bid_item: bid_item }, status: :ok
-      end
+    if @bid_item.update(status: new_status)
+      @bid_item.close_bid_item if new_status == 'done'
+      render json: {
+        status: 200,
+        message: I18n.t('controller.bid_item.update.success'),
+        bid_item: {
+          id: @bid_item.id,
+          status: @bid_item.status,
+          updated_at: @bid_item.updated_at
+        }
+      }, status: :ok
     else
-      render json: { error: I18n.t('activerecord.errors.models.bid_item.attributes.status.not_changed') }, status: :unprocessable_entity
+      render json: { error: @bid_item.errors.full_messages.to_sentence }, status: :unprocessable_entity
     end
-  rescue ActiveRecord::RecordNotFound
-    render json: { error: I18n.t('common.404') }, status: :not_found
   end
 
   def create_chat_session

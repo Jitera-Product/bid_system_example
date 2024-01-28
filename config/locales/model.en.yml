@@ -36,6 +36,8 @@ en:
           sold: Sold
           cancelled: Cancelled
           unsold: Unsold
+          done: Done
+          error: Error
         status: Status
         auction_ended: Auction Ended
       user:

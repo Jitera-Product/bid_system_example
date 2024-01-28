@@ -20,3 +20,8 @@ en:
         error:
           not_found: "Chat session not found."
           not_active: "Chat session is already closed."
+  bid_item:
+    update:
+      success: "Bid item status has been successfully updated."
+      not_found: "Bid item not found."
+      invalid_status: "Invalid status code for bid item."
