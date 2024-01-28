@@ -1,6 +1,21 @@
-
 class Api::ChatSessionsController < ApplicationController
   before_action :doorkeeper_authorize!
+
+  def create
+    bid_item_id = params[:bid_item_id]
+    bid_item_service = BidItemService::Index.new(bid_item_id: bid_item_id)
+
+    if bid_item_service.execute.blank?
+      render json: { error: I18n.t('chat_session.create.error.bid_item_not_found') }, status: :not_found
+    elsif !bid_item_service.records.first.active?
+      render json: { error: I18n.t('chat_session.create.error.bid_item_inactive') }, status: :unprocessable_entity
+    else
+      chat_session = ChatSession.create!(is_active: true, bid_item_id: bid_item_id, created_at: Time.current, updated_at: Time.current)
+      render json: { status: I18n.t('common.201'), chat_session: chat_session }, status: :created
+    end
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { error: e.record.errors.full_messages.to_sentence }, status: :unprocessable_entity
+  end
 
   def close
     chat_session = ChatSession.find_by(id: params[:id])
@@ -35,4 +50,6 @@ class Api::ChatSessionsController < ApplicationController
       }
     end
   end
+
+  # Other controller actions...
 end

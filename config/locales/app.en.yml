@@ -1,3 +1,4 @@
+
 ---
 en:
   common:
@@ -16,3 +17,10 @@ en:
     passwords:
       old_password_mismatch: Incorrect current password
       not_found_in_database: Invalid email or password
+  chat_session:
+    create:
+      success: "Chat session created successfully."
+      error:
+        default: "Chat session could not be created."
+        bid_item_not_found: "Bid item not found."
+        bid_item_inactive: "Chat session cannot be created for inactive bid items."
