@@ -27,6 +27,11 @@ en:
         updated_at: Updated at
         product_id: Product ID
         base_price: Base price
+        status:
+          pending: Pending
+          active: Active
+          sold: Sold
+          cancelled: Cancelled
         status: Status
       user:
         id: ID

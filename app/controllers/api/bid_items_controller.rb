@@ -1,5 +1,7 @@
+
 class Api::BidItemsController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update]
+  before_action :set_bid_item, only: [:update_status]
   before_action :validate_chat_session_creation, only: [:create_chat_session]
 
   def index
@@ -74,6 +76,24 @@ class Api::BidItemsController < Api::BaseController
     params.require(:bid_items).permit(:user_id, :product_id, :base_price, :status, :name, :expiration_time)
   end
 
+  def update_status
+    bid_item_id = params[:id]
+    new_status = params[:status]
+
+    bid_item = BidItem.find_by!(id: bid_item_id)
+    unless BidItem.statuses.keys.include?(new_status)
+      render json: { error: I18n.t('common.422') }, status: :unprocessable_entity
+      return
+    end
+
+    bid_item.close_bid_item if new_status == 'done'
+    bid_item.update!(updated_at: Time.current)
+
+    render 'api/bid_items/update', locals: { bid_item: bid_item }, status: :ok
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: I18n.t('common.404') }, status: :not_found
+  end
+
   def create_chat_session
     bid_item = BidItem.find_by(id: chat_session_params[:bid_item_id])
     unless bid_item
@@ -107,4 +127,12 @@ class Api::BidItemsController < Api::BaseController
   end
 
   # Add any additional error handling or private methods below
+
+  def set_bid_item
+    @bid_item = BidItem.find_by(id: params[:id])
+    unless @bid_item
+      render json: { error: I18n.t('bid_item.not_found') }, status: :not_found
+    end
+  end
+
 end
