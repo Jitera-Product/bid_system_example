@@ -7,6 +7,9 @@ module Api
     include Pundit::Authorization
 
     # =======End include module======
+    rescue_from Exceptions::InactiveChatSessionError, with: :handle_inactive_chat_session
+    rescue_from Exceptions::MessageTooLongError, with: :handle_message_too_long
+    rescue_from Exceptions::MessageLimitExceededError, with: :handle_message_limit_exceeded
 
     rescue_from ActiveRecord::RecordNotFound, with: :base_render_record_not_found
     rescue_from ActiveRecord::RecordInvalid, with: :base_render_unprocessable_entity
@@ -74,6 +77,18 @@ module Api
 
     def base_render_record_not_unique
       render json: { message: I18n.t('common.errors.record_not_uniq_error') }, status: :forbidden
+    end
+
+    def handle_inactive_chat_session(_exception)
+      render json: { message: I18n.t('controller.chat_session_not_active') }, status: :unprocessable_entity
+    end
+
+    def handle_message_too_long(_exception)
+      render json: { message: I18n.t('controller.message_too_long') }, status: :unprocessable_entity
+    end
+
+    def handle_message_limit_exceeded(_exception)
+      render json: { message: I18n.t('controller.message_limit_exceeded') }, status: :unprocessable_entity
     end
 
     def custom_token_initialize_values(resource, client)

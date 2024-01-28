@@ -17,6 +17,34 @@ class Api::ChatSessionsController < ApplicationController
     render json: { error: e.record.errors.full_messages.to_sentence }, status: :unprocessable_entity
   end
 
+  def send_chat_message
+    chat_session_id = params[:chat_session_id]
+    message = params[:message]
+    user_id = params[:user_id]
+
+    chat_session = ChatSession.find(chat_session_id)
+
+    raise Exceptions::InactiveChatSessionError unless chat_session.is_active
+    raise Exceptions::MessageTooLongError if message.length > 512
+    raise Exceptions::MessageLimitExceededError if chat_session.chat_messages.count >= 30
+
+    chat_message = chat_session.chat_messages.create!(message: message, user_id: user_id)
+
+    if chat_message.persisted?
+      render json: {
+        status: 201,
+        chat_message: {
+          id: chat_message.id,
+          created_at: chat_message.created_at,
+          message: chat_message.message,
+          chat_session_id: chat_message.chat_session_id,
+          user_id: chat_message.user_id,
+          message_count: chat_session.message_count
+        }
+      }, status: :created
+    end
+  end
+
   def close
     chat_session = ChatSession.find_by(id: params[:id])
 
@@ -33,7 +61,8 @@ class Api::ChatSessionsController < ApplicationController
   end
 
   def retrieve_chat_messages
-    chat_session_id = params[:chat_session_id].to_i
+    chat_session_id = params[:chat_session_id] || params[:id]
+    chat_session_id = chat_session_id.to_i
 
     if chat_session_id <= 0
       render json: { error: I18n.t('chat_session_id_invalid') }, status: :unprocessable_entity
@@ -46,7 +75,7 @@ class Api::ChatSessionsController < ApplicationController
       render json: { error: I18n.t('chat_session_not_found') }, status: :not_found
     elsif !chat_session.is_active
       render json: { error: I18n.t('common.404') }, status: :not_found
-    elsif !policy(chat_session).retrieve_chat_messages?
+    elsif defined?(policy) && !policy(chat_session).retrieve_chat_messages?
       render json: { error: I18n.t('chat_session_unauthorized') }, status: :forbidden
     else
       chat_messages = chat_session.chat_messages.select(:id, :created_at, :message, :chat_session_id, :user_id)
@@ -55,7 +84,7 @@ class Api::ChatSessionsController < ApplicationController
 
       render json: {
         status: 200,
-        chat_messages: chat_messages,
+        chat_messages: chat_messages.as_json(include: [:message_count]),
         total_messages: chat_messages.total_count,
         total_pages: chat_messages.total_pages
       }, status: :ok

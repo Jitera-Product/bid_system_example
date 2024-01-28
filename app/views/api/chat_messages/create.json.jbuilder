@@ -4,5 +4,7 @@ json.chat_message do
   json.created_at @chat_message.created_at.iso8601
   json.message @chat_message.message
   json.chat_session_id @chat_message.chat_session_id
-  json.sender_id @chat_message.user_id
+  json.user_id @chat_message.user_id
+  json.message_count @chat_message.chat_session.message_count
+  json.is_active @chat_message.chat_session.is_active
 end
