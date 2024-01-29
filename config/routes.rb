@@ -41,8 +41,11 @@ Rails.application.routes.draw do
     resources :admins, only: %i[index create show update] do
     end
 
+    # Merged the new chat_channels messages route with the existing chat_channels routes
+    get '/chat_channels/:id/messages', to: 'chat_channels#messages'
     get '/chat_channels/:id/availability', to: 'chat_channels#check_chat_availability'
     post '/chat_channels', to: 'chat_channels#create'
+
     resources :products, only: %i[index create show update] do
     end
 

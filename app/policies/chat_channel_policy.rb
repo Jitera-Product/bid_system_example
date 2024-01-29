@@ -17,8 +17,10 @@ class ChatChannelPolicy < ApplicationPolicy
   private
 
   def user_participant?
-    # Assuming 'bid_item' is a method that returns the associated BidItem object
+    # Assuming there is a method to check if the user is a participant of the chat channel
+    # and 'bid_item' is a method that returns the associated BidItem object
     # and 'messages' is a method that returns the associated messages for the ChatChannel
-    record.bid_item.user_id == user.id || record.messages.any? { |message| message.user_id == user.id }
+    # The condition has been updated to include both the new and existing checks
+    record.participants.include?(user) || record.bid_item.user_id == user.id || record.messages.any? { |message| message.user_id == user.id }
   end
 end

@@ -18,6 +18,21 @@ module Api
       base_render_unauthorized_error
     end
 
+    def messages
+      chat_channel_id = params[:id]
+      chat_channel = ChatChannel.find_by(id: chat_channel_id, is_active: true)
+
+      if chat_channel.nil?
+        base_render_record_not_found("Chat channel not found.")
+      else
+        messages = chat_channel.messages.order(created_at: :asc)
+        render json: {
+          status: 200,
+          messages: messages.as_json(only: [:id, :chat_channel_id, :user_id, :content, :created_at])
+        }, status: :ok
+      end
+    end
+
     def check_chat_availability
       begin
         chat_channel_id = params[:id]
