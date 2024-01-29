@@ -6,6 +6,7 @@ en:
     '401': unauthorized
     '500': internal server error
     '422': unprocessable
+    chat_channel_not_active: "Chat channel is not active."
     '201': created
     '200': success
     '302': deleted

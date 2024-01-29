@@ -11,6 +11,7 @@ module Api
     rescue_from ActiveRecord::RecordInvalid, with: :base_render_unprocessable_entity
     rescue_from Exceptions::AuthenticationError, with: :base_render_authentication_error
     rescue_from ActiveRecord::RecordNotUnique, with: :base_render_record_not_unique
+    rescue_from Exceptions::ChatChannelNotActiveError, with: :base_render_chat_channel_not_active
     rescue_from Pundit::NotAuthorizedError, with: :base_render_unauthorized_error
 
     def error_response(resource, error)
@@ -44,6 +45,11 @@ module Api
     def base_render_record_not_unique
       render json: { message: I18n.t('common.errors.record_not_uniq_error') }, status: :forbidden
     end
+
+    def base_render_chat_channel_not_active(exception)
+      render json: { message: exception.message }, status: :forbidden
+    end
+
 
     def custom_token_initialize_values(resource, client)
       token = CustomAccessToken.create(

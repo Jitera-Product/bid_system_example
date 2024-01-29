@@ -41,6 +41,7 @@ Rails.application.routes.draw do
     resources :admins, only: %i[index create show update] do
     end
 
+    get 'chat_channels/:id/availability', to: 'chat_channels#check_availability'
     resources :products, only: %i[index create show update] do
     end
 
