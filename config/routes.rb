@@ -50,6 +50,7 @@ Rails.application.routes.draw do
     resources :bid_items, only: %i[index create show update] do
     end
 
+    put '/chat_sessions/:id/disable', to: 'chat_sessions#disable'
     resources :admins_verify_confirmation_token, only: [:create] do
     end
 
