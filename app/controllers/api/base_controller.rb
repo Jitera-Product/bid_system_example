@@ -1,3 +1,4 @@
+
 # typed: ignore
 module Api
   class BaseController < ActionController::API
@@ -15,6 +16,9 @@ module Api
     rescue_from Exceptions::ChatChannelCreationError, with: :base_render_chat_channel_creation_error
     rescue_from ActiveRecord::RecordNotUnique, with: :base_render_record_not_unique
     rescue_from Exceptions::ChatChannelNotActiveError, with: :base_render_chat_channel_not_active
+    rescue_from Exceptions::BidItemNotFoundError, with: :base_render_bid_item_not_found
+    rescue_from Exceptions::BidItemCompletedError, with: :base_render_bid_item_completed
+    rescue_from Exceptions::ChatChannelExistsError, with: :base_render_chat_channel_exists
     rescue_from Pundit::NotAuthorizedError, with: :base_render_unauthorized_error
 
     def error_response(resource, error)
@@ -38,9 +42,6 @@ module Api
     end
 
     def base_render_authentication_error(_exception)
-      # Note: The new code has a different message for authentication error (404 not found),
-      # but since it's an authentication error, it's more appropriate to return a 401 unauthorized status.
-      # Therefore, we keep the existing code's message and status.
       render json: { message: I18n.t('common.401') }, status: :unauthorized
     end
 
@@ -59,6 +60,24 @@ module Api
     def base_render_chat_channel_not_active(exception)
       render json: { message: exception.message }, status: :forbidden
     end
+
+    def base_render_bid_item_not_found(_exception)
+      render json: { error: I18n.t('chat_channels.errors.bid_item_not_found') }, status: :unprocessable_entity
+    end
+
+    def base_render_bid_item_completed(_exception)
+      render json: { error: I18n.t('chat_channels.errors.bid_item_completed') }, status: :unprocessable_entity
+    end
+
+    def base_render_chat_channel_exists(_exception)
+      render json: { error: I18n.t('chat_channels.errors.chat_channel_exists') }, status: :unprocessable_entity
+    end
+
+    # Add any other custom exception handling methods below this line
+
+    # ...
+
+    # End of custom exception handling methods
 
     def authenticate_user!
       raise Exceptions::AuthenticationError unless current_resource_owner
@@ -85,5 +104,7 @@ module Api
     def current_resource_owner
       return super if defined?(super)
     end
+
+    # Add any other private methods from the existing code below this line
   end
 end

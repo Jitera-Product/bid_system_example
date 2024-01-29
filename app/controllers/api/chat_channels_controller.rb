@@ -7,19 +7,9 @@ module Api
     before_action :doorkeeper_authorize!, only: [:check_availability, :retrieve_chat_messages, :disable, :create]
 
     def create
-      bid_item = BidItem.find_by(id: chat_channel_params[:bid_item_id])
+      chat_channel = ChatChannel.new(chat_channel_params.merge(is_active: true))
 
-      if bid_item.nil?
-        return render json: { error: I18n.t('chat_channels.bid_item_not_found') }, status: :unprocessable_entity
-      elsif bid_item.status == 'done'
-        return render json: { error: I18n.t('chat_channels.chat_creation_for_completed_bid_items') }, status: :unprocessable_entity
-      elsif bid_item.chat_channels.exists?
-        return render json: { error: I18n.t('chat_channels.chat_channel_already_exists_for_bid_item') }, status: :unprocessable_entity
-      end
-
-      chat_channel = bid_item.chat_channels.create(is_active: true)
-
-      if chat_channel.persisted?
+      if chat_channel.save
         render json: chat_channel, status: :created
       else
         render json: { errors: chat_channel.errors.full_messages }, status: :unprocessable_entity

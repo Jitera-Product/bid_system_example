@@ -9,11 +9,10 @@ class ChatChannelPolicy < ApplicationPolicy
     @chat_channel = chat_channel
   end
 
-  def create?
-    return false unless user
-
-    bid_item = BidItem.find_by(id: chat_channel.bid_item_id)
-    return false unless bid_item
+  # Define the create? method to encapsulate the authorization logic for creating a chat channel
+  def create?(bid_item_id)
+    bid_item = BidItem.find_by(id: bid_item_id)
+    return false unless bid_item && user
 
     user_is_owner = bid_item.user_id == user.id
     user_is_bidder = bid_item.bids.exists?(user_id: user.id)
