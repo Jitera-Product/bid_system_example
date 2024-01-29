@@ -21,6 +21,14 @@ class ChatChannelPolicy < ApplicationPolicy
     user_is_owner || user_is_bidder
   end
 
+  def send_message?
+    return false unless user
+    bid_item = chat_channel.bid_item
+    user_is_owner = bid_item.user_id == user.id
+    user_is_bidder = bid_item.bids.exists?(user_id: user.id)
+    user_is_owner || user_is_bidder
+  end
+
   def disable?
     chat_channel.bid_item.user_id == user.id
   end

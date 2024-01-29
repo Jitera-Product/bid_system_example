@@ -5,7 +5,7 @@ class Message < ApplicationRecord
   # Validations
   validates :content, presence: true,
                       length: { maximum: 512,
-                                too_long: I18n.t('activerecord.errors.messages.message_content_length', count: 512) }
+                                too_long: I18n.t('activerecord.errors.messages.too_long', count: 512) }
 
   # Attributes
   # id, created_at, updated_at, content, chat_channel_id are handled by Rails
