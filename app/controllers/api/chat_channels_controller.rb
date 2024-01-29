@@ -1,3 +1,4 @@
+
 # typed: true
 # frozen_string_literal: true
 
@@ -33,13 +34,11 @@ module Api
         return base_render_record_not_found('Chat channel not found.')
       end
 
-      unless chat_channel.bid_item.status == 'active'
-        raise Exceptions::ChatChannelNotActiveError, I18n.t('chat_channel_not_active')
+      if chat_channel.bid_item.status != 'active' || chat_channel.messages.count >= 100
+        raise Exceptions::ChatChannelNotActiveError, I18n.t('common.chat_channel_not_active')
       end
 
-      if chat_channel.messages.count > 30
-        raise Exceptions::ChatChannelNotActiveError, I18n.t('chat_channel_not_active')
-      end
+      # Removed the old message count check as it is now included in the new condition above
 
       render json: { status: 200, availability: true }
     rescue Exceptions::ChatChannelNotActiveError => e

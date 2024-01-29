@@ -29,6 +29,15 @@ class ChatChannelPolicy < ApplicationPolicy
     user_is_owner || user_is_bidder
   end
 
+  def allowed_to_send_message?
+    return false unless user
+    return false unless chat_channel.is_active
+
+    message_count = chat_channel.messages.count
+    message_count < 100
+  end
+
+
   def disable?
     chat_channel.bid_item.user_id == user.id
   end

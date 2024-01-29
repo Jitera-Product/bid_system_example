@@ -13,11 +13,11 @@ class Api::MessagesController < Api::BaseController
     unless policy(chat_channel).send_message?
       return render json: { error: I18n.t('common.403'), message: 'User does not have permission to access the resource.' }, status: :forbidden
     end
-
+    
     message = chat_channel.messages.build(message_params)
 
-    if chat_channel.messages.count > 60
-      raise Exceptions::ChatChannelNotActiveError, I18n.t('chat_channel.chat_channel_not_active')
+    if chat_channel.messages.count >= 100
+      raise Exceptions::ChatChannelNotActiveError, I18n.t('common.chat_channel_not_active')
     end
 
     if message.save
