@@ -1,4 +1,3 @@
-
 class ChatChannel < ApplicationRecord
   # Associations
   belongs_to :bid_item
@@ -21,7 +20,8 @@ class ChatChannel < ApplicationRecord
   end
 
   def chat_channel_must_be_unique_for_bid_item
-    errors.add(:bid_item_id, I18n.t('activerecord.errors.messages.taken')) if ChatChannel.exists?(bid_item_id: bid_item_id)
+    # The new code checks for an active chat channel, which is more specific and thus we keep this condition
+    errors.add(:bid_item_id, I18n.t('activerecord.errors.messages.taken')) if ChatChannel.exists?(bid_item_id: bid_item_id, is_active: true)
   end
 
   def validate_chat_channel_availability

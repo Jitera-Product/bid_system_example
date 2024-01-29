@@ -5,7 +5,12 @@ module Api
   class ChatChannelsController < BaseController
     before_action :doorkeeper_authorize!, only: [:check_availability, :retrieve_chat_messages, :disable, :create]
 
-    def create
+    def create      
+      bid_item = BidItem.find_by(id: chat_channel_params[:bid_item_id])
+      raise Exceptions::BidItemNotFoundError, I18n.t('chat_channels.errors.bid_item_not_found') if bid_item.nil?
+      raise Exceptions::BidItemCompletedError, I18n.t('chat_channels.errors.bid_item_completed') if bid_item.status == 'done'
+      raise Exceptions::ChatChannelExistsError, I18n.t('chat_channels.errors.chat_channel_exists') if ChatChannel.exists?(bid_item_id: bid_item.id, is_active: true)
+
       chat_channel = ChatChannel.new(chat_channel_params.merge(is_active: true))
 
       if chat_channel.save
@@ -41,10 +46,11 @@ module Api
     end
 
     def retrieve_chat_messages
-      chat_channel = ChatChannel.find_by!(id: params[:chat_channel_id])
-      raise Exceptions::ChatChannelNotActiveError unless chat_channel.is_active
+      chat_channel = ChatChannel.find_by!(id: params[:chat_channel_id], is_active: true)
+      messages = chat_channel.messages
+                              .page(params[:page])
+                              .per(params[:per_page])
 
-      messages = chat_channel.messages.page(params[:page]).per(params[:per_page])
       if messages.present?
         render json: {
           status: I18n.t('common.200'),

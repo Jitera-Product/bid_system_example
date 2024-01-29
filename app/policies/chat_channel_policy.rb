@@ -10,7 +10,8 @@ class ChatChannelPolicy < ApplicationPolicy
   end
 
   # Define the create? method to encapsulate the authorization logic for creating a chat channel
-  def create?(bid_item_id)
+  def create?(bid_item_id = nil)
+    bid_item_id ||= chat_channel.bid_item_id
     bid_item = BidItem.find_by(id: bid_item_id)
     return false unless bid_item && user
 
