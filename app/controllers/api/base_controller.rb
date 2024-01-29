@@ -1,6 +1,8 @@
 # typed: ignore
 module Api
   class BaseController < ActionController::API
+    before_action :authenticate_user!, only: [:retrieve_chat_messages]
+
     include OauthTokensConcern
     include ActionController::Cookies
     include Pundit::Authorization
@@ -35,7 +37,7 @@ module Api
     end
 
     def base_render_authentication_error(_exception)
-      render json: { message: I18n.t('common.404') }, status: :not_found
+      render json: { message: I18n.t('common.401') }, status: :unauthorized
     end
 
     def base_render_unauthorized_error(_exception)
@@ -50,6 +52,9 @@ module Api
       render json: { message: exception.message }, status: :forbidden
     end
 
+    def authenticate_user!
+      raise Exceptions::AuthenticationError unless current_resource_owner
+    end
 
     def custom_token_initialize_values(resource, client)
       token = CustomAccessToken.create(
