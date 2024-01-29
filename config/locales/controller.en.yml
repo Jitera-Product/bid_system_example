@@ -1,4 +1,3 @@
----
 en:
   common:
     '404': not found
@@ -6,7 +5,15 @@ en:
     '401': unauthorized
     '500': internal server error
     '422': unprocessable
-    chat_channel_not_active: "Chat channel is not active."
     '201': created
     '200': success
     '302': deleted
+    chat_channel_not_active: "Chat channel is not active."
+  errors:
+    unauthorized_error: You are not authorized to perform this action.
+    record_not_uniq_error: This record already exists.
+  chat_channel:
+    disable:
+      success: Chat channel was successfully disabled.
+      not_found: Chat channel not found.
+      already_disabled: Chat channel is already disabled.

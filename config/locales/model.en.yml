@@ -1,3 +1,4 @@
+
 ---
 en:
   activerecord:
@@ -17,6 +18,7 @@ en:
       product_category: Product category
       listing: Listing
       listing_bid_item: Listing bid item
+      chat_channel: Chat Channel
     attributes:
       bid_item:
         user_id: User ID
@@ -146,6 +148,11 @@ en:
         id: ID
         updated_at: Updated at
         bid_item_id: Bid item ID
+      chat_channel:
+        id: ID
+        bid_item_id: Bid item ID
+        created_at: Created at
+        is_active: Is active
       shipping:
         id: ID
         shiping_address: Shiping address

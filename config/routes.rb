@@ -87,7 +87,7 @@ Rails.application.routes.draw do
     end
 
     # The new code has this route, so we add it
-    get '/api/chat_channels/:chat_channel_id/messages', to: 'chat_channels#retrieve_chat_messages', as: 'retrieve_chat_messages'
+    put '/chat_channels/:id/disable', to: 'chat_channels#disable', as: 'disable_chat_channel'
   end
 
   get '/health' => 'pages#health_check'
