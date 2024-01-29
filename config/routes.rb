@@ -1,8 +1,8 @@
 require 'sidekiq/web'
+
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
-
     skip_controllers :authorizations, :applications, :authorized_applications
   end
 
@@ -41,7 +41,9 @@ Rails.application.routes.draw do
     resources :admins, only: %i[index create show update] do
     end
 
+    # The new code does not have this route, so we keep it from the existing code
     get 'chat_channels/:id/availability', to: 'chat_channels#check_availability'
+
     resources :products, only: %i[index create show update] do
     end
 
@@ -83,6 +85,9 @@ Rails.application.routes.draw do
 
     resources :users, only: %i[index create show update] do
     end
+
+    # The new code has this route, so we add it
+    post '/messages', to: 'api/messages#create'
   end
 
   get '/health' => 'pages#health_check'

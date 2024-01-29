@@ -11,6 +11,15 @@ class Api::UsersPolicy < ApplicationPolicy
     (user.is_a?(User) && record.id == user&.id)
   end
 
+  def send_message?(chat_channel)
+    return false unless user.is_a?(User)
+
+    bid_item = chat_channel.bid_item
+    bid_item_owner = bid_item.user
+
+    user.id == bid_item_owner.id || chat_channel.participants.include?(user)
+  end
+
   class Scope < Scope
     def resolve
       if user.is_a?(User)
