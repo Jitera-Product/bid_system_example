@@ -1,4 +1,3 @@
-
 en:
   common:
     '404': not found
@@ -9,6 +8,7 @@ en:
     '201': created
     '200': success
     '302': deleted
+    chat_channel_message_limit_reached: "Cannot send message as the chat channel message limit has been reached."
     chat_channel_not_active: "Chat channel is not active."
   chat_channels:
     errors:
@@ -17,6 +17,7 @@ en:
       chat_channel_exists: "Chat channel already exists for this bid item."
   errors:
     unauthorized_error: You are not authorized to perform this action.
+    record_not_uniq_error: This record already exists.
     bid_item_not_done: "Bid item is not in a state that allows disabling the chat channel."
     chat_channel_already_disabled: "Chat channel is already disabled."
     chat_channel_not_found: "Chat channel not found."

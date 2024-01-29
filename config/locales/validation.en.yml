@@ -26,4 +26,5 @@ en:
         datetime_in_future: must be after the date and time today
         invalid: is invalid
         date_type: must be a valid date
+        sender_must_exist: 'Sender must exist in the system'
         datetime_type: must be a valid date and time

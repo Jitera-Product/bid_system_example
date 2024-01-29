@@ -5,11 +5,11 @@ class Api::MessagesController < Api::BaseController
   def create
     chat_channel = ChatChannel.find_by(id: message_params[:chat_channel_id])
     if chat_channel.nil? || !chat_channel.is_active
-      error_message = chat_channel.nil? ? I18n.t('common.404') : I18n.t('chat_channel.chat_channel_not_active')
+      error_message = chat_channel.nil? ? I18n.t('common.404') : I18n.t('common.chat_channel_not_active')
       return render json: { error: error_message }, status: :forbidden
     end
 
-    return render json: { error: I18n.t('common.403'), message: 'User not found.' }, status: :forbidden unless User.exists?(message_params[:user_id])
+    return render json: { error: I18n.t('common.403'), message: 'User not found.' }, status: :forbidden unless User.exists?(message_params[:sender_id])
     unless policy(chat_channel).send_message?
       return render json: { error: I18n.t('common.403'), message: 'User does not have permission to access the resource.' }, status: :forbidden
     end
@@ -20,7 +20,13 @@ class Api::MessagesController < Api::BaseController
       raise Exceptions::ChatChannelNotActiveError, I18n.t('common.chat_channel_not_active')
     end
 
+    if chat_channel.message_count >= 30
+      raise Exceptions::ChatChannelNotActiveError, I18n.t('common.chat_channel_message_limit_reached')
+    end
+
     if message.save
+      chat_channel.increment!(:message_count)
+      message.update(created_at: Time.current, updated_at: Time.current)
       @message = message
       render 'create', status: :created
     else
@@ -31,6 +37,10 @@ class Api::MessagesController < Api::BaseController
   private
 
   def message_params
-    params.require(:message).permit(:chat_channel_id, :user_id, :content)
+    params.require(:message).permit(:chat_channel_id, :sender_id, :content)
+  end
+
+  rescue_from Exceptions::ChatChannelNotActiveError do |e|
+    render json: { error: e.message }, status: :forbidden
   end
 end
