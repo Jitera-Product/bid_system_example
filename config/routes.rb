@@ -1,8 +1,8 @@
 require 'sidekiq/web'
+
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
-
     skip_controllers :authorizations, :applications, :authorized_applications
   end
 
@@ -41,6 +41,8 @@ Rails.application.routes.draw do
     resources :admins, only: %i[index create show update] do
     end
 
+    get '/chat_channels/:id/availability', to: 'chat_channels#check_chat_availability'
+    post '/chat_channels', to: 'chat_channels#create'
     resources :products, only: %i[index create show update] do
     end
 
@@ -65,7 +67,6 @@ Rails.application.routes.draw do
     resources :admins_reset_password_requests, only: [:create] do
     end
 
-    post '/chat_channels', to: 'chat_channels#create'
     resources :users_verify_confirmation_token, only: [:create] do
     end
 
