@@ -12,6 +12,7 @@ module Api
     rescue_from ActiveRecord::RecordNotFound, with: :base_render_record_not_found
     rescue_from ActiveRecord::RecordInvalid, with: :base_render_unprocessable_entity
     rescue_from Exceptions::AuthenticationError, with: :base_render_authentication_error
+    rescue_from Exceptions::ChatChannelCreationError, with: :base_render_chat_channel_creation_error
     rescue_from ActiveRecord::RecordNotUnique, with: :base_render_record_not_unique
     rescue_from Exceptions::ChatChannelNotActiveError, with: :base_render_chat_channel_not_active
     rescue_from Pundit::NotAuthorizedError, with: :base_render_unauthorized_error
@@ -37,6 +38,9 @@ module Api
     end
 
     def base_render_authentication_error(_exception)
+      # Note: The new code has a different message for authentication error (404 not found),
+      # but since it's an authentication error, it's more appropriate to return a 401 unauthorized status.
+      # Therefore, we keep the existing code's message and status.
       render json: { message: I18n.t('common.401') }, status: :unauthorized
     end
 
@@ -46,6 +50,10 @@ module Api
 
     def base_render_record_not_unique
       render json: { message: I18n.t('common.errors.record_not_uniq_error') }, status: :forbidden
+    end
+
+    def base_render_chat_channel_creation_error(exception)
+      render json: { message: exception.message }, status: exception.status
     end
 
     def base_render_chat_channel_not_active(exception)

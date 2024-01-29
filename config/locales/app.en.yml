@@ -8,6 +8,10 @@ en:
         inactive: Your account is not activated yet
         locked: Your account is locked
   email_login:
+    chat_channels:
+      bid_item_not_found: Bid item not found.
+      chat_creation_for_completed_bid_items: Chat cannot be created for completed bid items.
+      chat_channel_already_exists_for_bid_item: Chat channel already exists for this bid item.
     reset_password:
       invalid_token: The access token is invalid
       expired: The access token expired

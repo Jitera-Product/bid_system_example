@@ -53,6 +53,9 @@ Rails.application.routes.draw do
     resources :bid_items, only: %i[index create show update] do
     end
 
+    # The new code has this route, so we add it
+    post '/chat_channels', to: 'api/chat_channels#create'
+
     resources :admins_verify_confirmation_token, only: [:create] do
     end
 
@@ -85,9 +88,6 @@ Rails.application.routes.draw do
 
     resources :users, only: %i[index create show update] do
     end
-
-    # The new code has this route, so we add it
-    put '/chat_channels/:id/disable', to: 'chat_channels#disable', as: 'disable_chat_channel'
   end
 
   get '/health' => 'pages#health_check'

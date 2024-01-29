@@ -3,7 +3,29 @@
 
 module Api
   class ChatChannelsController < BaseController
-    before_action :doorkeeper_authorize!, only: [:check_availability, :retrieve_chat_messages, :disable]
+    before_action :doorkeeper_authorize!, only: [:check_availability, :retrieve_chat_messages, :disable, :create]
+
+    def create
+      bid_item = BidItem.find_by(id: chat_channel_params[:bid_item_id])
+
+      if bid_item.nil?
+        return render json: { error: I18n.t('chat_channels.bid_item_not_found') }, status: :unprocessable_entity
+      elsif bid_item.status == 'done'
+        return render json: { error: I18n.t('chat_channels.chat_creation_for_completed_bid_items') }, status: :unprocessable_entity
+      elsif bid_item.chat_channels.exists?
+        return render json: { error: I18n.t('chat_channels.chat_channel_already_exists_for_bid_item') }, status: :unprocessable_entity
+      end
+
+      chat_channel = bid_item.chat_channels.create(is_active: true)
+
+      if chat_channel.persisted?
+        render json: chat_channel, status: :created
+      else
+        render json: { errors: chat_channel.errors.full_messages }, status: :unprocessable_entity
+      end
+    rescue ActiveRecord::RecordNotFound
+      base_render_record_not_found
+    end
 
     def check_availability
       chat_channel = ChatChannel.find_by(id: params[:id])
@@ -65,6 +87,10 @@ module Api
     end
 
     private
+
+    def chat_channel_params
+      params.require(:chat_channel).permit(:bid_item_id)
+    end
 
     def base_render_chat_channel_not_active(exception)
       render json: { error: exception.message }, status: :forbidden
