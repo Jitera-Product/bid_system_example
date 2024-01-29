@@ -1,7 +1,11 @@
 module Api
   class ChatChannelsController < ApplicationController
-    before_action :doorkeeper_authorize!
+    before_action :doorkeeper_authorize!, only: [:create, :disable]
+    before_action :set_chat_channel, only: [:disable, :messages]
+    before_action :validate_bid_item, only: [:disable]
+    before_action :authorize_disable, only: [:disable]
 
+    # POST /api/chat_channels
     def create
       bid_item_id = chat_channel_params[:bid_item_id]
       bid_item = BidItem.find_by(id: bid_item_id)
@@ -18,14 +22,32 @@ module Api
       base_render_unauthorized_error
     end
 
-    def messages
-      chat_channel_id = params[:id]
-      chat_channel = ChatChannel.find_by(id: chat_channel_id, is_active: true)
+    # PUT /api/chat_channels/:id/disable
+    def disable
+      if @bid_item.status_done?
+        @chat_channel.update!(is_active: false)
+        render json: {
+          status: 200,
+          chat_channel: {
+            id: @chat_channel.id,
+            bid_item_id: @chat_channel.bid_item_id,
+            is_active: @chat_channel.is_active,
+            updated_at: @chat_channel.updated_at
+          }
+        }, status: :ok
+      else
+        render json: { message: 'Bid item is not done.' }, status: :unprocessable_entity
+      end
+    rescue ActiveRecord::RecordInvalid => e
+      render json: { message: e.record.errors.full_messages }, status: :unprocessable_entity
+    end
 
-      if chat_channel.nil?
+    # GET /api/chat_channels/:id/messages
+    def messages
+      if @chat_channel.nil? || !@chat_channel.is_active
         base_render_record_not_found("Chat channel not found.")
       else
-        messages = chat_channel.messages.order(created_at: :asc)
+        messages = @chat_channel.messages.order(created_at: :asc)
         render json: {
           status: 200,
           messages: messages.as_json(only: [:id, :chat_channel_id, :user_id, :content, :created_at])
@@ -33,6 +55,7 @@ module Api
       end
     end
 
+    # GET /api/chat_channels/:id/check_availability
     def check_chat_availability
       begin
         chat_channel_id = params[:id]
@@ -56,6 +79,19 @@ module Api
     end
 
     private
+
+    def set_chat_channel
+      @chat_channel = ChatChannel.find_by(id: params[:id])
+    end
+
+    def validate_bid_item
+      @bid_item = @chat_channel.bid_item if @chat_channel
+      raise ActiveRecord::RecordNotFound unless @bid_item && BidItem.exists?(id: @bid_item.id)
+    end
+
+    def authorize_disable
+      authorize @chat_channel.bid_item, :disable? if @chat_channel
+    end
 
     def chat_channel_params
       params.permit(:bid_item_id)

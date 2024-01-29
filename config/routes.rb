@@ -45,6 +45,7 @@ Rails.application.routes.draw do
     get '/chat_channels/:id/messages', to: 'chat_channels#messages'
     get '/chat_channels/:id/availability', to: 'chat_channels#check_chat_availability'
     post '/chat_channels', to: 'chat_channels#create'
+    put '/chat_channels/:id/disable', to: 'chat_channels#disable'
 
     resources :products, only: %i[index create show update] do
     end
