@@ -1,3 +1,4 @@
+
 class ChatChannel < ApplicationRecord
   # Associations
   belongs_to :bid_item
@@ -6,7 +7,7 @@ class ChatChannel < ApplicationRecord
   # Validations
   validates :is_active, inclusion: { in: [true, false], message: I18n.t('activerecord.errors.messages.inclusion') }
   validates :bid_item_id, presence: true
-  validate :bid_item_must_exist, :bid_item_must_be_active, :chat_channel_must_be_unique_for_bid_item
+  validate :bid_item_must_exist, :bid_item_must_be_active, :chat_channel_must_be_unique_for_bid_item, :validate_chat_channel_availability
 
   private
 
@@ -21,6 +22,15 @@ class ChatChannel < ApplicationRecord
 
   def chat_channel_must_be_unique_for_bid_item
     errors.add(:bid_item_id, I18n.t('activerecord.errors.messages.taken')) if ChatChannel.exists?(bid_item_id: bid_item_id)
+  end
+
+  def validate_chat_channel_availability
+    bid_item = BidItem.find_by(id: bid_item_id)
+    if bid_item&.status != 'active'
+      errors.add(:bid_item_id, I18n.t('validation.errors.bid_item_inactive'))
+    elsif ChatChannel.where(bid_item_id: bid_item_id, is_active: true).exists?
+      errors.add(:bid_item_id, I18n.t('validation.errors.chat_channel_exists'))
+    end
   end
 
   # Callbacks

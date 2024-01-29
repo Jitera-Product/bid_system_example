@@ -8,13 +8,15 @@ en:
     '201': created
     '200': success
     '302': deleted
-    chat_channel_message_limit_reached: "Cannot send message as the chat channel message limit has been reached."
     chat_channel_not_active: "Chat channel is not active."
+    chat_channel_message_limit_reached: "Cannot send message as the chat channel message limit has been reached."
   chat_channels:
     errors:
       bid_item_not_found: "Bid item not found."
       bid_item_completed: "Chat cannot be created for completed bid items. Bid item must be active status."
       chat_channel_exists: "Chat channel already exists for this bid item."
+      chat_available: "Chat is available."
+      chat_not_available: "Chat is not available."
   errors:
     unauthorized_error: You are not authorized to perform this action.
     record_not_uniq_error: This record already exists.

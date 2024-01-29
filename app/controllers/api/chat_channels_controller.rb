@@ -1,4 +1,3 @@
-
 # typed: true
 # frozen_string_literal: true
 
@@ -19,19 +18,24 @@ module Api
     end
 
     def check_availability
-      chat_channel = ChatChannel.find_by(id: params[:id])
-      unless chat_channel
+      bid_item = BidItem.find_by(id: params[:bid_item_id])
+      if bid_item.nil?
         return base_render_record_not_found('Chat channel not found.')
       end
 
-      if chat_channel.bid_item.status != 'active' || chat_channel.messages.count >= 100
+      if bid_item.status == 'done'
+        raise Exceptions::BidItemCompletedError
+      elsif bid_item.status != 'active' || bid_item.chat_channels.where(is_active: true).count >= 100
         raise Exceptions::ChatChannelNotActiveError, I18n.t('common.chat_channel_not_active')
       end
 
-      # Removed the old message count check as it is now included in the new condition above
-
-      render json: { status: 200, availability: true }
-    rescue Exceptions::ChatChannelNotActiveError => e
+      chat_channel = bid_item.chat_channels.find_by(is_active: true)
+      if chat_channel
+        render json: { message: I18n.t('chat_channels.errors.chat_available') }, status: :ok
+      else
+        render json: { message: I18n.t('chat_channels.errors.chat_not_available') }, status: :ok
+      end
+    rescue Exceptions::ChatChannelNotActiveError, Exceptions::BidItemCompletedError => e
       base_render_chat_channel_not_active(e)
     end
 
@@ -67,7 +71,7 @@ module Api
 
       if chat_channel.is_active
         chat_channel.update!(is_active: false, updated_at: Time.at(1706517234522))
-        render :disable, status: :ok
+        render json: chat_channel, status: :ok
       else
         render json: { error: I18n.t('chat_channel.disable.already_disabled') }, status: :unprocessable_entity
       end
