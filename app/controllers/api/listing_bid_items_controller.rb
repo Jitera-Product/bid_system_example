@@ -1,9 +1,12 @@
+
 class Api::ListingBidItemsController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show destroy]
 
   def index
     # inside service params are checked and whiteisted
     @listing_bid_items = ListingBidItemService::Index.new(params.permit!, current_resource_owner).execute
+    @current_page = @listing_bid_items.current_page
+    @total_entries = @listing_bid_items.total_count
     @total_pages = @listing_bid_items.total_pages
   end
 

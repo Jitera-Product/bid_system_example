@@ -1,3 +1,4 @@
+
 # rubocop:disable Style/ClassAndModuleChildren
 class ListingBidItemService::Index
   attr_accessor :params, :records, :query
@@ -41,8 +42,8 @@ class ListingBidItemService::Index
   end
 
   def paginate
-    @records = ListingBidItem.none if records.blank? || records.is_a?(Class)
-    @records = records.page(params.dig(:pagination_page) || 1).per(params.dig(:pagination_limit) || 20)
+    @records = records.none if records.blank? || records.is_a?(Class)
+    @records = records.page(params[:page] || 1).per(params[:per] || 20)
   end
 end
 # rubocop:enable Style/ClassAndModuleChildren

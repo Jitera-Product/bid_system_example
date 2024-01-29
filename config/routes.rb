@@ -17,6 +17,7 @@ Rails.application.routes.draw do
     resources :listing_bid_items, only: %i[index create show destroy] do
     end
 
+    get 'listing_bid_items', to: 'listing_bid_items#index'
     resources :listings, only: %i[index create show update] do
     end
 

@@ -1,3 +1,4 @@
+
 if @message.present?
 
   json.message @message
@@ -5,6 +6,8 @@ if @message.present?
 else
 
   json.total_pages @total_pages
+  json.current_page @current_page
+  json.total_entries @total_entries
 
   json.listing_bid_items @listing_bid_items do |listing_bid_item|
     json.id listing_bid_item.id
