@@ -57,8 +57,8 @@ module Api
       render json: { message: exception.message }, status: exception.status
     end
 
-    def base_render_chat_channel_not_active(exception)
-      render json: { message: exception.message }, status: :forbidden
+    def base_render_chat_channel_not_active(_exception)
+      render json: { message: I18n.t('common.chat_channel_not_active') }, status: :forbidden
     end
 
     def base_render_bid_item_not_found(_exception)

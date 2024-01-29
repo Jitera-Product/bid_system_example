@@ -1,4 +1,3 @@
-
 # typed: true
 # frozen_string_literal: true
 
@@ -18,6 +17,14 @@ class ChatChannelPolicy < ApplicationPolicy
     user_is_owner = bid_item.user_id == user.id
     user_is_bidder = bid_item.bids.exists?(user_id: user.id)
 
+    user_is_owner || user_is_bidder
+  end
+
+  def retrieve_chat_messages?
+    return false unless user
+    bid_item = chat_channel.bid_item
+    user_is_owner = bid_item.user_id == user.id
+    user_is_bidder = bid_item.bids.exists?(user_id: user.id)
     user_is_owner || user_is_bidder
   end
 

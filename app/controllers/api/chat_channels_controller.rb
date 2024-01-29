@@ -18,7 +18,9 @@ module Api
     end
 
     def check_availability
-      bid_item = BidItem.find_by(id: params[:bid_item_id])
+      chat_channel = ChatChannel.find_by(id: params[:id])
+      bid_item = chat_channel&.bid_item || BidItem.find_by(id: params[:bid_item_id])
+
       if bid_item.nil?
         return base_render_record_not_found('Chat channel not found.')
       end
@@ -29,8 +31,7 @@ module Api
         raise Exceptions::ChatChannelNotActiveError, I18n.t('common.chat_channel_not_active')
       end
 
-      chat_channel = bid_item.chat_channels.find_by(is_active: true)
-      if chat_channel
+      if chat_channel && chat_channel.is_active && chat_channel.messages.count < 100
         render json: { message: I18n.t('chat_channels.errors.chat_available') }, status: :ok
       else
         render json: { message: I18n.t('chat_channels.errors.chat_not_available') }, status: :ok
@@ -40,11 +41,10 @@ module Api
     end
 
     def retrieve_chat_messages
-      chat_channel = ChatChannel.find_by!(id: params[:chat_channel_id], is_active: true)
-      messages = chat_channel.messages
-                              .page(params[:page])
-                              .per(params[:per_page])
+      chat_channel = ChatChannel.find_by!(id: params[:chat_channel_id])
+      raise Exceptions::ChatChannelNotActiveError unless chat_channel.is_active
 
+      messages = chat_channel.messages.page(params[:page]).per(params[:per_page])
       if messages.present?
         render json: {
           status: I18n.t('common.200'),
@@ -57,15 +57,19 @@ module Api
           error: 'No messages found.'
         }, status: :not_found
       end
+    rescue ActiveRecord::RecordNotFound
+      base_render_record_not_found
+    rescue Exceptions::ChatChannelNotActiveError => e
+      base_render_chat_channel_not_active(e)
     end
 
     def disable
       chat_channel = ChatChannel.find(params[:id])
       authorize chat_channel
-      bid_item = chat_channel.bid_item
 
+      bid_item = chat_channel.bid_item
       if bid_item.status != 'done'
-        render json: { error: I18n.t('chat_channels.errors.bid_item_not_done') }, status: :unprocessable_entity
+        render json: { message: I18n.t('chat_channel.errors.not_done') }, status: :unprocessable_entity
         return
       end
 
@@ -73,10 +77,10 @@ module Api
         chat_channel.update!(is_active: false, updated_at: Time.at(1706517234522))
         render json: chat_channel, status: :ok
       else
-        render json: { error: I18n.t('chat_channel.disable.already_disabled') }, status: :unprocessable_entity
+        render json: { message: I18n.t('chat_channel.errors.already_disabled') }, status: :unprocessable_entity
       end
     rescue ActiveRecord::RecordNotFound
-      render json: { error: I18n.t('chat_channel.disable.not_found') }, status: :not_found
+      render json: { message: I18n.t('chat_channel.errors.not_found') }, status: :not_found
     end
 
     private

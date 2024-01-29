@@ -8,7 +8,7 @@ en:
     '201': created
     '200': success
     '302': deleted
-    chat_channel_not_active: "Chat channel is not active."
+    chat_channel_not_active: "The chat channel is not currently active."
     chat_channel_message_limit_reached: "Cannot send message as the chat channel message limit has been reached."
   chat_channels:
     errors:
