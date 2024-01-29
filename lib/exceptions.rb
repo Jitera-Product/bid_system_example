@@ -8,5 +8,6 @@ module Exceptions
   class BidItemNotFoundError < StandardError; end
   class BidItemCompletedError < StandardError; end
   class ChatChannelExistsError < StandardError; end
+  class BidItemNotDoneError < StandardError; end
   # Add any other custom exceptions as needed
 end

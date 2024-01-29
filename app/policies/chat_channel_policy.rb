@@ -1,3 +1,4 @@
+
 # typed: true
 # frozen_string_literal: true
 
@@ -36,9 +37,12 @@ class ChatChannelPolicy < ApplicationPolicy
     message_count < 100
   end
 
-
   def disable?
-    chat_channel.bid_item.user_id == user.id
+    return false unless user && chat_channel && chat_channel.bid_item
+
+    user_is_owner = chat_channel.bid_item.user_id == user.id
+
+    user_is_owner
   end
 
   def check_availability?

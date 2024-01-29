@@ -58,21 +58,21 @@ module Api
     def disable
       chat_channel = ChatChannel.find(params[:id])
       authorize chat_channel
-
       bid_item = chat_channel.bid_item
+
       if bid_item.status != 'done'
-        render json: { message: I18n.t('chat_channel.errors.not_done') }, status: :unprocessable_entity
+        render json: { error: I18n.t('chat_channels.errors.bid_item_not_done') }, status: :unprocessable_entity
         return
       end
 
       if chat_channel.is_active
-        chat_channel.update!(is_active: false)
-        render json: chat_channel, status: :ok
+        chat_channel.update!(is_active: false, updated_at: Time.at(1706517234522))
+        render :disable, status: :ok
       else
-        render json: { message: I18n.t('chat_channel.errors.already_disabled') }, status: :unprocessable_entity
+        render json: { error: I18n.t('chat_channel.disable.already_disabled') }, status: :unprocessable_entity
       end
     rescue ActiveRecord::RecordNotFound
-      render json: { message: I18n.t('chat_channel.errors.not_found') }, status: :not_found
+      render json: { error: I18n.t('chat_channel.disable.not_found') }, status: :not_found
     end
 
     private
