@@ -5,7 +5,7 @@ module Api
   class ChatChannelsController < BaseController
     before_action :doorkeeper_authorize!, only: [:check_availability, :retrieve_chat_messages, :disable, :create]
 
-    def create      
+    def create
       bid_item = BidItem.find_by(id: chat_channel_params[:bid_item_id])
       raise Exceptions::BidItemNotFoundError, I18n.t('chat_channels.errors.bid_item_not_found') if bid_item.nil?
       raise Exceptions::BidItemCompletedError, I18n.t('chat_channels.errors.bid_item_completed') if bid_item.status == 'done'
@@ -24,24 +24,18 @@ module Api
 
     def check_availability
       chat_channel = ChatChannel.find_by(id: params[:id])
-      bid_item = chat_channel&.bid_item || BidItem.find_by(id: params[:bid_item_id])
-
-      if bid_item.nil?
-        return base_render_record_not_found('Chat channel not found.')
+      unless chat_channel
+        base_render_record_not_found('Chat channel not found.')
+        return
       end
 
-      if bid_item.status == 'done'
-        raise Exceptions::BidItemCompletedError
-      elsif bid_item.status != 'active' || bid_item.chat_channels.where(is_active: true).count >= 100
+      raise Exceptions::ChatChannelNotActiveError, I18n.t('common.chat_channel_not_active') if chat_channel.message_count > 100
+      if chat_channel.bid_item.status != 'active' || chat_channel.messages.count >= 100
         raise Exceptions::ChatChannelNotActiveError, I18n.t('common.chat_channel_not_active')
       end
 
-      if chat_channel && chat_channel.is_active && chat_channel.messages.count < 100
-        render json: { message: I18n.t('chat_channels.errors.chat_available') }, status: :ok
-      else
-        render json: { message: I18n.t('chat_channels.errors.chat_not_available') }, status: :ok
-      end
-    rescue Exceptions::ChatChannelNotActiveError, Exceptions::BidItemCompletedError => e
+      render json: { status: 200, availability: true }
+    rescue Exceptions::ChatChannelNotActiveError => e
       base_render_chat_channel_not_active(e)
     end
 
@@ -65,8 +59,6 @@ module Api
       end
     rescue ActiveRecord::RecordNotFound
       base_render_record_not_found
-    rescue Exceptions::ChatChannelNotActiveError => e
-      base_render_chat_channel_not_active(e)
     end
 
     def disable

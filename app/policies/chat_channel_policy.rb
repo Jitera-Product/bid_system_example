@@ -41,16 +41,16 @@ class ChatChannelPolicy < ApplicationPolicy
     return false unless user
     return false unless chat_channel.is_active
 
-    message_count = chat_channel.messages.count
-    message_count < 100
+    # Use the new code's logic for message_count as it is more efficient
+    # by not hitting the database again for the count
+    chat_channel.message_count <= 100
   end
 
   def disable?
+    # Combine the conditions from both versions to ensure all checks are made
     return false unless user && chat_channel && chat_channel.bid_item
 
-    user_is_owner = chat_channel.bid_item.user_id == user.id
-
-    user_is_owner
+    chat_channel.bid_item.user_id == user.id
   end
 
   def check_availability?

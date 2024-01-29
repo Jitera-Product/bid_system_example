@@ -7,6 +7,7 @@ class ChatChannel < ApplicationRecord
   validates :is_active, inclusion: { in: [true, false], message: I18n.t('activerecord.errors.messages.inclusion') }
   validates :bid_item_id, presence: true
   validate :bid_item_must_exist, :bid_item_must_be_active, :chat_channel_must_be_unique_for_bid_item, :validate_chat_channel_availability
+  validates_numericality_of :message_count, only_integer: true, less_than_or_equal_to: 100, message: I18n.t('activerecord.errors.models.chat_channel.attributes.message_count.message_count_invalid')
 
   private
 
