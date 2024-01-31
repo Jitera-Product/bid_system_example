@@ -1,3 +1,4 @@
+
 # typed: ignore
 module Api
   class BaseController < ActionController::API
@@ -12,6 +13,7 @@ module Api
     rescue_from Exceptions::AuthenticationError, with: :base_render_authentication_error
     rescue_from ActiveRecord::RecordNotUnique, with: :base_render_record_not_unique
     rescue_from Pundit::NotAuthorizedError, with: :base_render_unauthorized_error
+    rescue_from Exceptions::WalletDeletionError, with: :base_render_wallet_deletion_error
 
     def error_response(resource, error)
       {
@@ -43,6 +45,10 @@ module Api
 
     def base_render_record_not_unique
       render json: { message: I18n.t('common.errors.record_not_uniq_error') }, status: :forbidden
+    end
+
+    def base_render_wallet_deletion_error(exception)
+      render json: { message: I18n.t('wallet.deletion_error', error: exception.message) }, status: :unprocessable_entity
     end
 
     def custom_token_initialize_values(resource, client)

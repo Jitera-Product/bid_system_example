@@ -1,9 +1,8 @@
-
 require 'sidekiq/web'
+
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
-
     skip_controllers :authorizations, :applications, :authorized_applications
   end
 
@@ -11,6 +10,7 @@ Rails.application.routes.draw do
   devise_for :admins
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
+  
   namespace :api do
     resources :shippings, only: %i[index show update] do
     end
@@ -30,8 +30,9 @@ Rails.application.routes.draw do
     resources :deposits, only: %i[index create show] do
     end
 
-    resources :wallets, only: [:show, :destroy] do
+    resources :wallets, only: [:show] do
     end
+    delete '/wallets/:id', to: 'wallets#destroy' # This line is added from the new code
 
     resources :payment_methods, only: %i[index create show] do
     end
