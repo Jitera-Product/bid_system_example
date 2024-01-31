@@ -1,1 +1,1 @@
-json.message 'Wallet has been successfully deleted.'
+json.message I18n.t('wallet.delete_success')
