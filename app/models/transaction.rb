@@ -1,6 +1,7 @@
 
 class Transaction < ApplicationRecord
   belongs_to :wallet
+  attribute :payment_gateway_name, :string
 
   enum status: %w[done inprogress rejected], _suffix: true
   enum transaction_type: %w[deposit withdraw bid payback], _suffix: true

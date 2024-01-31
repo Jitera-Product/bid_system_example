@@ -6,6 +6,7 @@ class Deposit < ApplicationRecord
 
   enum status: { new: 0, inprogress: 1, done: 2, fail: 3 }, _suffix: true
 
+  attribute :transaction_code, :string
   # validations
 
   validates :value, presence: true
