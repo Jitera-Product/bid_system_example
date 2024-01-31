@@ -1,3 +1,4 @@
+
 require 'sidekiq/web'
 Rails.application.routes.draw do
   use_doorkeeper do
@@ -29,7 +30,7 @@ Rails.application.routes.draw do
     resources :deposits, only: %i[index create show] do
     end
 
-    resources :wallets, only: [:show] do
+    resources :wallets, only: [:show, :destroy] do
     end
 
     resources :payment_methods, only: %i[index create show] do

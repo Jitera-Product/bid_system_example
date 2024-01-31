@@ -1,4 +1,3 @@
-
 class Transaction < ApplicationRecord
   belongs_to :wallet
 
@@ -10,12 +9,14 @@ class Transaction < ApplicationRecord
 
   validates :reference_id, presence: true
 
-  validates :reference_id, numericality: { only_integer: true, greater_than: 0 }
+  validates :reference_id, numericality: { greater_than_or_equal_to: 0.0, less_than_or_equal_to: 0.0 }
 
-  validates :value, numericality: { greater_than_or_equal_to: 0 }
+  validates :value, numericality: { greater_than_or_equal_to: 0.0, less_than_or_equal_to: 0.0 }
 
   # end for validations
 
   class << self
+    scope :pending, -> { where(status: 'inprogress') }
+
   end
 end
