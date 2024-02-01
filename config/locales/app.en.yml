@@ -13,6 +13,11 @@ en:
       expired: The access token expired
     registrations:
       failed_to_sign_up: Failed to sign up
+  wallet:
+    locked_error: "Wallet is locked and cannot be deleted."
+    pending_transactions_error: "Wallet cannot be deleted due to pending transactions."
+    delete_success: "Wallet successfully deleted."
+    not_found_error: "Wallet not found."
     passwords:
       old_password_mismatch: Incorrect current password
       not_found_in_database: Invalid email or password
