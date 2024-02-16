@@ -9,6 +9,7 @@ module BidSystem
     config.load_defaults 7.0
     config.time_zone = 'Asia/Saigon'
     config.active_record.default_timezone = :local
+    config.autoload_paths << Rails.root.join('lib')
     config.i18n.default_locale = :en
     config.i18n.available_locales = %i[en]
     config.paths.add 'lib', eager_load: true

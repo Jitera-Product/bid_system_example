@@ -48,7 +48,8 @@ module Api
     end
 
     def base_render_moder_confirmation_error(exception)
-      render json: { error: exception.message }, status: :bad_request
+      render json: { error: I18n.t('controller.moder.confirmation_token_invalid') }, status: :bad_request if exception.message == 'Confirmation token is not valid'
+      render json: { error: I18n.t('controller.moder.confirmation_token_expired') }, status: :bad_request if exception.message == 'Confirmation token is expired'
     end
 
     def custom_token_initialize_values(resource, client)

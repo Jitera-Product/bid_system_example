@@ -1,4 +1,3 @@
----
 en:
   common:
     '404': not found
@@ -9,6 +8,9 @@ en:
     '201': created
     '200': success
     '302': deleted
+  moder:
+    confirmation_token_invalid: 'Confirmation token is not valid'
+    confirmation_token_expired: 'Confirmation token is expired'
   moders:
     signup:
       success: "Moder account created successfully."

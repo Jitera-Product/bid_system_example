@@ -9,6 +9,11 @@ class ModerPolicy < ApplicationPolicy
     true # Anyone can sign up, no user needed to be present
   end
 
+  # Define authorization rule for email confirmation
+  def confirm_email?
+    true # Email confirmation should be allowed for unauthenticated users
+  end
+
   # Define other necessary authorization rules for moders if needed
 
   # ... (other methods and rules can be added here as needed)
