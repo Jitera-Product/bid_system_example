@@ -80,6 +80,9 @@ Rails.application.routes.draw do
     resources :users_reset_password_requests, only: [:create] do
     end
 
+    # Route for email confirmation for moders
+    post '/moders/confirm_email', to: 'moders_email_auth#confirm_email', as: 'moder_confirm_email'
+
     resources :users, only: %i[index create show update] do
     end
   end
