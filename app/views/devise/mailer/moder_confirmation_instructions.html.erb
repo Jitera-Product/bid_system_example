@@ -1,0 +1,9 @@
+<p>Welcome <%= @moder.email %>!</p>
+<p>You can confirm your account email through the link below:</p>
+<p><a href="<%= confirmation_url(@moder, confirmation_token: @moder.confirmation_token) %>">Confirm my account</a></p>
+<br>
+<p>If you didn't request this, please ignore this email.</p>
+<p>Your token is valid for 24 hours from the time this email was sent.</p>
+<br>
+<p>Thanks,</p>
+<p>The Moder Team</p>
