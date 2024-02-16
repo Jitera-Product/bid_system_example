@@ -1,6 +1,9 @@
+
 # frozen_string_literal: true
 
 class ModersEmailAuthService
+  attr_reader :moder_params
+
   def initialize(moder_params)
     @moder_params = moder_params
   end
@@ -20,6 +23,8 @@ class ModersEmailAuthService
     else
       { error: moder.errors.full_messages.join(', ') }
     end
+  rescue ActiveRecord::RecordNotUnique => e
+    { error: I18n.t('activerecord.errors.messages.taken', attribute: 'email') }
   rescue StandardError => e
     { error: e.message }
   end

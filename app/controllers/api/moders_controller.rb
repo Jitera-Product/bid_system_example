@@ -1,17 +1,21 @@
+
 # typed: ignore
 module Api
   class ModersController < BaseController
     def signup
-      email = params[:email]
-      password = params[:password]
-      service = ModersEmailAuthService.new
-      result = service.signup(email, password)
+      moder_params = params.require(:moder).permit(:email, :password, :password_confirmation)
+      service = ModersEmailAuthService.new(moder_params)
+      result = service.signup
 
       if result[:success]
-        render json: { user: result[:user] }, status: :ok
+        render json: { moder: result[:moder] }, status: :created
+      elsif result[:errors].include?(I18n.t('activerecord.errors.messages.taken', attribute: 'email'))
+        render json: { error: I18n.t('activerecord.errors.messages.taken', attribute: 'email') }, status: :bad_request
       else
-        render json: { message: result[:error] }, status: :bad_request
+        render json: { errors: result[:errors] }, status: :unprocessable_entity
       end
+    rescue StandardError => e
+      render json: { error: e.message }, status: :internal_server_error
     end
 
     private
