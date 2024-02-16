@@ -1,3 +1,4 @@
+
 ---
 en:
   activerecord:
@@ -24,4 +25,8 @@ en:
         datetime_in_future: must be after the date and time today
         invalid: is invalid
         date_type: must be a valid date
+        password_invalid: 'Password is invalid'
+        password_too_short: 'Password is too short (minimum is 8 characters)'
+        password_confirmation_mismatch: 'Password confirmation does not match'
+        email_invalid: 'Email is invalid'
         datetime_type: must be a valid date and time

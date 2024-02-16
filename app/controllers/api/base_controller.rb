@@ -1,5 +1,7 @@
+
 # typed: ignore
 module Api
+  rescue_from Exceptions::ModerConfirmationError, with: :base_render_moder_confirmation_error
   class BaseController < ActionController::API
     include OauthTokensConcern
     include ActionController::Cookies
@@ -43,6 +45,11 @@ module Api
 
     def base_render_record_not_unique
       render json: { message: I18n.t('common.errors.record_not_uniq_error') }, status: :forbidden
+    end
+
+    def base_render_moder_confirmation_error(exception)
+      render json: { error: I18n.t('controller.moder.confirmation_token_invalid') }, status: :bad_request if exception.message == 'Confirmation token is not valid'
+      render json: { error: I18n.t('controller.moder.confirmation_token_expired') }, status: :bad_request if exception.message == 'Confirmation token is expired'
     end
 
     def custom_token_initialize_values(resource, client)
