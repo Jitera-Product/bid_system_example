@@ -1,8 +1,13 @@
+
 class Category < ApplicationRecord
   has_many :product_categories, dependent: :destroy
+  has_many :todos, dependent: :destroy
 
+  belongs_to :admin
   belongs_to :created,
              class_name: 'Admin'
+
+  attribute :disabled, :boolean, default: false
 
   # validations
 
