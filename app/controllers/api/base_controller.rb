@@ -1,3 +1,4 @@
+
 # typed: ignore
 module Api
   class BaseController < ActionController::API
@@ -12,6 +13,7 @@ module Api
     rescue_from Exceptions::AuthenticationError, with: :base_render_authentication_error
     rescue_from ActiveRecord::RecordNotUnique, with: :base_render_record_not_unique
     rescue_from Pundit::NotAuthorizedError, with: :base_render_unauthorized_error
+    rescue_from Exceptions::CustomValidationException, with: :handle_custom_validation_exception
 
     def error_response(resource, error)
       {
@@ -30,7 +32,7 @@ module Api
     end
 
     def base_render_unprocessable_entity(exception)
-      render json: { message: exception.record.errors.full_messages }, status: :unprocessable_entity
+      render json: { message: I18n.t('todos.create.errors.validation'), errors: exception.record.errors }, status: :unprocessable_entity
     end
 
     def base_render_authentication_error(_exception)
@@ -43,6 +45,10 @@ module Api
 
     def base_render_record_not_unique
       render json: { message: I18n.t('common.errors.record_not_uniq_error') }, status: :forbidden
+    end
+
+    def handle_custom_validation_exception(exception)
+      render json: { error: exception.message }, status: :unprocessable_entity
     end
 
     def custom_token_initialize_values(resource, client)

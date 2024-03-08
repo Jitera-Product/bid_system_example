@@ -1,3 +1,4 @@
+
 class Api::UsersPolicy < ApplicationPolicy
   def update?
     (user.is_a?(User) && record.id == user&.id)
@@ -8,17 +9,19 @@ class Api::UsersPolicy < ApplicationPolicy
   end
 
   def create?
-    (user.is_a?(User) && record.id == user&.id)
+    user.is_a?(User)
+  end
+
+  def create_todo?
+    (user.is_a?(User) && record.user_id == user&.id)
   end
 
   class Scope < Scope
     def resolve
       if user.is_a?(User)
         scope.all.where('users.id = ?', user&.id)
-
       else
         scope.none
-
       end
     end
   end
