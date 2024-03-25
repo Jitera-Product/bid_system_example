@@ -1,3 +1,4 @@
+
 ---
 en:
   activerecord:
@@ -17,6 +18,7 @@ en:
       product_category: Product category
       listing: Listing
       listing_bid_item: Listing bid item
+      request: Request
     attributes:
       bid_item:
         user_id: User ID
@@ -28,6 +30,10 @@ en:
         product_id: Product ID
         base_price: Base price
         status: Status
+      request:
+        description_too_long: Description cannot exceed 2000 characters
+        invalid_visitor_id: Invalid visitor ID
+        invalid_hairstylist_id: Invalid hairstylist ID
       user:
         id: ID
         updated_at: Updated at
