@@ -1,3 +1,4 @@
+
 class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :rememberable, :validatable,
          :trackable, :recoverable, :lockable, :confirmable
@@ -26,6 +27,17 @@ class User < ApplicationRecord
 
   validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }
 
+  validates_presence_of :display_name, message: I18n.t('validation.en.blank')
+  validates_presence_of :gender, message: I18n.t('validation.en.blank')
+  validates_presence_of :date_of_birth, message: I18n.t('validation.en.blank')
+  validates_presence_of :area, message: I18n.t('validation.en.area_and_menu_required')
+  validates_presence_of :menu, message: I18n.t('validation.en.area_and_menu_required')
+
+  validates_length_of :display_name, maximum: 20, message: I18n.t('validation.en.display_name_too_long')
+
+  validates_inclusion_of :gender, in: User.genders.keys, message: I18n.t('validation.en.gender_invalid')
+  validate :validate_date_of_birth_format
+
   # end for validations
 
   def generate_reset_password_token
@@ -52,4 +64,14 @@ class User < ApplicationRecord
       false
     end
   end
+
+  private
+
+  def validate_date_of_birth_format
+    errors.add(:date_of_birth, I18n.t('validation.en.date_of_birth_invalid')) unless date_of_birth.is_a?(Date)
+  end
+
+  # Custom validation for images will be added here
+  # validate :validate_images
+
 end

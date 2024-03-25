@@ -77,6 +77,7 @@ Rails.application.routes.draw do
     resources :users_verify_reset_password_requests, only: [:create] do
     end
 
+    post '/api/users', to: 'users_registrations#create'
     resources :users_reset_password_requests, only: [:create] do
     end
 
