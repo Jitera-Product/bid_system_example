@@ -1,22 +1,25 @@
 class Api::UsersRegistrationsController < Api::BaseController
   def create
-    @user = User.new(create_params)
-    if @user.save
-      if Rails.env.staging?
-        # to show token in staging
-        token = @user.respond_to?(:confirmation_token) ? @user.confirmation_token : ''
-        render json: { message: I18n.t('common.200'), token: token }, status: :ok and return
-      else
-        head :ok, message: I18n.t('common.200') and return
+    @user = User.new(user_params)
+
+    if params[:user][:images].present?
+      params[:user][:images].each do |image|
+        @user.images.attach(image)
       end
+    end
+
+    if @user.save
+      render json: @user, status: :created
     else
-      error_messages = @user.errors.messages
-      render json: { error_messages: error_messages, message: I18n.t('email_login.registrations.failed_to_sign_up') },
-             status: :unprocessable_entity
+      render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
+    else
+      render_error_response(:unprocessable_entity, @user.errors.full_messages)
     end
   end
 
-  def create_params
-    params.require(:user).permit(:password, :password_confirmation, :email)
+  private
+
+  def user_params
+    params.require(:user).permit(:email, :password, :password_confirmation, :display_name, :gender, :date_of_birth, :area, :menu)
   end
 end
