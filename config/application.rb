@@ -12,6 +12,8 @@ module BidSystem
     config.i18n.default_locale = :en
     config.i18n.available_locales = %i[en]
     config.paths.add 'lib', eager_load: true
+    config.paths.add 'lib/exceptions', eager_load: true
+    # Add additional paths to autoload here, if necessary
     config.generators do |g|
       g.test_framework :rspec
     end

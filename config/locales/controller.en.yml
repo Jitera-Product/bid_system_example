@@ -1,3 +1,4 @@
+
 ---
 en:
   common:
@@ -9,3 +10,10 @@ en:
     '201': created
     '200': success
     '302': deleted
+  user_registration:
+    success: "Your account has been successfully created. Please check your email to confirm your account."
+    error:
+      missing_fields: "Required fields are missing."
+      password_mismatch: "Password and password confirmation do not match."
+      invalid_email_format: "Email format is invalid."
+      user_already_exists: "A user with this email already exists."
