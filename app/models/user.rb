@@ -25,11 +25,16 @@ class User < ApplicationRecord
 
   validates :email, presence: true, uniqueness: true
 
-  validates :email, length: { in: 0..255 }, if: :email?
+  validates :email, length: { maximum: 255 }
 
-  validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validate :email_format_valid, if: :email?
 
   # end for validations
+
+  # Custom validation methods
+  def email_format_valid
+    errors.add(:email, I18n.t('activerecord.errors.models.user.attributes.email.invalid')) unless email =~ URI::MailTo::EMAIL_REGEXP
+  end
 
   def generate_reset_password_token
     raw, enc = Devise.token_generator.generate(self.class, :reset_password_token)
