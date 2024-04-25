@@ -1,7 +1,19 @@
+
 ---
 en:
   activerecord:
     errors:
+      models:
+        user:
+          attributes:
+            email:
+              blank: "can't be blank"
+              taken: "has already been taken"
+              invalid: "is not a valid email format"
+            password:
+              blank: "can't be blank"
+              too_short: "is too short (minimum is %{count} characters)"
+              confirmation: "doesn't match Password"
       messages:
         blank: can't be blank
         taken: has already been taken

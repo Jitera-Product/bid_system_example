@@ -1,3 +1,4 @@
+
 class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :rememberable, :validatable,
          :trackable, :recoverable, :lockable, :confirmable
@@ -13,13 +14,14 @@ class User < ApplicationRecord
   # validations
 
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
-  validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
+  validates :password, presence: true, confirmation: true, length: { in: Devise.password_length }, format: { with: PASSWORD_FORMAT }, if: -> { new_record? || password.present? }
+  validates :password_confirmation, presence: true, if: -> { new_record? || password.present? }
 
-  validates :email, presence: true, uniqueness: true
+  validates :email, presence: { message: I18n.t('activerecord.errors.models.user.attributes.email.blank') }, uniqueness: { message: I18n.t('activerecord.errors.models.user.attributes.email.taken') }
 
-  validates :email, length: { in: 0..255 }, if: :email?
+  validates :email, length: { in: 0..255, too_long: I18n.t('activerecord.errors.messages.too_long', count: 255) }, if: :email?
 
-  validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :email, format: { with: URI::MailTo::EMAIL_REGEXP, message: I18n.t('activerecord.errors.models.user.attributes.email.invalid') }
 
   # end for validations
 
