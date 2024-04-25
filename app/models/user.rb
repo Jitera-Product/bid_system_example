@@ -13,15 +13,21 @@ class User < ApplicationRecord
 
   # validations
 
-  PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
-  validates :password, presence: true, confirmation: true, length: { in: Devise.password_length }, format: { with: PASSWORD_FORMAT }, if: -> { new_record? || password.present? }
+  PASSWORD_FORMAT = /\A
+    (?=.*?[A-Z])        # Must contain an uppercase letter
+    (?=.*?[a-z])        # Must contain a lowercase letter
+    (?=.*?[0-9])        # Must contain a digit
+    (?=.*?[#?!@$%^&*-]) # Must contain a special character
+  .{8,}                 # Must be at least 8 characters long
+\z/x
+  validates :password, presence: true, confirmation: true, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
   validates :password_confirmation, presence: true, if: -> { new_record? || password.present? }
 
-  validates :email, presence: { message: I18n.t('activerecord.errors.models.user.attributes.email.blank') }, uniqueness: { message: I18n.t('activerecord.errors.models.user.attributes.email.taken') }
+  validates :email, presence: true, uniqueness: true
 
-  validates :email, length: { in: 0..255, too_long: I18n.t('activerecord.errors.messages.too_long', count: 255) }, if: :email?
+  validates :email, length: { in: 0..255 }, if: :email?
 
-  validates :email, format: { with: URI::MailTo::EMAIL_REGEXP, message: I18n.t('activerecord.errors.models.user.attributes.email.invalid') }
+  validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }
 
   # end for validations
 
