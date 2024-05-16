@@ -3,9 +3,9 @@ class ProductService::Index
   attr_accessor :params, :records, :query
 
   def initialize(params, _current_user = nil)
-    @params = params
+    @params = params.permit(:name, :price, :description, :stock, :approved_id, :pagination_page, :pagination_limit)
 
-    @records = Product
+    @records = Product.all
   end
 
   def execute
@@ -13,84 +13,67 @@ class ProductService::Index
 
     name_start_with
 
-    description_start_with
+    description_contains
 
-    price_equal
+    price_equal_or_less_than
 
     stock_equal
 
-    aproved_id_equal
+    approved_id_equal
 
     order
 
     paginate
+
+    @records
   end
 
-  def user_id_equal
-    return if params.dig(:products, :user_id).blank?
+  private
 
-    @records = Product.where('user_id = ?', params.dig(:products, :user_id))
+  def user_id_equal
+    return if params[:user_id].blank?
+
+    @records = records.where(user_id: params[:user_id])
   end
 
   def name_start_with
-    return if params.dig(:products, :name).blank?
+    return if params[:name].blank?
 
-    @records = if records.is_a?(Class)
-                 Product.where(value.query)
-               else
-                 records.or(Product.where('name like ?', "%#{params.dig(:products, :name)}"))
-               end
+    @records = records.where('name LIKE ?', "#{params[:name]}%")
   end
 
-  def description_start_with
-    return if params.dig(:products, :description).blank?
+  def description_contains
+    return if params[:description].blank?
 
-    @records = if records.is_a?(Class)
-                 Product.where(value.query)
-               else
-                 records.or(Product.where('description like ?', "%#{params.dig(:products, :description)}"))
-               end
+    @records = records.where('description LIKE ?', "%#{params[:description]}%")
   end
 
-  def price_equal
-    return if params.dig(:products, :price).blank?
+  def price_equal_or_less_than
+    return if params[:price].blank?
 
-    @records = if records.is_a?(Class)
-                 Product.where(value.query)
-               else
-                 records.or(Product.where('price = ?', params.dig(:products, :price)))
-               end
+    @records = records.where('price <= ?', params[:price])
   end
 
   def stock_equal
-    return if params.dig(:products, :stock).blank?
+    return if params[:stock].blank?
 
-    @records = if records.is_a?(Class)
-                 Product.where(value.query)
-               else
-                 records.or(Product.where('stock = ?', params.dig(:products, :stock)))
-               end
+    @records = records.where(stock: params[:stock])
   end
 
-  def aproved_id_equal
-    return if params.dig(:products, :aproved_id).blank?
+  def approved_id_equal
+    return if params[:approved_id].blank?
 
-    @records = if records.is_a?(Class)
-                 Product.where(value.query)
-               else
-                 records.or(Product.where('aproved_id = ?', params.dig(:products, :aproved_id)))
-               end
+    @records = records.where(approved_id: params[:approved_id])
   end
 
   def order
-    return if records.blank?
-
-    @records = records.order('products.created_at desc')
+    @records = records.order(created_at: :desc)
   end
 
   def paginate
-    @records = Product.none if records.blank? || records.is_a?(Class)
-    @records = records.page(params.dig(:pagination_page) || 1).per(params.dig(:pagination_limit) || 20)
+    page = params[:pagination_page] || 1
+    limit = params[:pagination_limit] || 20
+    @records = records.page(page).per(limit)
   end
 end
 # rubocop:enable Style/ClassAndModuleChildren

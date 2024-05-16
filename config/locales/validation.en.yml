@@ -2,6 +2,25 @@
 en:
   activerecord:
     errors:
+      models:
+        product:
+          attributes:
+            name:
+              blank: "Product name can't be blank."
+            price:
+              greater_than: "Price must be greater than 0."
+            description:
+              blank: "Description can't be blank."
+            image:
+              invalid: "Image must be a valid URL format."
+            stock:
+              greater_than_or_equal_to: "Stock must be a non-negative number."
+            user_id:
+              not_a_number: "User ID must be a valid number."
+              invalid: "User ID must be a valid existing user ID."
+            approved_id:
+              not_a_number: "Approved ID must be a valid number."
+              invalid: "Approved ID must be a valid existing admin ID."
       messages:
         blank: can't be blank
         taken: has already been taken

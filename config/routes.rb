@@ -1,4 +1,5 @@
 require 'sidekiq/web'
+
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
@@ -41,7 +42,13 @@ Rails.application.routes.draw do
     resources :admins, only: %i[index create show update] do
     end
 
-    resources :products, only: %i[index create show update] do
+    # Updated products resource to remove the :create action
+    resources :products, only: %i[index show update] do
+    end
+
+    # Added namespace for products with a custom create route
+    namespace :products do
+      post '/', to: 'products#create'
     end
 
     resources :bids, only: %i[index create show update] do
