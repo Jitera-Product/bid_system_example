@@ -7,6 +7,10 @@ en:
       token:
         inactive: Your account is not activated yet
         locked: Your account is locked
+      product_category:
+        not_found: Product category not found
+        create_error: Error creating product category
+        update_error: Error updating product category
   email_login:
     reset_password:
       invalid_token: The access token is invalid

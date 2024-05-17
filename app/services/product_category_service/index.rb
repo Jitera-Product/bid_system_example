@@ -19,19 +19,15 @@ class ProductCategoryService::Index
   end
 
   def category_id_equal
-    return if params.dig(:product_categories, :category_id).blank?
+    return if params[:category_id].blank?
 
-    @records = ProductCategory.where('category_id = ?', params.dig(:product_categories, :category_id))
+    @records = @records.where(category_id: params[:category_id])
   end
 
   def product_id_equal
-    return if params.dig(:product_categories, :product_id).blank?
+    return if params[:product_id].blank?
 
-    @records = if records.is_a?(Class)
-                 ProductCategory.where(value.query)
-               else
-                 records.or(ProductCategory.where('product_id = ?', params.dig(:product_categories, :product_id)))
-               end
+    @records = @records.where(product_id: params[:product_id])
   end
 
   def order
