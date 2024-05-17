@@ -16,3 +16,10 @@ en:
     passwords:
       old_password_mismatch: Incorrect current password
       not_found_in_database: Invalid email or password
+  admins:
+    index:
+      success: Admin list successfully retrieved.
+      error: Error retrieving admin list.
+    filter:
+      name_not_found: No admins found with the given name.
+      email_not_found: No admins found with the given email.

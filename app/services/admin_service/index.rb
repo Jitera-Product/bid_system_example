@@ -11,29 +11,25 @@ class AdminService::Index
   end
 
   def execute
-    name_start_with
+    filter_by_name
 
-    email_start_with
+    filter_by_email
 
     order
 
     paginate
   end
 
-  def name_start_with
+  def filter_by_name
     return if params.dig(:admins, :name).blank?
 
-    @records = Admin.where('name like ?', "%#{params.dig(:admins, :name)}")
+    @records = @records.where('name ILIKE ?', "%#{params.dig(:admins, :name)}%")
   end
 
-  def email_start_with
+  def filter_by_email
     return if params.dig(:admins, :email).blank?
 
-    @records = if records.is_a?(Class)
-                 Admin.where(value.query)
-               else
-                 records.or(Admin.where('email like ?', "%#{params.dig(:admins, :email)}"))
-               end
+    @records = @records.where('email ILIKE ?', "%#{params.dig(:admins, :email)}%")
   end
 
   def order

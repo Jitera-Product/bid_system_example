@@ -2,9 +2,13 @@ class Api::AdminsController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update]
 
   def index
-    # inside service params are checked and whiteisted
-    @admins = AdminService::Index.new(params.permit!, current_resource_owner).execute
-    @total_pages = @admins.total_pages
+    begin
+      # inside service params are checked and whitelisted
+      @admins = AdminService::Index.new(params.permit!, current_resource_owner).execute
+      @total_pages = @admins.total_pages
+    rescue StandardError => e
+      render json: { error: I18n.t('common.errors.internal_server_error'), message: e.message }, status: :internal_server_error
+    end
   end
 
   def show
