@@ -2,9 +2,18 @@ class Api::ProductCategoriesController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update]
 
   def index
-    # inside service params are checked and whiteisted
-    @product_categories = ProductCategoryService::Index.new(params.permit!, current_resource_owner).execute
-    @total_pages = @product_categories.total_pages
+    page = params[:page].to_i
+    if page < 1
+      render json: { error: I18n.t('activerecord.errors.messages.pagination.page_must_be_greater_than_zero') }, status: :bad_request
+      return
+    end
+
+    begin
+      @product_categories = ProductCategoryService::Index.new(params.permit!, current_resource_owner).execute
+      @total_pages = @product_categories.total_pages
+    rescue ArgumentError
+      render json: { error: I18n.t('activerecord.errors.messages.pagination.wrong_format') }, status: :bad_request
+    end
   end
 
   def show

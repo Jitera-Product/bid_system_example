@@ -9,7 +9,7 @@ class ProductCategoryService::Index
   end
 
   def execute
-    category_id_equal
+    @page = params[:page] || 1
 
     product_id_equal
 
@@ -41,8 +41,13 @@ class ProductCategoryService::Index
   end
 
   def paginate
-    @records = ProductCategory.none if records.blank? || records.is_a?(Class)
-    @records = records.page(params.dig(:pagination_page) || 1).per(params.dig(:pagination_limit) || 20)
+    if records.blank? || records.is_a?(Class)
+      @records = ProductCategory.none
+      @total_pages = 0
+    else
+      @records = records.page(@page).per(params.dig(:pagination_limit) || 20)
+      @total_pages = @records.total_pages
+    end
   end
 end
 # rubocop:enable Style/ClassAndModuleChildren
