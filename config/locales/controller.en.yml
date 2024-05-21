@@ -6,9 +6,12 @@ en:
     '401': unauthorized
     '500': internal server error
     '422': unprocessable
+    '400': bad request
     '201': created
     '200': success
     '302': deleted
   users:
     already_checked_in: "User has already checked in for today."
     check_in_success: "Check-in was successfully recorded."
+    user_not_found: "User not found."
+    already_checked_in_error: "User has already checked in and not checked out."

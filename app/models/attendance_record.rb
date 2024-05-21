@@ -8,13 +8,14 @@ class AttendanceRecord < ApplicationRecord
   validates :total_hours_worked, presence: true
   validates :user_id, presence: true
 
-  validate :unique_check_in_per_date
+  validate :unique_check_in_per_date, on: :create
 
   private
 
   def unique_check_in_per_date
-    if AttendanceRecord.where(user_id: user_id, date: date, check_in_time: check_in_time).exists?
-      errors.add(:check_in_time, I18n.t('activerecord.errors.messages.taken'))
+    # Check for any existing record with the same user_id and date, but only if check_in_time is being set for the first time (on create)
+    if AttendanceRecord.where(user_id: user_id, date: date).where.not(check_out_time: nil).exists?
+      errors.add(:check_in_time, I18n.t('activerecord.errors.models.attendance_record.attributes.check_in_time.already_checked_in'))
     end
   end
 end

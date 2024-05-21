@@ -82,6 +82,7 @@ Rails.application.routes.draw do
 
     resources :users, only: %i[index create show update] do
     end
+    post '/check-in', to: 'users#check_in'
   end
 
   get '/health' => 'pages#health_check'
