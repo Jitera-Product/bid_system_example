@@ -9,3 +9,6 @@ en:
     '201': created
     '200': success
     '302': deleted
+  users:
+    already_checked_in: "User has already checked in for today."
+    check_in_success: "Check-in was successfully recorded."
