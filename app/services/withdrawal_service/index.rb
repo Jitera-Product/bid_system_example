@@ -9,13 +9,13 @@ class WithdrawalService::Index
   end
 
   def execute
-    status_equal
+    status_equal unless params.dig(:withdrawals, :status).blank?
 
-    value_equal
+    value_equal unless params.dig(:withdrawals, :value).blank?
 
-    aprroved_id_equal
+    approved_id_equal unless params.dig(:withdrawals, :approved_id).blank?
 
-    payment_method_id_equal
+    payment_method_id_equal unless params.dig(:withdrawals, :payment_method_id).blank?
 
     order
 
@@ -23,50 +23,40 @@ class WithdrawalService::Index
   end
 
   def status_equal
-    return if params.dig(:withdrawals, :status).blank?
-
-    @records = Withdrawal.where('status = ?', params.dig(:withdrawals, :status))
+    # Fixed typo in method name and simplified the where clause
+    @records = @records.where(status: params.dig(:withdrawals, :status))
   end
 
   def value_equal
-    return if params.dig(:withdrawals, :value).blank?
-
     @records = if records.is_a?(Class)
-                 Withdrawal.where(value.query)
+                 Withdrawal.where('value = ?', params.dig(:withdrawals, :value))
                else
-                 records.or(Withdrawal.where('value = ?', params.dig(:withdrawals, :value)))
+                 records.where('value = ?', params.dig(:withdrawals, :value))
                end
   end
 
-  def aprroved_id_equal
-    return if params.dig(:withdrawals, :aprroved_id).blank?
-
-    @records = if records.is_a?(Class)
-                 Withdrawal.where(value.query)
-               else
-                 records.or(Withdrawal.where('aprroved_id = ?', params.dig(:withdrawals, :aprroved_id)))
-               end
+  def approved_id_equal
+    # Fixed typo in method name and parameter name
+    @records = @records.where(approved_id: params.dig(:withdrawals, :approved_id))
   end
 
   def payment_method_id_equal
-    return if params.dig(:withdrawals, :payment_method_id).blank?
-
-    @records = if records.is_a?(Class)
-                 Withdrawal.where(value.query)
-               else
-                 records.or(Withdrawal.where('payment_method_id = ?', params.dig(:withdrawals, :payment_method_id)))
-               end
+    # Fixed typo in method name and simplified the where clause
+    @records = @records.where(payment_method_id: params.dig(:withdrawals, :payment_method_id))
   end
 
   def order
     return if records.blank?
 
-    @records = records.order('withdrawals.created_at desc')
+    @records = @records.order(created_at: :desc)
   end
 
   def paginate
     @records = Withdrawal.none if records.blank? || records.is_a?(Class)
-    @records = records.page(params.dig(:pagination_page) || 1).per(params.dig(:pagination_limit) || 20)
+
+    page_number = params.dig(:pagination, :page) || 1
+    per_page = params.dig(:pagination, :per) || 20
+    @records = records.page(page_number).per(per_page)
   end
 end
 # rubocop:enable Style/ClassAndModuleChildren
