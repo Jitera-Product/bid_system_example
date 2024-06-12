@@ -23,7 +23,7 @@ Rails.application.routes.draw do
     resources :product_categories, only: %i[index create show update] do
     end
 
-    resources :categories, only: %i[index create show update] do
+    resources :categories, only: %i[index show update] do
     end
 
     resources :deposits, only: %i[index create show] do
@@ -84,6 +84,11 @@ Rails.application.routes.draw do
     end
   end
 
+  namespace :api, defaults: { format: :json } do
+    namespace :v1 do
+      resources :product_categories, only: [:create]
+    end
+  end
   get '/health' => 'pages#health_check'
   get 'api-docs/v1/swagger.yaml' => 'swagger#yaml'
 end

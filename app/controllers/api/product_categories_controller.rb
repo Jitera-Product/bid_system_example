@@ -11,18 +11,19 @@ class Api::ProductCategoriesController < Api::BaseController
     @product_category = ProductCategory.find_by!('product_categories.id = ?', params[:id])
   end
 
+  # Define a "create" action that instantiates a new "ProductCategory" with "create_params"
+  # and handles success or failure.
   def create
-    @product_category = ProductCategory.new(create_params)
-
-    return if @product_category.save
-
-    @error_object = @product_category.errors.messages
-
-    render status: :unprocessable_entity
+    product_category = ProductCategory.new(create_params)
+    if product_category.save
+      render json: product_category, status: :ok
+    else
+      base_render_unprocessable_entity(product_category.errors)
+    end
   end
 
   def create_params
-    params.require(:product_categories).permit(:category_id, :product_id)
+    params.require(:product_category).permit(:category_id, :product_id)
   end
 
   def update

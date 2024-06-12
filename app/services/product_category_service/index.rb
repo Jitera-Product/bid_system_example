@@ -9,29 +9,23 @@ class ProductCategoryService::Index
   end
 
   def execute
-    category_id_equal
-
-    product_id_equal
+    query = ProductCategory.all
+    query = category_id_equal(query, params[:category_id]) if params[:category_id]
+    query = product_id_equal(query, params[:product_id]) if params[:product_id]
 
     order
 
     paginate
   end
 
-  def category_id_equal
-    return if params.dig(:product_categories, :category_id).blank?
+  private
 
-    @records = ProductCategory.where('category_id = ?', params.dig(:product_categories, :category_id))
+  def category_id_equal(query, category_id)
+    query.where(category_id: category_id)
   end
 
-  def product_id_equal
-    return if params.dig(:product_categories, :product_id).blank?
-
-    @records = if records.is_a?(Class)
-                 ProductCategory.where(value.query)
-               else
-                 records.or(ProductCategory.where('product_id = ?', params.dig(:product_categories, :product_id)))
-               end
+  def product_id_equal(query, product_id)
+    query.where(product_id: product_id)
   end
 
   def order

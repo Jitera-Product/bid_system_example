@@ -9,3 +9,7 @@ en:
     '201': created
     '200': success
     '302': deleted
+  product_categories:
+    create:
+      success: "Product category created successfully."
+      error: "Failed to create product category."
