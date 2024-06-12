@@ -2,71 +2,55 @@
 class WithdrawalService::Index
   attr_accessor :params, :records, :query
 
-  def initialize(params, _current_user = nil)
+  def initialize(params, current_user = nil)
     @params = params
-
-    @records = Withdrawal
+    @current_user = current_user
+    @records = Withdrawal.all
   end
 
   def execute
-    status_equal
-
-    value_equal
-
-    aprroved_id_equal
-
-    payment_method_id_equal
-
+    filter_by_status
+    filter_by_value
+    filter_by_approved_id
+    filter_by_payment_method_id
     order
-
     paginate
   end
 
-  def status_equal
-    return if params.dig(:withdrawals, :status).blank?
+  private
 
-    @records = Withdrawal.where('status = ?', params.dig(:withdrawals, :status))
+  def filter_by_status
+    return if params[:status].nil?
+
+    @records = @records.where(status: params[:status])
   end
 
-  def value_equal
-    return if params.dig(:withdrawals, :value).blank?
+  def filter_by_value
+    return if params[:value].nil?
 
-    @records = if records.is_a?(Class)
-                 Withdrawal.where(value.query)
-               else
-                 records.or(Withdrawal.where('value = ?', params.dig(:withdrawals, :value)))
-               end
+    @records = @records.where(value: params[:value])
   end
 
-  def aprroved_id_equal
-    return if params.dig(:withdrawals, :aprroved_id).blank?
+  def filter_by_approved_id
+    return if params[:approved_id].nil?
 
-    @records = if records.is_a?(Class)
-                 Withdrawal.where(value.query)
-               else
-                 records.or(Withdrawal.where('aprroved_id = ?', params.dig(:withdrawals, :aprroved_id)))
-               end
+    @records = @records.where(approved_id: params[:approved_id])
   end
 
-  def payment_method_id_equal
-    return if params.dig(:withdrawals, :payment_method_id).blank?
+  def filter_by_payment_method_id
+    return if params[:payment_method_id].nil?
 
-    @records = if records.is_a?(Class)
-                 Withdrawal.where(value.query)
-               else
-                 records.or(Withdrawal.where('payment_method_id = ?', params.dig(:withdrawals, :payment_method_id)))
-               end
+    @records = @records.where(payment_method_id: params[:payment_method_id])
   end
 
   def order
-    return if records.blank?
-
-    @records = records.order('withdrawals.created_at desc')
+    @records = @records.order(created_at: :desc)
   end
 
   def paginate
-    @records = Withdrawal.none if records.blank? || records.is_a?(Class)
-    @records = records.page(params.dig(:pagination_page) || 1).per(params.dig(:pagination_limit) || 20)
+    page = params.fetch(:page, 1)
+    per_page = params.fetch(:per_page, 20)
+    @records = @records.page(page).per(per_page)
   end
 end
 # rubocop:enable Style/ClassAndModuleChildren

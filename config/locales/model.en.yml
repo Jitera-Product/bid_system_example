@@ -88,10 +88,16 @@ en:
       withdrawal:
         updated_at: Updated at
         created_at: Created at
-        aprroved_id: Aprroved ID
+        approved_id: Approved ID
         id: ID
         value: Value
         status: Status
+        approved:
+          id: Approved ID
+          created_at: Approved at
+          updated_at: Updated at
+          name: Name
+          email: Email
         payment_method_id: Payment method ID
       product:
         description: Description

@@ -1,6 +1,10 @@
-if @message.present?
+json.total_pages @total_pages
 
-  json.message @message
+json.withdrawals @withdrawals do |withdrawal|
+  json.extract! withdrawal, :id, :status, :created_at, :updated_at, :value, :approved_id, :payment_method_id
+  json.approved withdrawal.approved, :id, :created_at, :updated_at, :name, :email
+  json.payment_method withdrawal.payment_method, :id, :user_id, :primary, :created_at, :updated_at, :method
+end
 
 else
 
