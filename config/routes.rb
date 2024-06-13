@@ -42,6 +42,7 @@ Rails.application.routes.draw do
     end
 
     resources :products, only: %i[index create show update] do
+      get ':id', to: 'products#show', on: :collection
     end
 
     resources :bids, only: %i[index create show update] do

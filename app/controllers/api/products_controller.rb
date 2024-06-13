@@ -8,7 +8,11 @@ class Api::ProductsController < Api::BaseController
   end
 
   def show
-    @product = Product.find_by!('products.id = ?', params[:id])
+    begin
+      @product = Product.find_by!('products.id = ?', params[:id])
+    rescue ActiveRecord::RecordNotFound => e
+      base_render_record_not_found(e)
+    end
   end
 
   def create
@@ -21,10 +25,6 @@ class Api::ProductsController < Api::BaseController
     @error_object = @product.errors.messages
 
     render status: :unprocessable_entity
-  end
-
-  def create_params
-    params.require(:products).permit(:name, :price, :description, :image, :user_id, :stock, :aproved_id)
   end
 
   def update
@@ -40,7 +40,18 @@ class Api::ProductsController < Api::BaseController
     render status: :unprocessable_entity
   end
 
+  private
+
+  def create_params
+    params.require(:products).permit(:name, :price, :description, :image, :user_id, :stock, :aproved_id)
+  end
+
   def update_params
     params.require(:products).permit(:name, :price, :description, :image, :user_id, :stock, :aproved_id)
+  end
+
+  # Assuming the base_render_record_not_found method is defined in the BaseController or included module
+  def base_render_record_not_found(exception)
+    render json: { error: exception.message }, status: :not_found
   end
 end

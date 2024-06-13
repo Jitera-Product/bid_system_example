@@ -1,7 +1,7 @@
 ---
 en:
   common:
-    '404': not found
+    '404': "The product with the specified ID was not found."
     '403': forbidden
     '401': unauthorized
     '500': internal server error

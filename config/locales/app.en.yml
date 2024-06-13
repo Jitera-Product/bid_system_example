@@ -16,3 +16,10 @@ en:
     passwords:
       old_password_mismatch: Incorrect current password
       not_found_in_database: Invalid email or password
+  product:
+    success:
+      created: Product created successfully
+      details_retrieved: Product details retrieved successfully
+    error:
+      not_found: Product not found
+      invalid_id: Product ID must be a valid integer

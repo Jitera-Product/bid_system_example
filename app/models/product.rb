@@ -10,20 +10,16 @@ class Product < ApplicationRecord
 
   # validations
 
-  validates :name, presence: true
+  validates :name, presence: true, length: { maximum: 255 }
 
-  validates :name, length: { in: 0..255 }, if: :name?
+  validates :price, presence: true, numericality: { greater_than_or_equal_to: 0.0 }, format: { with: /\A\d+(?:\.\d{0,2})?\z/ }
 
-  validates :price, presence: true
-
-  validates :price, numericality: { greater_than_or_equal_to: 0.0, less_than_or_equal_to: 0.0 }
-
-  validates :description, length: { in: 0..65_535 }, if: :description?
+  validates :description, length: { maximum: 65_535 }, allow_blank: true
 
   validates :image, content_type: ['image/png', 'image/jpg', 'image/jpeg', 'image/gif', 'image/svg+xml'],
                     size: { less_than_or_equal_to: 100.megabytes }
 
-  validates :stock, numericality: { greater_than_or_equal_to: 0.0, less_than_or_equal_to: 0.0 }
+  validates :stock, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 
   # end for validations
 
