@@ -11,6 +11,9 @@ module Api
     rescue_from ActiveRecord::RecordInvalid, with: :base_render_unprocessable_entity
     rescue_from Exceptions::AuthenticationError, with: :base_render_authentication_error
     rescue_from ActiveRecord::RecordNotUnique, with: :base_render_record_not_unique
+    rescue_from Exceptions::PaginationError, with: :base_render_pagination_error
+    rescue_from Exceptions::PageNumberError, with: :base_render_page_number_error
+    rescue_from Exceptions::PageFormatError, with: :base_render_page_format_error
     rescue_from Pundit::NotAuthorizedError, with: :base_render_unauthorized_error
 
     def error_response(resource, error)
@@ -43,6 +46,18 @@ module Api
 
     def base_render_record_not_unique
       render json: { message: I18n.t('common.errors.record_not_uniq_error') }, status: :forbidden
+    end
+
+    def base_render_pagination_error(exception)
+      render json: { message: exception.message }, status: :unprocessable_entity
+    end
+
+    def base_render_page_number_error(_exception)
+      render json: { message: I18n.t('activerecord.errors.messages.pagination.page_must_be_greater_than_zero') }, status: :bad_request
+    end
+
+    def base_render_page_format_error(_exception)
+      render json: { message: I18n.t('activerecord.errors.messages.pagination.wrong_format') }, status: :bad_request
     end
 
     def custom_token_initialize_values(resource, client)

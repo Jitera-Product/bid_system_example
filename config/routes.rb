@@ -20,8 +20,7 @@ Rails.application.routes.draw do
     resources :listings, only: %i[index create show update] do
     end
 
-    resources :product_categories, only: %i[index create show update] do
-    end
+    get 'product_categories_list', to: 'product_categories#index'
 
     resources :categories, only: %i[index create show update] do
     end
