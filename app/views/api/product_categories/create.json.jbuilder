@@ -1,59 +1,17 @@
 if @error_object.present?
-
   json.error_object @error_object
-
 else
-
   json.product_category do
+    json.extract! @product_category, :id, :category_id, :product_id
     json.created_at @product_category.created_at
-
     json.updated_at @product_category.updated_at
 
-    json.id @product_category.id
-
-    category = @product_category.category
-    if category.present?
-      json.category do
-        json.id category.id
-
-        json.created_at category.created_at
-
-        json.updated_at category.updated_at
-
-        json.name category.name
-
-        json.created_id category.created_id
-      end
+    json.category do
+      json.extract! @product_category.category, :id, :created_at, :updated_at, :name, :created_id
     end
 
-    json.category_id @product_category.category_id
-
-    product = @product_category.product
-    if product.present?
-      json.product do
-        json.created_at product.created_at
-
-        json.updated_at product.updated_at
-
-        json.name product.name
-
-        json.price product.price
-
-        json.description product.description
-
-        json.image product.image
-
-        json.stock product.stock
-
-        json.id product.id
-
-        json.user_id product.user_id
-
-        json.aproved_id product.aproved_id
-      end
+    json.product do
+      json.extract! @product_category.product, :created_at, :updated_at, :name, :price, :description, :image, :stock, :id, :user_id, :aproved_id
     end
-
-    json.product_id @product_category.product_id
   end
-
 end
