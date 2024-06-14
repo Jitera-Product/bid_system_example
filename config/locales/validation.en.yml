@@ -2,6 +2,15 @@
 en:
   activerecord:
     errors:
+      models:
+        product_category:
+          attributes:
+            category_id:
+              blank: "can't be blank"
+            product_id:
+              blank: "can't be blank"
+            category_id_and_product_id:
+              taken: "has already been taken"
       messages:
         blank: can't be blank
         taken: has already been taken

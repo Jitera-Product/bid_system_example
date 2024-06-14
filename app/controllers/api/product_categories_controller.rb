@@ -8,7 +8,9 @@ class Api::ProductCategoriesController < Api::BaseController
   end
 
   def show
-    @product_category = ProductCategory.find_by!('product_categories.id = ?', params[:id])
+    @product_category = ProductCategory.find_by!(id: params[:id])
+  rescue ActiveRecord::RecordNotFound => e
+    base_render_record_not_found(e)
   end
 
   def create
@@ -38,5 +40,11 @@ class Api::ProductCategoriesController < Api::BaseController
 
   def update_params
     params.require(:product_categories).permit(:category_id, :product_id)
+  end
+
+  private
+
+  def base_render_record_not_found(exception)
+    render json: { error: exception.message }, status: :not_found
   end
 end
