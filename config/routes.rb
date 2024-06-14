@@ -1,4 +1,5 @@
 require 'sidekiq/web'
+
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
@@ -82,6 +83,9 @@ Rails.application.routes.draw do
 
     resources :users, only: %i[index create show update] do
     end
+
+    # The new code added a POST route for '/requests', which does not conflict with the existing code.
+    post '/requests', to: 'requests#create'
   end
 
   get '/health' => 'pages#health_check'

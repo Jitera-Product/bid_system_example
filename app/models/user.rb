@@ -1,3 +1,4 @@
+
 class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :rememberable, :validatable,
          :trackable, :recoverable, :lockable, :confirmable
@@ -9,6 +10,11 @@ class User < ApplicationRecord
   has_many :bid_items, dependent: :destroy
   has_many :bids, dependent: :destroy
   has_many :deposits, dependent: :destroy
+  has_many :requests, dependent: :destroy
+  has_many :payment_methods, dependent: :destroy
+  has_many :wallets, dependent: :destroy
+  has_many :products, dependent: :destroy
+  has_many :bids, dependent: :destroy
 
   # validations
 
@@ -20,6 +26,17 @@ class User < ApplicationRecord
   validates :email, length: { in: 0..255 }, if: :email?
 
   validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }
+
+  validates_presence_of :display_name, message: I18n.t('validation.en.blank')
+  validates_presence_of :gender, message: I18n.t('validation.en.blank')
+  validates_presence_of :date_of_birth, message: I18n.t('validation.en.blank')
+  validates_presence_of :area, message: I18n.t('validation.en.area_and_menu_required')
+  validates_presence_of :menu, message: I18n.t('validation.en.area_and_menu_required')
+
+  validates_length_of :display_name, maximum: 20, message: I18n.t('validation.en.display_name_too_long')
+
+  validates_inclusion_of :gender, in: User.genders.keys, message: I18n.t('validation.en.gender_invalid')
+  validate :validate_date_of_birth_format
 
   # end for validations
 
@@ -47,4 +64,14 @@ class User < ApplicationRecord
       false
     end
   end
+
+  private
+
+  def validate_date_of_birth_format
+    errors.add(:date_of_birth, I18n.t('validation.en.date_of_birth_invalid')) unless date_of_birth.is_a?(Date)
+  end
+
+  # Custom validation for images will be added here
+  # validate :validate_images
+
 end
