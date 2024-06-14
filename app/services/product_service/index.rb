@@ -4,82 +4,56 @@ class ProductService::Index
 
   def initialize(params, _current_user = nil)
     @params = params
-
     @records = Product
   end
 
   def execute
-    user_id_equal
-
-    name_start_with
-
-    description_start_with
-
-    price_equal
-
-    stock_equal
-
-    aproved_id_equal
-
+    filter_by_user_id
+    filter_by_name
+    filter_by_description
+    filter_by_price
+    filter_by_stock
+    filter_by_approved_id
     order
-
     paginate
   end
 
-  def user_id_equal
-    return if params.dig(:products, :user_id).blank?
+  private
 
-    @records = Product.where('user_id = ?', params.dig(:products, :user_id))
+  def filter_by_user_id
+    return if params[:user_id].blank?
+
+    @records = @records.where(user_id: params[:user_id])
   end
 
-  def name_start_with
-    return if params.dig(:products, :name).blank?
+  def filter_by_name
+    return if params[:name].blank?
 
-    @records = if records.is_a?(Class)
-                 Product.where(value.query)
-               else
-                 records.or(Product.where('name like ?', "%#{params.dig(:products, :name)}"))
-               end
+    @records = @records.where('name LIKE ?', "%#{params[:name]}%")
   end
 
-  def description_start_with
-    return if params.dig(:products, :description).blank?
+  def filter_by_description
+    return if params[:description].blank?
 
-    @records = if records.is_a?(Class)
-                 Product.where(value.query)
-               else
-                 records.or(Product.where('description like ?', "%#{params.dig(:products, :description)}"))
-               end
+    @records = @records.where('description LIKE ?', "%#{params[:description]}%")
   end
 
-  def price_equal
-    return if params.dig(:products, :price).blank?
+  def filter_by_price
+    return if params[:price].blank?
 
-    @records = if records.is_a?(Class)
-                 Product.where(value.query)
-               else
-                 records.or(Product.where('price = ?', params.dig(:products, :price)))
-               end
+    @records = @records.where(price: params[:price])
   end
 
-  def stock_equal
-    return if params.dig(:products, :stock).blank?
+  def filter_by_stock
+    return if params[:stock].blank?
 
-    @records = if records.is_a?(Class)
-                 Product.where(value.query)
-               else
-                 records.or(Product.where('stock = ?', params.dig(:products, :stock)))
-               end
+    @records = @records.where(stock: params[:stock])
   end
 
-  def aproved_id_equal
-    return if params.dig(:products, :aproved_id).blank?
+  def filter_by_approved_id
+    return if params[:approved_id].blank?
 
-    @records = if records.is_a?(Class)
-                 Product.where(value.query)
-               else
-                 records.or(Product.where('aproved_id = ?', params.dig(:products, :aproved_id)))
-               end
+    @records = @records.where(approved_id: params[:approved_id])
   end
 
   def order

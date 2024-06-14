@@ -1,5 +1,9 @@
 class Api::ProductsPolicy < ApplicationPolicy
-  def update?; end
+  def update?
+    user.present?
+  end
 
-  def create?; end
+  def create?
+    user.present?
+  end
 end
