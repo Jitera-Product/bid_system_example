@@ -9,7 +9,7 @@ class Category < ApplicationRecord
 
   attribute :disabled, :boolean, default: false
 
-  # validations
+  # validations v1
 
   validates :name, presence: true
 
