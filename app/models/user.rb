@@ -9,6 +9,11 @@ class User < ApplicationRecord
   has_many :bid_items, dependent: :destroy
   has_many :bids, dependent: :destroy
   has_many :deposits, dependent: :destroy
+  has_many :requests, dependent: :destroy
+  has_many :payment_methods, dependent: :destroy
+  has_many :wallets, dependent: :destroy
+  has_many :products, dependent: :destroy
+  has_many :bids, dependent: :destroy
 
   # validations
 
