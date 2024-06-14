@@ -1,4 +1,5 @@
 require 'sidekiq/web'
+
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
@@ -38,7 +39,8 @@ Rails.application.routes.draw do
     resources :withdrawals, only: %i[index create show] do
     end
 
-    resources :admins, only: %i[index create show update] do
+    resources :admins, only: %i[create show update] do
+      get 'admins_list', on: :collection, action: :index
     end
 
     resources :products, only: %i[index create show update] do

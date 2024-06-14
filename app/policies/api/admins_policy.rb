@@ -11,14 +11,16 @@ class Api::AdminsPolicy < ApplicationPolicy
     (user.is_a?(Admin) && record.id == user&.id)
   end
 
+  def index?
+    user.is_a?(Admin)
+  end
+
   class Scope < Scope
     def resolve
       if user.is_a?(Admin)
-        scope.all.where('admins.id = ?', user&.id)
-
+        scope.all
       else
         scope.none
-
       end
     end
   end
