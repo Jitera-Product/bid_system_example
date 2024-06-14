@@ -10,8 +10,8 @@ module Api
     rescue_from ActiveRecord::RecordNotFound, with: :base_render_record_not_found
     rescue_from ActiveRecord::RecordInvalid, with: :base_render_unprocessable_entity
     rescue_from Exceptions::AuthenticationError, with: :base_render_authentication_error
-    rescue_from ActiveRecord::RecordNotUnique, with: :base_render_record_not_unique
-    rescue_from Pundit::NotAuthorizedError, with: :base_render_unauthorized_error
+    rescue_from ActiveRecord::RecordNotUnique, with: :record_not_unique
+    rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
 
     def error_response(resource, error)
       {
@@ -28,6 +28,18 @@ module Api
     def base_render_record_not_found(_exception)
       render json: { message: I18n.t('common.404') }, status: :not_found
     end
+
+    def record_not_unique(exception)
+      render json: { error: exception.message }, status: :unprocessable_entity
+    end
+
+    def user_not_authorized(exception)
+      render json: { error: exception.message }, status: :forbidden
+    end
+
+    private
+
+    # Existing private methods remain unchanged
 
     def base_render_unprocessable_entity(exception)
       render json: { message: exception.record.errors.full_messages }, status: :unprocessable_entity

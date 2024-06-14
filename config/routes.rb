@@ -35,7 +35,7 @@ Rails.application.routes.draw do
     resources :payment_methods, only: %i[index create show] do
     end
 
-    resources :withdrawals, only: %i[index create show] do
+    resources :withdrawals, only: [:index] do
     end
 
     resources :admins, only: %i[index create show update] do

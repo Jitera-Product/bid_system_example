@@ -2,9 +2,11 @@ class Api::WithdrawalsController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show]
 
   def index
-    # inside service params are checked and whiteisted
+    # inside service params are checked and whitelisted
     @withdrawals = WithdrawalService::Index.new(params.permit!, current_resource_owner).execute
-    @total_pages = @withdrawals.total_pages
+    @total_pages = @withdrawals.total_pages if @withdrawals.respond_to?(:total_pages)
+
+    render 'api/withdrawals/index', formats: :json
   end
 
   def show
