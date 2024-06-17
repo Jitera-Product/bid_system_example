@@ -14,7 +14,7 @@ class User < ApplicationRecord
   has_many :wallets, dependent: :destroy
   has_many :products, dependent: :destroy
 
-  # validations
+  # validations v1
 
   PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
   validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
