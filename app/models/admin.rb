@@ -8,6 +8,7 @@ class Admin < ApplicationRecord
   has_many :aprroved_withdrawals,
            class_name: 'Withdrawal',
            foreign_key: :aprroved_id, dependent: :destroy
+  has_many :categories, foreign_key: 'admin_id' # Patch added this line
   has_many :created_categories,
            class_name: 'Category',
            foreign_key: :created_id, dependent: :destroy
