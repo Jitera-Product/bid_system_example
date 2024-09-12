@@ -1,8 +1,9 @@
+
 require 'sidekiq/web'
+
 Rails.application.routes.draw do
   use_doorkeeper do
     controllers tokens: 'tokens'
-
     skip_controllers :authorizations, :applications, :authorized_applications
   end
 
@@ -79,6 +80,10 @@ Rails.application.routes.draw do
 
     resources :users_reset_password_requests, only: [:create] do
     end
+
+    post '/moders/signup', to: 'moders#signup', as: 'moders_signup'
+    # Route for email confirmation for moders
+    post '/moders/confirm_email', to: 'moders_email_auth#confirm_email', as: 'moder_confirm_email'
 
     resources :users, only: %i[index create show update] do
     end
