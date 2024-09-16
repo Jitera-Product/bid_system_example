@@ -11,6 +11,11 @@ class Api::UsersPolicy < ApplicationPolicy
     (user.is_a?(User) && record.id == user&.id)
   end
 
+  def destroy?
+    user.is_a?(Admin) || (user.is_a?(User) && record.user_id == user&.id)
+  end
+
+
   class Scope < Scope
     def resolve
       if user.is_a?(User)

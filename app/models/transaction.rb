@@ -16,5 +16,7 @@ class Transaction < ApplicationRecord
   # end for validations
 
   class << self
+    scope :pending, -> { where(status: 'inprogress') }
+
   end
 end
