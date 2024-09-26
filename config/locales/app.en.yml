@@ -1,3 +1,4 @@
+
 ---
 en:
   common:
@@ -16,3 +17,11 @@ en:
     passwords:
       old_password_mismatch: Incorrect current password
       not_found_in_database: Invalid email or password
+  todos:
+    create:
+      success: "Todo item created successfully."
+      errors:
+        validation: "Validation failed for Todo item."
+        uniqueness: "Todo item title must be unique."
+        due_date_future: "The due date must be in the future."
+        invalid_user: "Invalid user."
