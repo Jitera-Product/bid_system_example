@@ -1,3 +1,4 @@
+
 class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :rememberable, :validatable,
          :trackable, :recoverable, :lockable, :confirmable
@@ -12,16 +13,28 @@ class User < ApplicationRecord
 
   # validations
 
-  PASSWORD_FORMAT = /\A(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}\z/
-  validates :password, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
+  PASSWORD_FORMAT = /\A
+    (?=.*?[A-Z])        # Must contain an uppercase letter
+    (?=.*?[a-z])        # Must contain a lowercase letter
+    (?=.*?[0-9])        # Must contain a digit
+    (?=.*?[#?!@$%^&*-]) # Must contain a special character
+  .{8,}                 # Must be at least 8 characters long
+\z/x
+  validates :password, presence: true, confirmation: true, format: PASSWORD_FORMAT, if: -> { new_record? || password.present? }
+  validates :password_confirmation, presence: true, if: -> { new_record? || password.present? }
 
   validates :email, presence: true, uniqueness: true
 
-  validates :email, length: { in: 0..255 }, if: :email?
+  validates :email, length: { maximum: 255 }
 
-  validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validate :email_format_valid, if: :email?
 
   # end for validations
+
+  # Custom validation methods
+  def email_format_valid
+    errors.add(:email, I18n.t('activerecord.errors.models.user.attributes.email.invalid')) unless email =~ URI::MailTo::EMAIL_REGEXP
+  end
 
   def generate_reset_password_token
     raw, enc = Devise.token_generator.generate(self.class, :reset_password_token)
