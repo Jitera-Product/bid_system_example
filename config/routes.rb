@@ -1,3 +1,4 @@
+
 require 'sidekiq/web'
 Rails.application.routes.draw do
   use_doorkeeper do
@@ -65,20 +66,8 @@ Rails.application.routes.draw do
     resources :admins_reset_password_requests, only: [:create] do
     end
 
-    resources :users_verify_confirmation_token, only: [:create] do
-    end
-
-    resources :users_passwords, only: [:create] do
-    end
-
-    resources :users_registrations, only: [:create] do
-    end
-
-    resources :users_verify_reset_password_requests, only: [:create] do
-    end
-
-    resources :users_reset_password_requests, only: [:create] do
-    end
+    # Route for creating a new Todo item
+    resources :todos, only: [:create]
 
     resources :users, only: %i[index create show update] do
     end
