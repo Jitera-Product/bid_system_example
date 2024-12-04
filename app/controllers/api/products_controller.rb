@@ -2,7 +2,6 @@ class Api::ProductsController < Api::BaseController
   before_action :doorkeeper_authorize!, only: %i[index create show update]
 
   def index
-    # inside service params are checked and whiteisted
     @products = ProductService::Index.new(params.permit!, current_resource_owner).execute
     @total_pages = @products.total_pages
   end
@@ -16,15 +15,17 @@ class Api::ProductsController < Api::BaseController
 
     authorize @product, policy_class: Api::ProductsPolicy
 
-    return if @product.save
-
-    @error_object = @product.errors.messages
-
-    render status: :unprocessable_entity
+    if @product.save
+      render :create, status: :created
+    else
+      render json: error_response(@product, StandardError.new(@product.errors.full_messages.join(', '))), status: :unprocessable_entity
+    end
+  rescue ActiveRecord::RecordInvalid => e
+    render json: error_response(@product, e), status: :unprocessable_entity
   end
 
   def create_params
-    params.require(:products).permit(:name, :price, :description, :image, :user_id, :stock, :aproved_id)
+    params.require(:product).permit(:name, :price, :description, :image, :user_id, :stock, :approved_id)
   end
 
   def update
@@ -33,14 +34,14 @@ class Api::ProductsController < Api::BaseController
 
     authorize @product, policy_class: Api::ProductsPolicy
 
-    return if @product.update(update_params)
-
-    @error_object = @product.errors.messages
-
-    render status: :unprocessable_entity
+    if @product.update(update_params)
+      render :update
+    else
+      render json: error_response(@product, StandardError.new(@product.errors.full_messages.join(', '))), status: :unprocessable_entity
+    end
   end
 
   def update_params
-    params.require(:products).permit(:name, :price, :description, :image, :user_id, :stock, :aproved_id)
+    params.require(:product).permit(:name, :price, :description, :image, :user_id, :stock, :approved_id)
   end
 end
